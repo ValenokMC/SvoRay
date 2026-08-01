@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="96" x2="904" y2="928" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7779FF"/>
+      <stop offset="0.5" stop-color="#526FF2"/>
+      <stop offset="1" stop-color="#26D3B3"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="310" y1="210" x2="714" y2="840" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#D9FFFF" stop-opacity="0.58"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="34" stdDeviation="42" flood-color="#061024" flood-opacity="0.42"/>
+    </filter>
+  </defs>
+  <rect x="42" y="42" width="940" height="940" rx="252" fill="#0E1429"/>
+  <circle cx="290" cy="224" r="280" fill="#8D7BFF" opacity="0.24"/>
+  <circle cx="792" cy="806" r="320" fill="#21DDB7" opacity="0.18"/>
+  <path d="M512 132 826 258v222c0 205-126 337-314 424C324 817 198 685 198 480V258L512 132Z" fill="url(#bg)" filter="url(#shadow)"/>
+  <path d="M512 195 766 297v181c0 163-96 270-254 351-158-81-254-188-254-351V297L512 195Z" fill="#FFFFFF" opacity="0.12"/>
+  <path d="M646 347c-33-35-79-54-132-54-92 0-162 48-162 126 0 72 55 103 151 124 57 12 78 24 78 49 0 27-28 43-72 43-54 0-102-22-139-62l-72 79c50 57 116 86 203 86 103 0 175-51 175-137 0-74-50-109-154-132-55-12-75-23-75-45 0-24 25-39 64-39 43 0 82 17 113 48l72-86Z" fill="url(#glass)"/>
+  <path d="M340 266c73-58 159-77 247-42" fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" opacity="0.28"/>
+</svg>

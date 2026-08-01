@@ -1,0 +1,21 @@
+# Build output
+**/bin/
+**/obj/
+dist/
+*.user
+*.suo
+.vs/
+
+# Data the client creates for itself. Never publish: it holds the subscription URL
+# and profile credentials in clear text.
+guiConfigs/
+guiLogs/
+guiTemps/
+guiBackups/
+guiFonts/
+binConfigs/
+*.log
+
+# Working notes: specs, session prompts and handoffs. Kept locally because they are
+# useful for future work, but they are not part of the product and are not released.
+internal/
