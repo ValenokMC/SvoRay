@@ -672,12 +672,22 @@
                     </LinearGradientBrush>
                 </Grid.Background>
 
+                <!--
+                    Both glows are static decoration, but a BlurEffect this wide is recomputed
+                    on every frame, and WPF gives an element with an Effect no dirty-rectangle
+                    optimisation - it redraws the whole blurred area. Two of them made dragging
+                    the window visibly stutter in simple mode while advanced mode, which has no
+                    such decoration, stayed smooth. BitmapCache rasterises each glow once and
+                    reuses the texture; nothing here ever changes, so the cache is never
+                    invalidated. The look is unchanged - the cache stores the blurred result.
+                -->
                 <Ellipse
                     Width="520"
                     Height="520"
                     Margin="-250,-310,0,0"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
+                    CacheMode="BitmapCache"
                     Fill="#334B8BFF"
                     IsHitTestVisible="False">
                     <Ellipse.Effect>
@@ -690,6 +700,7 @@
                     Margin="0,0,-220,-280"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
+                    CacheMode="BitmapCache"
                     Fill="#2EDB70C9"
                     IsHitTestVisible="False">
                     <Ellipse.Effect>
