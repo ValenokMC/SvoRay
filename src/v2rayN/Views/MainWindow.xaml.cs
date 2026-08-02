@@ -11,6 +11,19 @@ namespace v2rayN.Views;
 
 public partial class MainWindow
 {
+    private const double SimpleWidth = 420;
+    private const double SimpleHeight = 780;
+    private const double SimpleMinWidth = 360;
+    private const double SimpleMinHeight = 560;
+
+    /// <summary>Past this the phone layout stops looking like one; the card stretches, nothing else.</summary>
+    private const double SimpleMaxWidth = 560;
+
+    private const double AdvancedWidth = 1180;
+    private const double AdvancedHeight = 760;
+    private const double AdvancedMinWidth = 860;
+    private const double AdvancedMinHeight = 620;
+
     private static Config _config;
     private readonly SerialDisposable _layoutBindingsDisposable = new();
     private CheckUpdateView? _checkUpdateView;
@@ -30,6 +43,12 @@ public partial class MainWindow
     private DispatcherTimer? _pingTimeoutTimer;
 
     private ESvoRayConnectionState _lastConnectionState = ESvoRayConnectionState.Off;
+
+    /// <summary>Set while the mode radio buttons are being set from the config rather than by the user.</summary>
+    private bool _suppressModeEvents;
+
+    private Size? _simpleSize;
+    private Size? _advancedSize;
 
     private ESvoRayConnectionState _trayState = ESvoRayConnectionState.Off;
 
@@ -57,7 +76,10 @@ public partial class MainWindow
         cmbSimpleServers.SelectionChanged += (_, _) => ResetPingResult();
         btnShowImport.Click += BtnShowImport_Click;
         btnCancelImport.Click += BtnCancelImport_Click;
+        btnSimpleRouting.Click += BtnSimpleRouting_Click;
         togSvoRayConnect.Click += TogSvoRayConnect_Click;
+        rdoModeProxy.Checked += async (_, _) => await ApplyModeAsync(ESvoRayMode.Proxy);
+        rdoModeTun.Checked += async (_, _) => await ApplyModeAsync(ESvoRayMode.Tun);
         menuTrayToggle.Click += MenuTrayToggle_Click;
         menuShowWindow.Click += (_, _) => ShowHideWindow(true);
         menuTrayExit.Click += MenuTrayExit_Click;
@@ -242,24 +264,90 @@ public partial class MainWindow
 
         AddHelpMenuItem();
         WindowsManager.Instance.RegisterGlobalHotkey(_config, OnHotkeyHandler, null);
+
+        InitSimpleMode();
+    }
+
+    /// <summary>
+    /// Restores the stored simple-mode choices into the screen. The radio buttons raise Checked
+    /// while this runs, so the handler is suppressed - otherwise restoring the saved mode would
+    /// be read as the user changing it and would reconnect on startup.
+    /// </summary>
+    private void InitSimpleMode()
+    {
+        _suppressModeEvents = true;
+        rdoModeProxy.IsChecked = _config.SvoRayItem.Mode == ESvoRayMode.Proxy;
+        rdoModeTun.IsChecked = _config.SvoRayItem.Mode == ESvoRayMode.Tun;
+        _suppressModeEvents = false;
+
+        UpdateRoutingSummary();
     }
 
     #region Event
 
     private void ShowAdvancedMode()
     {
+        if (SimplePanel.Visibility == Visibility.Visible && WindowState == WindowState.Normal)
+        {
+            _simpleSize = new Size(Width, Height);
+        }
+
         SimplePanel.Visibility = Visibility.Collapsed;
         AdvancedPanel.Visibility = Visibility.Visible;
-        Width = Math.Max(Width, 1180);
-        Height = Math.Max(Height, 760);
+        ApplyWindowSize(false);
     }
 
     private void ShowSimpleMode()
     {
+        if (AdvancedPanel.Visibility == Visibility.Visible && WindowState == WindowState.Normal)
+        {
+            _advancedSize = new Size(Width, Height);
+        }
+
         AdvancedPanel.Visibility = Visibility.Collapsed;
         SimplePanel.Visibility = Visibility.Visible;
-        Width = Math.Min(Width, 980);
-        Height = Math.Min(Height, 700);
+        ApplyWindowSize(true);
+    }
+
+    /// <summary>
+    /// Simple mode is a phone-shaped window, advanced mode a desktop one, and they cannot share
+    /// a size or a minimum. Each keeps what the user last resized it to for the session, so
+    /// switching back and forth does not undo their adjustment.
+    /// </summary>
+    private void ApplyWindowSize(bool simple)
+    {
+        var work = SystemParameters.WorkArea;
+
+        // MaxWidth is assigned before Width in both branches: while the phone limit is still in
+        // force, a wider assignment would be clamped down to it and silently ignored.
+        if (simple)
+        {
+            MinWidth = SimpleMinWidth;
+            MinHeight = SimpleMinHeight;
+            MaxWidth = SimpleMaxWidth;
+
+            var size = _simpleSize ?? new Size(SimpleWidth, SimpleHeight);
+            Width = Math.Min(size.Width, work.Width);
+            Height = Math.Min(size.Height, work.Height);
+        }
+        else
+        {
+            MaxWidth = double.PositiveInfinity;
+            MinWidth = AdvancedMinWidth;
+            MinHeight = AdvancedMinHeight;
+
+            var size = _advancedSize ?? new Size(AdvancedWidth, AdvancedHeight);
+            Width = Math.Min(Math.Max(size.Width, AdvancedMinWidth), work.Width);
+            Height = Math.Min(Math.Max(size.Height, AdvancedMinHeight), work.Height);
+        }
+
+        // The window keeps its top-left corner through a resize, so a switch between the two
+        // shapes would push it towards the edge of the screen and eventually off it.
+        if (WindowState == WindowState.Normal)
+        {
+            Left = work.Left + ((work.Width - Width) / 2);
+            Top = work.Top + ((work.Height - Height) / 2);
+        }
     }
 
     private void UpdateSimpleImportState(bool hasProfiles)
@@ -399,7 +487,7 @@ public partial class MainWindow
         }
         finally
         {
-            txtUpdateSubscription.Text = "Обновить подписку";
+            txtUpdateSubscription.Text = "Обновить";
             btnUpdateSimple.IsEnabled = true;
         }
     }
@@ -410,36 +498,169 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Shared by the power button and the tray menu so both take the same TUN path.
+    /// Shared by the power button and the tray menu so both take the same path. What is actually
+    /// switched depends on the mode: the TUN adapter, or the Windows system proxy.
     /// </summary>
     private async Task ToggleConnectionAsync(bool enable)
     {
+        var statusBar = ViewModel.StatusBarViewModel;
         try
         {
-            if (enable)
+            if (!enable)
             {
-                var profile = await ConfigHandler.GetDefaultServer(_config);
-                if (profile is null)
-                {
-                    togSvoRayConnect.IsChecked = false;
-                    ViewModel.StatusBarViewModel.SetConnectionState(
-                        ESvoRayConnectionState.Error, "Сначала добавьте подключение и выберите профиль.");
-                    return;
-                }
+                statusBar.SystemProxySelected = (int)ESysProxyType.ForcedClear;
+                statusBar.EnableTun = false;
 
-                await SvoRayService.PrepareTunAsync(_config);
-                ViewModel.StatusBarViewModel.SystemProxySelected = (int)ESysProxyType.ForcedClear;
+                // Only the TUN switch restarts the core and reports the new state on its own.
+                if (_config.SvoRayItem.Mode == ESvoRayMode.Proxy)
+                {
+                    statusBar.SetConnectionState(ESvoRayConnectionState.Off);
+                }
+                return;
             }
 
-            ViewModel.StatusBarViewModel.EnableTun = enable;
+            var profile = await ConfigHandler.GetDefaultServer(_config);
+            if (profile is null)
+            {
+                togSvoRayConnect.IsChecked = false;
+                statusBar.SetConnectionState(
+                    ESvoRayConnectionState.Error, "Сначала добавьте подключение и выберите профиль.");
+                return;
+            }
+
+            statusBar.SetConnectionState(ESvoRayConnectionState.Connecting);
+            await SvoRayService.PrepareAsync(_config);
+
+            // Simple mode has just made its own profile the active one; advanced mode shows
+            // which routing profile is in use and would otherwise still name the previous one.
+            await statusBar.RefreshRoutingsMenu();
+
+            if (_config.SvoRayItem.Mode == ESvoRayMode.Tun)
+            {
+                statusBar.SystemProxySelected = (int)ESysProxyType.ForcedClear;
+                statusBar.EnableTun = true;
+                return;
+            }
+
+            // Leaving TUN restarts the core by itself; starting from an already stopped tunnel
+            // does not, and the routing profile that was just rebuilt has to reach the core.
+            var wasTun = statusBar.EnableTun;
+            statusBar.EnableTun = false;
+            statusBar.SystemProxySelected = (int)ESysProxyType.ForcedChange;
+            if (!wasTun)
+            {
+                await ViewModel.Reload();
+            }
         }
         catch (Exception ex)
         {
-            Logging.SaveLog("SvoRay TUN", ex);
-            togSvoRayConnect.IsChecked = ViewModel.StatusBarViewModel.EnableTun;
-            ViewModel.StatusBarViewModel.SetConnectionState(
+            Logging.SaveLog("SvoRay connect", ex);
+            togSvoRayConnect.IsChecked = MainWindowViewModel.IsSvoRayConnectionRequested(_config);
+            statusBar.SetConnectionState(
                 ESvoRayConnectionState.Error, "Не удалось переключить VPN. Откройте расширенные настройки.");
         }
+    }
+
+    /// <summary>
+    /// Switches between proxy and TUN. An active connection is taken down through the mode it was
+    /// established with before the new one is brought up: the two use different switches, and
+    /// dropping the old one afterwards would leave the system proxy or the tunnel behind.
+    /// </summary>
+    private async Task ApplyModeAsync(ESvoRayMode mode)
+    {
+        if (_suppressModeEvents || _config.SvoRayItem.Mode == mode)
+        {
+            return;
+        }
+
+        var wasConnected = _lastConnectionState is ESvoRayConnectionState.On or ESvoRayConnectionState.Connecting;
+        try
+        {
+            if (wasConnected)
+            {
+                await ToggleConnectionAsync(false);
+            }
+
+            _config.SvoRayItem.Mode = mode;
+            await ConfigHandler.SaveConfig(_config);
+
+            if (wasConnected)
+            {
+                await ToggleConnectionAsync(true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay mode", ex);
+            ShowSimpleStatus("Не удалось сменить режим. Откройте расширенные настройки.", true);
+        }
+    }
+
+    private async void BtnSimpleRouting_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new SimpleRoutingWindow(_config.SvoRayItem.RoutingMode, _config.SvoRayItem.RuleDomains)
+        {
+            Owner = this
+        };
+        if (window.ShowDialog() != true)
+        {
+            return;
+        }
+
+        try
+        {
+            _config.SvoRayItem.RoutingMode = window.ResultMode;
+            _config.SvoRayItem.RuleDomains = window.ResultDomains;
+            await SvoRayRoutingHandler.ApplyAsync(_config);
+            await ConfigHandler.SaveConfig(_config);
+            await ViewModel.StatusBarViewModel.RefreshRoutingsMenu();
+            UpdateRoutingSummary();
+
+            // The core reads the routing profile at startup only, so a live connection has to be
+            // rebuilt for the new list to mean anything.
+            if (_lastConnectionState is not ESvoRayConnectionState.Off)
+            {
+                ShowSimpleStatus("Применяем маршрутизацию…", false);
+                await ViewModel.Reload();
+            }
+            else
+            {
+                ShowSimpleStatus("Маршрутизация сохранена.", false);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay routing", ex);
+            ShowSimpleStatus("Не удалось сохранить маршрутизацию. Откройте расширенные настройки.", true);
+        }
+    }
+
+    private void UpdateRoutingSummary()
+    {
+        var count = _config.SvoRayItem.RuleDomains.Count;
+        txtRoutingSummary.Text = _config.SvoRayItem.RoutingMode switch
+        {
+            ESvoRayRoutingMode.ProxyListed when count > 0 => $"Через VPN: {count} {DomainsWord(count)}",
+            ESvoRayRoutingMode.ProxyListed => "VPN не используется",
+            _ when count > 0 => $"Без VPN: {count} {DomainsWord(count)}",
+            _ => "Весь трафик через VPN"
+        };
+    }
+
+    private static string DomainsWord(int count)
+    {
+        var tens = count % 100;
+        var ones = count % 10;
+        if (tens is >= 11 and <= 14)
+        {
+            return "доменов";
+        }
+        return ones switch
+        {
+            1 => "домен",
+            2 or 3 or 4 => "домена",
+            _ => "доменов"
+        };
     }
 
     /// <summary>
@@ -604,6 +825,9 @@ public partial class MainWindow
         togSvoRayConnect.IsChecked = state is ESvoRayConnectionState.Connecting or ESvoRayConnectionState.On;
         togSvoRayConnect.IsEnabled = state != ESvoRayConnectionState.Connecting;
 
+        // Switching modes mid-handshake would take down a connection that is not up yet.
+        rdoModeProxy.IsEnabled = rdoModeTun.IsEnabled = state != ESvoRayConnectionState.Connecting;
+
         // A real ping starts a second core. Whether that is safe while TUN holds the default
         // route has not been tested live, so the check is offered only while disconnected.
         var idle = state == ESvoRayConnectionState.Off;
@@ -621,7 +845,9 @@ public partial class MainWindow
 
             case ESvoRayConnectionState.On:
                 txtConnectionTitle.Text = "VPN включён";
-                txtConnectionSubtitle.Text = "Подключение активно";
+                txtConnectionSubtitle.Text = _config.SvoRayItem.Mode == ESvoRayMode.Proxy
+                    ? "Через прокси идут программы, которые учитывают системные настройки"
+                    : "Через VPN идёт весь трафик системы";
                 break;
 
             case ESvoRayConnectionState.Error:
@@ -795,7 +1021,24 @@ public partial class MainWindow
 
     protected override void OnLoaded(object? sender, RoutedEventArgs e)
     {
+        // The base restores one remembered size for the window as a whole, which is the wrong
+        // shape for whichever mode it did not come from. Keep it only when it still fits the
+        // mode that is about to be shown, then let that mode decide.
         base.OnLoaded(sender, e);
+        var restored = new Size(Width, Height);
+        if (SimplePanel.Visibility == Visibility.Visible)
+        {
+            if (restored.Width <= SimpleMaxWidth)
+            {
+                _simpleSize = restored;
+            }
+        }
+        else
+        {
+            _advancedSize = restored;
+        }
+        ApplyWindowSize(SimplePanel.Visibility == Visibility.Visible);
+
         if (_config.UiItem.AutoHideStartup)
         {
             ShowHideWindow(false);

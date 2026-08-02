@@ -174,7 +174,9 @@ public class StatusBarViewModel : MyReactiveObject
         }
 
         // The initial reload confirms whether the core actually came up.
-        ConnectionState = EnableTun ? ESvoRayConnectionState.Connecting : ESvoRayConnectionState.Off;
+        ConnectionState = MainWindowViewModel.IsSvoRayConnectionRequested(_config)
+            ? ESvoRayConnectionState.Connecting
+            : ESvoRayConnectionState.Off;
 
         #region WhenAnyValue && ReactiveCommand
 

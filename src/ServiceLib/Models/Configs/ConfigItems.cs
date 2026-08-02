@@ -300,3 +300,24 @@ public class HappyEyeballs4RayItem
     public int? Interleave { get; set; }
     public int? MaxConcurrentTry { get; set; }
 }
+
+/// <summary>
+/// Everything the simple screen owns. The advanced v2rayN settings stay untouched;
+/// simple mode derives what it needs from here whenever a connection is prepared.
+/// </summary>
+[Serializable]
+public class SvoRayItem
+{
+    public ESvoRayMode Mode { get; set; } = ESvoRayMode.Tun;
+
+    public ESvoRayRoutingMode RoutingMode { get; set; } = ESvoRayRoutingMode.BypassListed;
+
+    /// <summary>
+    /// Bare host names, without a scheme or a matcher prefix - what the user typed, normalised.
+    /// The routing profile is rebuilt from this list, never edited in place.
+    /// </summary>
+    public List<string> RuleDomains { get; set; } = [];
+
+    /// <summary>Id of the routing profile simple mode generates, so it is reused instead of duplicated.</summary>
+    public string? RoutingId { get; set; }
+}

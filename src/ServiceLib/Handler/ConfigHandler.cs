@@ -194,6 +194,9 @@ public static class ConfigHandler
         }
         config.GlobalHotkeys ??= [];
 
+        config.SvoRayItem ??= new();
+        config.SvoRayItem.RuleDomains ??= [];
+
         if (config.SystemProxyItem.SystemProxyExceptions.IsNullOrEmpty())
         {
             config.SystemProxyItem.SystemProxyExceptions = Utils.IsWindows() ? Global.SystemProxyExceptionsWindows : Global.SystemProxyExceptionsLinux;

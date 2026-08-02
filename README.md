@@ -12,7 +12,8 @@ You paste your own subscription link or a single profile, pick a server, and pre
 
 - one screen: connection status, a power button, a profile selector
 - imports an HTTPS subscription or an individual `vless://`, `hysteria2://` and other links v2rayN supports
-- global TUN routing without a system proxy
+- two connection modes: TUN for the whole system, or the Windows system proxy
+- a domain list that decides what the VPN carries: everything except the list, or the list only
 - picks the active Ethernet/Wi-Fi adapter and local IPv4 automatically
 - excludes the selected server's IP from TUN so traffic cannot loop
 - Cloudflare DNS: `1.1.1.1` and `https://1.1.1.1/dns-query`
@@ -30,7 +31,7 @@ SvoRay routes your traffic through a server you supply. It does not provide anon
 2. Optionally verify the download against `SHA256SUMS.txt` published with the release:
 
    ```powershell
-   Get-FileHash .\SvoRay-0.2.0-setup.exe -Algorithm SHA256
+   Get-FileHash .\SvoRay-0.3.0-setup.exe -Algorithm SHA256
    ```
 
    The build is not signed with a commercial certificate, so comparing the hash is the only way to confirm you got the right file.
@@ -44,9 +45,11 @@ A Start-menu shortcut is created. No desktop shortcut.
 1. Launch SvoRay and confirm the UAC prompt.
 2. Paste your subscription link or a single profile into the field and press **Импортировать**.
 3. The form is replaced by a profile selector, and the first usable profile is selected automatically.
-4. Press the power button. Press it again to disconnect.
-5. **Проверить** measures latency for the selected profile.
-6. **Настройки** opens the full v2rayN interface.
+4. Pick a mode: **Прокси** covers applications that honour the Windows system proxy, **TUN** covers the whole system.
+5. Press the power button. Press it again to disconnect.
+6. **Проверить** measures latency for the selected profile.
+7. **Маршрутизация** edits the domain list. Type `example.com`; subdomains are matched too, and DNS for a listed domain takes the same path as its traffic.
+8. **Настройки** opens the full v2rayN interface.
 
 ## Update
 
@@ -80,13 +83,13 @@ Core binaries (`xray.exe`, `sing-box.exe`, `wintun.dll`) are copied from a local
 
 ## Status
 
-Version 0.2.0.
+Version 0.3.0. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
 A pre-publication security audit has been completed — see [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for scope, findings, fixes and remaining risks. Notable fixes it produced: the downloaded subscription payload no longer reaches the log files, and profile links are kept out of the on-screen notice stream.
 
-Verified: clean install and first launch, install over a previous version, import and subscription update, latency check, tray behaviour, 62/62 unit tests, no threats found by Microsoft Defender in any release artifact.
+Verified: clean install and first launch, install over a previous version, import and subscription update, latency check, tray behaviour, 80/80 unit tests, no threats found by Microsoft Defender in any release artifact.
 
-Not verified yet: uninstall with both answers to the user-data prompt, Windows display scaling at 125 % and 150 %.
+Not verified yet: uninstall with both answers to the user-data prompt, Windows display scaling at 125 % and 150 %, and a live run of the 0.3.0 connection modes and domain routing.
 
 Known open defect: a single unexplained `OutOfMemoryException` was observed once, raised while the thread pool was creating a worker thread. It has not been reproduced. If the client hangs or exits unexpectedly, please do not close the process — capture a dump first and open an issue.
 

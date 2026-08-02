@@ -784,7 +784,7 @@ public class MainWindowViewModel : MyReactiveObject
     /// </summary>
     private void UpdateSvoRayConnectionState()
     {
-        if (!_config.TunModeItem.EnableTun)
+        if (!IsSvoRayConnectionRequested(_config))
         {
             StatusBarViewModel.SetConnectionState(ESvoRayConnectionState.Off);
             return;
@@ -793,6 +793,18 @@ public class MainWindowViewModel : MyReactiveObject
         StatusBarViewModel.SetConnectionState(CoreManager.Instance.IsCoreRunning
             ? ESvoRayConnectionState.On
             : ESvoRayConnectionState.Error);
+    }
+
+    /// <summary>
+    /// Whether the user asked for a connection, expressed in whatever the current simple mode
+    /// switches: the TUN adapter, or the Windows system proxy. In proxy mode the core keeps
+    /// running while disconnected - nothing is routed into it, which is what "off" means there.
+    /// </summary>
+    public static bool IsSvoRayConnectionRequested(Config config)
+    {
+        return config.SvoRayItem.Mode == ESvoRayMode.Proxy
+            ? config.SystemProxyItem.SysProxyType == ESysProxyType.ForcedChange
+            : config.TunModeItem.EnableTun;
     }
 
     private void ReloadResult(bool showClashUI)

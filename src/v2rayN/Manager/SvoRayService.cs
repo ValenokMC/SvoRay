@@ -39,39 +39,49 @@ internal static class SvoRayService
         }
     }
 
-    public static async Task PrepareTunAsync(Config config)
+    /// <summary>
+    /// Writes everything the selected simple mode needs into the config. The caller then flips
+    /// the switch the mode actually uses - the TUN flag or the system proxy - through the
+    /// status bar view model, so the shared v2rayN plumbing stays the single owner of both.
+    /// </summary>
+    public static async Task PrepareAsync(Config config)
     {
-        var network = GetPreferredNetwork();
-        if (network is not null)
-        {
-            config.CoreBasicItem.BindInterface = network.Value.InterfaceName;
-            config.CoreBasicItem.SendThrough = network.Value.LocalAddress;
-        }
-
-        config.TunModeItem.AutoRoute = true;
-        config.TunModeItem.StrictRoute = true;
-        config.TunModeItem.EnableLegacyProtect = false;
-        config.TunModeItem.EnableIPv6Address = false;
-        config.TunModeItem.Stack = "gvisor";
-        config.TunModeItem.Mtu = 1500;
-
-        config.SystemProxyItem.SysProxyType = ESysProxyType.ForcedClear;
         config.SimpleDNSItem.DirectDNS = "1.1.1.1";
         config.SimpleDNSItem.RemoteDNS = "https://1.1.1.1/dns-query";
         config.SimpleDNSItem.BootstrapDNS = "1.1.1.1";
 
-        var routingItems = await AppManager.Instance.RoutingItems();
-        var globalRouting = routingItems.FirstOrDefault(item =>
-            item.Remarks?.Contains("(Global)", StringComparison.OrdinalIgnoreCase) == true);
-        if (globalRouting is not null)
-        {
-            await ConfigHandler.SetDefaultRouting(config, globalRouting);
-        }
+        await SvoRayRoutingHandler.ApplyAsync(config);
 
-        var profile = await ConfigHandler.GetDefaultServer(config);
-        if (profile is not null)
+        if (config.SvoRayItem.Mode == ESvoRayMode.Tun)
         {
-            config.TunModeItem.RouteExcludeAddress = await ResolveEndpointRoutes(profile.Address);
+            var network = GetPreferredNetwork();
+            if (network is not null)
+            {
+                config.CoreBasicItem.BindInterface = network.Value.InterfaceName;
+                config.CoreBasicItem.SendThrough = network.Value.LocalAddress;
+            }
+
+            config.TunModeItem.AutoRoute = true;
+            config.TunModeItem.StrictRoute = true;
+            config.TunModeItem.EnableLegacyProtect = false;
+            config.TunModeItem.EnableIPv6Address = false;
+            config.TunModeItem.Stack = "gvisor";
+            config.TunModeItem.Mtu = 1500;
+
+            var profile = await ConfigHandler.GetDefaultServer(config);
+            if (profile is not null)
+            {
+                config.TunModeItem.RouteExcludeAddress = await ResolveEndpointRoutes(profile.Address);
+            }
+        }
+        else
+        {
+            // Proxy mode reaches the server over the ordinary system route, so none of the TUN
+            // bindings apply. Leaving them behind would pin the core to whichever adapter was
+            // current the last time TUN ran, which breaks as soon as the user changes network.
+            config.CoreBasicItem.BindInterface = string.Empty;
+            config.CoreBasicItem.SendThrough = string.Empty;
+            config.TunModeItem.RouteExcludeAddress = [];
         }
 
         await ConfigHandler.SaveConfig(config);
