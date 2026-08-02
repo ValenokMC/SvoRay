@@ -18,7 +18,7 @@ You paste your own subscription link or a single profile, pick a server, and pre
 - excludes the selected server's IP from TUN so traffic cannot loop
 - Cloudflare DNS: `1.1.1.1` and `https://1.1.1.1/dns-query`
 - tray icon that shows state by shape, not only by colour
-- latency check for the selected profile, measured through the proxy rather than by a bare TCP handshake
+- latency check for the selected profile, and a live check of the running tunnel that reports the exit country
 - the complete v2rayN interface for manual settings and diagnostics
 
 ## What it does not do
@@ -87,7 +87,7 @@ Version 0.3.0. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
 A pre-publication security audit has been completed — see [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for scope, findings, fixes and remaining risks. Notable fixes it produced: the downloaded subscription payload no longer reaches the log files, and profile links are kept out of the on-screen notice stream.
 
-Verified: clean install and first launch, install over a previous version, import and subscription update, latency check, tray behaviour, 88/88 unit tests, no threats found by Microsoft Defender in any release artifact.
+Verified: clean install and first launch, install over a previous version, import and subscription update, latency check, tray behaviour, 91/91 unit tests, no threats found by Microsoft Defender in any release artifact.
 
 Not verified yet: uninstall with both answers to the user-data prompt, Windows display scaling at 125 % and 150 %, and a live run of the 0.3.0 connection modes and domain routing.
 

@@ -31,7 +31,7 @@ public partial class SimpleRoutingWindow : Window
         rdoProxyListed.IsChecked = mode == ESvoRayRoutingMode.ProxyListed;
 
         btnAddDomain.Click += (_, _) => AddDomain();
-        btnRussiaPreset.Click += (_, _) => AddRussiaPreset();
+        btnRussiaPreset.Click += async (_, _) => await AddRussiaPresetAsync();
         txtDomain.PreviewKeyDown += (_, e) =>
         {
             // Shift+Enter is the way to break a line; a bare Enter keeps meaning "add this".
@@ -92,19 +92,45 @@ public partial class SimpleRoutingWindow : Window
     /// The preset only makes sense as a bypass list, so a window left in the opposite mode is
     /// switched over rather than quietly producing the reverse of what the button promises.
     /// </summary>
-    private void AddRussiaPreset()
+    /// <remarks>
+    /// The built-in set is applied first and the maintained one is merged on top of it, so the
+    /// button does its job without a network connection and only improves on it with one.
+    /// </remarks>
+    private async Task AddRussiaPresetAsync()
     {
-        var added = Append(SvoRayRoutingHandler.RussiaPreset);
         var switched = rdoProxyListed.IsChecked == true;
         if (switched)
         {
             rdoBypassListed.IsChecked = true;
         }
 
-        var message = added == 0
-            ? "Набор уже в списке."
-            : DescribeAdded(added, SvoRayRoutingHandler.RussiaPreset.Count - added);
-        ShowStatus(switched ? $"{message} Режим переключён на «всё через VPN, кроме списка»." : message, false);
+        var added = Append(SvoRayRoutingHandler.RussiaPreset);
+
+        btnRussiaPreset.IsEnabled = false;
+        ShowStatus("Проверяем актуальный список…", false);
+        List<string> maintained;
+        try
+        {
+            maintained = await SvoRayRoutingHandler.DownloadRussiaListAsync();
+        }
+        finally
+        {
+            btnRussiaPreset.IsEnabled = true;
+        }
+
+        added += Append(maintained);
+
+        var message = added == 0 ? "Набор уже в списке." : $"Добавлено: {added}.";
+        if (maintained.Count == 0)
+        {
+            message += " Обновить список из интернета не удалось, добавлен встроенный набор.";
+        }
+        if (switched)
+        {
+            message += " Режим переключён на «всё через VPN, кроме списка».";
+        }
+
+        ShowStatus(message, false);
     }
 
     private int Append(IEnumerable<string> domains)

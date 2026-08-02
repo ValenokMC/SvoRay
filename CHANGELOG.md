@@ -19,9 +19,16 @@ Full notes: [docs/RELEASE_NOTES_0.3.0_RU.md](docs/RELEASE_NOTES_0.3.0_RU.md) (Ru
   the same host. A whole list can be pasted at once in any separator shape, and a **Набор для
   РФ** button fills in the sites that commonly refuse a foreign address - state services, banks,
   Yandex, VK, marketplaces, operators - together with the static hosts they load their images
-  from. SvoRay generates its own routing profile and rebuilds it on every connect, which also
-  makes DNS follow the traffic: a domain routed direct is resolved by the direct DNS server
-  rather than through the tunnel.
+  from. The button also pulls the community-maintained list from
+  [itdoginfo/allow-domains](https://github.com/itdoginfo/allow-domains) and merges it on top, so
+  it works offline and gets fresher entries when it can reach the network. SvoRay generates its
+  own routing profile and rebuilds it on every connect, which also makes DNS follow the traffic:
+  a domain routed direct is resolved by the direct DNS server rather than through the tunnel.
+- **A connection check that works while connected.** The check button used to be available only
+  while disconnected. With the VPN up it now probes the running tunnel through the core's own
+  proxy port and reports the exit country and the delay - the question an IP-check site is
+  usually opened for, answered without leaving the app and without trusting the browser's proxy
+  settings.
 
 ### Changed
 

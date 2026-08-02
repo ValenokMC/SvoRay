@@ -34,16 +34,31 @@ public static class SvoRayRoutingHandler
     /// </remarks>
     public static IReadOnlyList<string> RussiaPreset { get; } =
     [
-        // State services
+        // State services. gov.ru covers every federal service under it, so nalog.gov.ru,
+        // rosreestr.gov.ru, fssp.gov.ru and the rest need no separate entry.
         "gosuslugi.ru",
         "gu-st.ru",
+        "xn--90aijkdmaud0d.xn--p1ai", // госуслуги.рф
+        "gov.ru",
         "nalog.ru",
-        "nalog.gov.ru",
-        "sfr.gov.ru",
         "gibdd.ru",
         "mos.ru",
+        "mosreg.ru",
+        "gorzdrav.spb.ru",
         "pochta.ru",
+        "russianpost.ru",
         "rzd.ru",
+        "rzd-bonus.ru",
+        "avtodor-tr.ru",
+        "onelya.ru",
+        "consultant.ru",
+
+        // Utilities and insurance, which are among the strictest about foreign addresses
+        "mosenergosbyt.ru",
+        "pesc.ru",
+        "reso.ru",
+        "dzvr.ru",
+        "bkvet.ru",
 
         // Banks and payments
         "sber.ru",
@@ -90,6 +105,7 @@ public static class SvoRayRoutingHandler
         // Shops and services
         "ozon.ru",
         "ozone.ru",
+        "ozonusercontent.com",
         "wildberries.ru",
         "wbbasket.ru",
         "wbstatic.net",
@@ -98,11 +114,19 @@ public static class SvoRayRoutingHandler
         "dns-shop.ru",
         "citilink.ru",
         "mvideo.ru",
+        "magnit.ru",
+        "leroymerlin.ru",
+        "lemanapro.ru",
+        "emex.ru",
         "2gis.ru",
         "hh.ru",
         "cian.ru",
         "domclick.ru",
         "drom.ru",
+
+        // Widgets and counters that hang a page load when they cannot be reached
+        "bitrix.info",
+        "counter.yadro.ru",
 
         // Mobile operators
         "mts.ru",
@@ -117,6 +141,46 @@ public static class SvoRayRoutingHandler
         "premier.one",
         "wink.ru"
     ];
+
+    /// <summary>
+    /// Community-maintained list of Russian resources that answer only to Russian addresses.
+    /// The built-in preset is a snapshot plus the banks, social networks and marketplaces this
+    /// list does not carry; downloading it keeps the shared part current without a new release.
+    /// </summary>
+    private const string RussiaListUrl =
+        "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/outside-raw.lst";
+
+    /// <summary>
+    /// Fetches the maintained list. Returns an empty list when it cannot be reached - the caller
+    /// already has the built-in preset, so a failed refresh is not a failed operation.
+    /// </summary>
+    /// <remarks>
+    /// The proxy is tried first: the host is commonly unreachable from inside Russia, which is
+    /// exactly where this list is wanted, and going through a running tunnel is the attempt more
+    /// likely to succeed. When no core is running that fails at once and the direct attempt runs.
+    /// </remarks>
+    public static async Task<List<string>> DownloadRussiaListAsync()
+    {
+        var downloadService = new DownloadService();
+        foreach (var viaProxy in new[] { true, false })
+        {
+            try
+            {
+                var content = await downloadService.TryDownloadString(RussiaListUrl, viaProxy, string.Empty);
+                var domains = ParseDomains(content);
+                if (domains.Count > 0)
+                {
+                    return domains;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog("SvoRay domain list", ex);
+            }
+        }
+
+        return [];
+    }
 
     /// <summary>
     /// Splits pasted text into domains. Anything a list can be separated by is accepted, so a
@@ -278,6 +342,13 @@ public static class SvoRayRoutingHandler
         }
 
         if (!text.Contains('.') || text.Length > 253)
+        {
+            return string.Empty;
+        }
+
+        // A bare address is not a domain matcher. Pasting a hosts file, where every line starts
+        // with 0.0.0.0 or 127.0.0.1, would otherwise fill the list with entries routing nothing.
+        if (IPAddress.TryParse(text, out _))
         {
             return string.Empty;
         }

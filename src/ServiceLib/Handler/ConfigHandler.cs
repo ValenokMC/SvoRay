@@ -147,6 +147,12 @@ public static class ConfigHandler
         {
             config.SpeedTestItem.UdpTestTarget = Global.UdpTestTargets.First();
         }
+        if (config.SpeedTestItem.IPAPIUrl.IsNullOrEmpty())
+        {
+            // Without it the connection check can report a delay but not where the traffic came
+            // out, which is the half of the answer that tells the user the tunnel is really used.
+            config.SpeedTestItem.IPAPIUrl = Global.IPAPIUrls.First();
+        }
 
         config.Mux4RayItem ??= new()
         {

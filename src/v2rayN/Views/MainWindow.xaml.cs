@@ -1,4 +1,5 @@
-﻿using System.Reactive.Disposables;
+﻿using System.Net;
+using System.Reactive.Disposables;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
@@ -701,6 +702,12 @@ public partial class MainWindow
     /// </summary>
     private async void BtnCheckPing_Click(object sender, RoutedEventArgs e)
     {
+        if (_lastConnectionState == ESvoRayConnectionState.On)
+        {
+            await CheckLiveConnectionAsync();
+            return;
+        }
+
         var indexId = ViewModel?.StatusBarViewModel.SelectedServer?.ID;
         if (indexId.IsNullOrEmpty())
         {
@@ -725,6 +732,60 @@ public partial class MainWindow
             return Task.CompletedTask;
         });
         service.RunLoop(ESpeedActionType.Realping, [profile]);
+    }
+
+    /// <summary>
+    /// Answers the question the user would otherwise open an IP-check site for: is traffic really
+    /// going through the tunnel right now. The request is made through the local proxy port of the
+    /// running core, so it tests the live connection rather than starting a second one - and it
+    /// holds in proxy mode too, where a browser that ignores the system proxy would say nothing.
+    /// </summary>
+    private async Task CheckLiveConnectionAsync()
+    {
+        _pingTimeoutTimer?.Stop();
+        _pingIndexId = null;
+        btnCheckPing.IsEnabled = false;
+        icoCheckPing.Kind = PackIconKind.TimerSandEmpty;
+        icoCheckPing.Foreground = Brushes.White;
+        txtCheckPing.Text = "Проверяем…";
+        txtCheckPing.Foreground = Brushes.White;
+
+        try
+        {
+            var port = AppManager.Instance.GetLocalPort(EInboundProtocol.socks);
+            var proxy = new WebProxy($"socks5://{Global.Loopback}:{port}");
+
+            var delay = await ConnectionHandler.GetRealPingTime(proxy);
+            if (delay <= 0)
+            {
+                ShowPingFailure("Нет ответа");
+                ShowSimpleStatus("Трафик через VPN не проходит. Попробуйте другой профиль или переподключитесь.", true);
+                return;
+            }
+
+            // Only the country is shown. The exit address is the server address, which simple
+            // mode keeps off screen on purpose; advanced mode reports it in full.
+            var info = await ConnectionHandler.GetIPInfo(proxy);
+            var country = info?.Country;
+
+            icoCheckPing.Kind = PackIconKind.ShieldCheck;
+            txtCheckPing.Text = $"{delay} мс";
+            var green = new SolidColorBrush(Color.FromRgb(0x5F, 0xE3, 0xB4));
+            txtCheckPing.Foreground = green;
+            icoCheckPing.Foreground = green;
+            ShowSimpleStatus(country.IsNullOrEmpty() || country == "unknown"
+                ? $"VPN работает, трафик идёт через сервер. Задержка {delay} мс."
+                : $"VPN работает, выход в интернет: {country}. Задержка {delay} мс.", false);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay live check", ex);
+            ShowPingFailure("Ошибка");
+        }
+        finally
+        {
+            btnCheckPing.IsEnabled = true;
+        }
     }
 
     private void BeginPingCheck(string indexId)
@@ -812,7 +873,8 @@ public partial class MainWindow
     {
         _pingTimeoutTimer?.Stop();
         _pingIndexId = null;
-        btnCheckPing.IsEnabled = _lastConnectionState == ESvoRayConnectionState.Off;
+        btnCheckPing.IsEnabled = _lastConnectionState
+            is ESvoRayConnectionState.Off or ESvoRayConnectionState.On;
         icoCheckPing.Kind = PackIconKind.SpeedometerMedium;
         icoCheckPing.Foreground = Brushes.White;
         txtCheckPing.Text = "Проверить";
@@ -828,13 +890,18 @@ public partial class MainWindow
         // Switching modes mid-handshake would take down a connection that is not up yet.
         rdoModeProxy.IsEnabled = rdoModeTun.IsEnabled = state != ESvoRayConnectionState.Connecting;
 
-        // A real ping starts a second core. Whether that is safe while TUN holds the default
-        // route has not been tested live, so the check is offered only while disconnected.
-        var idle = state == ESvoRayConnectionState.Off;
-        btnCheckPing.IsEnabled = idle && _pingIndexId is null;
-        btnCheckPing.ToolTip = idle
-            ? "Измерить задержку выбранного профиля через сам прокси"
-            : "Доступно, когда VPN выключен";
+        // The button asks two different questions. Disconnected it measures the selected profile,
+        // which starts a second core - not something to do while TUN holds the default route.
+        // Connected it probes the tunnel that is already up, which is the more useful of the two:
+        // it says whether traffic really leaves through the server right now.
+        btnCheckPing.IsEnabled = state is ESvoRayConnectionState.Off or ESvoRayConnectionState.On
+            && _pingIndexId is null;
+        btnCheckPing.ToolTip = state switch
+        {
+            ESvoRayConnectionState.On => "Проверить, что трафик действительно идёт через VPN",
+            ESvoRayConnectionState.Off => "Измерить задержку выбранного профиля через сам прокси",
+            _ => "Доступно, когда VPN включён или выключен"
+        };
 
         switch (state)
         {

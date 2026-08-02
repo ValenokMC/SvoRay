@@ -55,6 +55,40 @@ public class SvoRayRoutingHandlerTests
     }
 
     /// <summary>
+    /// Pasting a hosts file is a plausible thing to try, and every line of one begins with an
+    /// address that would otherwise be stored as a domain matching nothing.
+    /// </summary>
+    [Fact]
+    public void ParseDomains_ShouldKeepAddressesOutOfADomainList()
+    {
+        var parsed = SvoRayRoutingHandler.ParseDomains("0.0.0.0 tracker.example\n127.0.0.1 ads.example");
+
+        parsed.Should().Equal("tracker.example", "ads.example");
+    }
+
+    /// <summary>
+    /// The maintained list is fetched at runtime, so this pins the parsing of its actual shape:
+    /// one host per line, some of them deep subdomains, some punycode.
+    /// </summary>
+    [Fact]
+    public void ParseDomains_ShouldReadTheMaintainedListFormat()
+    {
+        var payload = string.Join('\n',
+            "gosuslugi.ru",
+            "gu-st.ru",
+            "b2c-ticket-sentry.onelya.ru",
+            "xn--90aijkdmaud0d.xn--p1ai",
+            "1018213540.rsc.cdn77.org");
+
+        SvoRayRoutingHandler.ParseDomains(payload).Should().Equal(
+            "gosuslugi.ru",
+            "gu-st.ru",
+            "b2c-ticket-sentry.onelya.ru",
+            "xn--90aijkdmaud0d.xn--p1ai",
+            "1018213540.rsc.cdn77.org");
+    }
+
+    /// <summary>
     /// Every entry has to survive the same normalisation a typed domain goes through, or the
     /// preset would quietly ship matchers that never fire.
     /// </summary>
@@ -66,6 +100,23 @@ public class SvoRayRoutingHandlerTests
         preset.Should().OnlyContain(domain => SvoRayRoutingHandler.NormalizeDomain(domain) == domain);
         preset.Should().OnlyHaveUniqueItems();
         preset.Should().Contain(["gosuslugi.ru", "sberbank.ru", "yandex.ru", "avito.ru"]);
+    }
+
+    /// <summary>
+    /// An entry already covered by a shorter one in the same list is dead weight: the matcher
+    /// takes subdomains, so gov.ru answers for nalog.gov.ru and the pair would only mislead a
+    /// reader into thinking one of them does something the other does not.
+    /// </summary>
+    [Fact]
+    public void RussiaPreset_ShouldNotRepeatWhatAShorterEntryAlreadyCovers()
+    {
+        var preset = SvoRayRoutingHandler.RussiaPreset;
+
+        var covered = preset
+            .Where(domain => preset.Any(other => other != domain && domain.EndsWith($".{other}", StringComparison.Ordinal)))
+            .ToList();
+
+        covered.Should().BeEmpty();
     }
 
     [Fact]
