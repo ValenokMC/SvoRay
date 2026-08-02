@@ -36,6 +36,79 @@ public class SvoRayRoutingHandlerTests
     }
 
     [Fact]
+    public void ParseDomains_ShouldAcceptAPastedListInAnyShape()
+    {
+        var parsed = SvoRayRoutingHandler.ParseDomains(
+            "gosuslugi.ru\r\nhttps://www.sberbank.ru/ru/person\n avito.ru, vk.com; ozon.ru\tsberbank.ru");
+
+        parsed.Should().Equal("gosuslugi.ru", "sberbank.ru", "avito.ru", "vk.com", "ozon.ru");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" , ; \n ")]
+    [InlineData("localhost\nне домен")]
+    public void ParseDomains_ShouldReturnNothingWhenThereIsNoUsableDomain(string? input)
+    {
+        SvoRayRoutingHandler.ParseDomains(input).Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// Every entry has to survive the same normalisation a typed domain goes through, or the
+    /// preset would quietly ship matchers that never fire.
+    /// </summary>
+    [Fact]
+    public void RussiaPreset_ShouldBeNormalisedAndFreeOfDuplicates()
+    {
+        var preset = SvoRayRoutingHandler.RussiaPreset;
+
+        preset.Should().OnlyContain(domain => SvoRayRoutingHandler.NormalizeDomain(domain) == domain);
+        preset.Should().OnlyHaveUniqueItems();
+        preset.Should().Contain(["gosuslugi.ru", "sberbank.ru", "yandex.ru", "avito.ru"]);
+    }
+
+    [Fact]
+    public void RussiaPreset_ShouldCarryTheStaticHostsOfTheSitesItLists()
+    {
+        var preset = SvoRayRoutingHandler.RussiaPreset;
+
+        // A site whose pages are direct while its images still go through the tunnel is the
+        // failure this pairing exists to prevent.
+        var pairs = new[]
+        {
+            ("gosuslugi.ru", "gu-st.ru"),
+            ("yandex.ru", "yastatic.net"),
+            ("vk.com", "userapi.com"),
+            ("ozon.ru", "ozone.ru"),
+            ("wildberries.ru", "wbbasket.ru"),
+            ("avito.ru", "avito.st"),
+            ("mail.ru", "imgsmail.ru"),
+        };
+
+        foreach (var (site, statics) in pairs)
+        {
+            preset.Should().Contain(site);
+            preset.Should().Contain(statics);
+        }
+    }
+
+    [Fact]
+    public void RussiaPreset_ShouldSurviveRuleGenerationAsBypassDomains()
+    {
+        var rules = SvoRayRoutingHandler.BuildRules(new SvoRayItem
+        {
+            RoutingMode = ESvoRayRoutingMode.BypassListed,
+            RuleDomains = [.. SvoRayRoutingHandler.RussiaPreset]
+        });
+
+        var listed = rules.First();
+        listed.OutboundTag.Should().Be(Global.DirectTag);
+        listed.Domain.Should().HaveCount(SvoRayRoutingHandler.RussiaPreset.Count);
+        listed.Domain.Should().Contain("domain:gosuslugi.ru");
+    }
+
+    [Fact]
     public void BuildRules_BypassListed_ShouldSendListedDomainsDirectAndTheRestToProxy()
     {
         var rules = SvoRayRoutingHandler.BuildRules(new SvoRayItem

@@ -48,7 +48,7 @@ A Start-menu shortcut is created. No desktop shortcut.
 4. Pick a mode: **Прокси** covers applications that honour the Windows system proxy, **TUN** covers the whole system.
 5. Press the power button. Press it again to disconnect.
 6. **Проверить** measures latency for the selected profile.
-7. **Маршрутизация** edits the domain list. Type `example.com`; subdomains are matched too, and DNS for a listed domain takes the same path as its traffic.
+7. **Маршрутизация** edits the domain list. Type `example.com`; subdomains are matched too, a whole list can be pasted at once, and **Набор для РФ** fills in the sites that commonly refuse a foreign address. DNS for a listed domain takes the same path as its traffic.
 8. **Настройки** opens the full v2rayN interface.
 
 ## Update
@@ -87,7 +87,7 @@ Version 0.3.0. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
 A pre-publication security audit has been completed — see [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for scope, findings, fixes and remaining risks. Notable fixes it produced: the downloaded subscription payload no longer reaches the log files, and profile links are kept out of the on-screen notice stream.
 
-Verified: clean install and first launch, install over a previous version, import and subscription update, latency check, tray behaviour, 80/80 unit tests, no threats found by Microsoft Defender in any release artifact.
+Verified: clean install and first launch, install over a previous version, import and subscription update, latency check, tray behaviour, 88/88 unit tests, no threats found by Microsoft Defender in any release artifact.
 
 Not verified yet: uninstall with both answers to the user-data prompt, Windows display scaling at 125 % and 150 %, and a live run of the 0.3.0 connection modes and domain routing.
 

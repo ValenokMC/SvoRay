@@ -16,9 +16,12 @@ Full notes: [docs/RELEASE_NOTES_0.3.0_RU.md](docs/RELEASE_NOTES_0.3.0_RU.md) (Ru
 - **Domain routing.** A **Маршрутизация** window holds a list of domains and decides how it is
   applied: everything through the VPN except the list, or only the list through the VPN.
   `example.com` covers its subdomains, and pasted URLs, ports and `*.` prefixes are reduced to
-  the same host. SvoRay generates its own routing profile and rebuilds it on every connect,
-  which also makes DNS follow the traffic: a domain routed direct is resolved by the direct DNS
-  server rather than through the tunnel.
+  the same host. A whole list can be pasted at once in any separator shape, and a **Набор для
+  РФ** button fills in the sites that commonly refuse a foreign address - state services, banks,
+  Yandex, VK, marketplaces, operators - together with the static hosts they load their images
+  from. SvoRay generates its own routing profile and rebuilds it on every connect, which also
+  makes DNS follow the traffic: a domain routed direct is resolved by the direct DNS server
+  rather than through the tunnel.
 
 ### Changed
 

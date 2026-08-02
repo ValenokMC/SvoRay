@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
+using System.Windows.Media;
 using v2rayN.Manager;
 
 namespace v2rayN.Views;
@@ -30,16 +31,19 @@ public partial class SimpleRoutingWindow : Window
         rdoProxyListed.IsChecked = mode == ESvoRayRoutingMode.ProxyListed;
 
         btnAddDomain.Click += (_, _) => AddDomain();
-        txtDomain.KeyDown += (_, e) =>
+        btnRussiaPreset.Click += (_, _) => AddRussiaPreset();
+        txtDomain.PreviewKeyDown += (_, e) =>
         {
-            if (e.Key == Key.Enter)
+            // Shift+Enter is the way to break a line; a bare Enter keeps meaning "add this".
+            if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0)
             {
+                e.Handled = true;
                 AddDomain();
             }
         };
         btnSave.Click += (_, _) =>
         {
-            // A domain still sitting in the field was typed to be added, not to be discarded.
+            // Text still sitting in the field was typed to be added, not to be discarded.
             if (txtDomain.Text.TrimEx().IsNotEmpty() && !AddDomain())
             {
                 return;
@@ -62,24 +66,66 @@ public partial class SimpleRoutingWindow : Window
 
     private bool AddDomain()
     {
-        var domain = SvoRayRoutingHandler.NormalizeDomain(txtDomain.Text);
-        if (domain.IsNullOrEmpty())
+        var parsed = SvoRayRoutingHandler.ParseDomains(txtDomain.Text);
+        if (parsed.Count == 0)
         {
-            ShowStatus("Введите домен, например example.com.");
+            ShowStatus("Введите домен, например example.com.", true);
             return false;
         }
 
-        if (_domains.Contains(domain, StringComparer.OrdinalIgnoreCase))
+        var added = Append(parsed);
+        if (added == 0)
         {
-            ShowStatus($"Домен {domain} уже в списке.");
+            ShowStatus(parsed.Count == 1
+                ? $"Домен {parsed[0]} уже в списке."
+                : "Все эти домены уже в списке.", true);
             return false;
         }
 
-        _domains.Add(domain);
         txtDomain.Clear();
-        txtStatus.Visibility = Visibility.Collapsed;
         txtDomain.Focus();
+        ShowStatus(DescribeAdded(added, parsed.Count - added), false);
         return true;
+    }
+
+    /// <summary>
+    /// The preset only makes sense as a bypass list, so a window left in the opposite mode is
+    /// switched over rather than quietly producing the reverse of what the button promises.
+    /// </summary>
+    private void AddRussiaPreset()
+    {
+        var added = Append(SvoRayRoutingHandler.RussiaPreset);
+        var switched = rdoProxyListed.IsChecked == true;
+        if (switched)
+        {
+            rdoBypassListed.IsChecked = true;
+        }
+
+        var message = added == 0
+            ? "Набор уже в списке."
+            : DescribeAdded(added, SvoRayRoutingHandler.RussiaPreset.Count - added);
+        ShowStatus(switched ? $"{message} Режим переключён на «всё через VPN, кроме списка»." : message, false);
+    }
+
+    private int Append(IEnumerable<string> domains)
+    {
+        var added = 0;
+        foreach (var domain in domains)
+        {
+            if (_domains.Contains(domain, StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+            _domains.Add(domain);
+            added++;
+        }
+        return added;
+    }
+
+    private static string DescribeAdded(int added, int skipped)
+    {
+        var text = $"Добавлено: {added}.";
+        return skipped > 0 ? $"{text} Пропущено (уже в списке): {skipped}." : text;
     }
 
     private void BtnRemoveDomain_Click(object sender, RoutedEventArgs e)
@@ -90,9 +136,12 @@ public partial class SimpleRoutingWindow : Window
         }
     }
 
-    private void ShowStatus(string message)
+    private void ShowStatus(string message, bool isError)
     {
         txtStatus.Text = message;
+        txtStatus.Foreground = new SolidColorBrush(isError
+            ? Color.FromRgb(0xF0, 0xA9, 0xA9)
+            : Color.FromRgb(0x9F, 0xD9, 0xCE));
         txtStatus.Visibility = Visibility.Visible;
     }
 

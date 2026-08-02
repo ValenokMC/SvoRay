@@ -20,6 +20,124 @@ public static class SvoRayRoutingHandler
     public const string RoutingRemarks = "SvoRay";
 
     /// <summary>
+    /// Starting set for users in Russia: sites that refuse or degrade on a foreign address.
+    /// </summary>
+    /// <remarks>
+    /// Each entry matches its subdomains, so only second-level names are listed. Static and
+    /// media hosts are listed separately wherever they sit on a domain of their own - a bank or
+    /// a shop whose pages load direct while its images still go through the tunnel is the most
+    /// common way this ends up half-broken.
+    /// <para>
+    /// It is a starting point, not a guarantee: these hosts change hands and names over time,
+    /// and an entry that no longer resolves to anything simply never matches.
+    /// </para>
+    /// </remarks>
+    public static IReadOnlyList<string> RussiaPreset { get; } =
+    [
+        // State services
+        "gosuslugi.ru",
+        "gu-st.ru",
+        "nalog.ru",
+        "nalog.gov.ru",
+        "sfr.gov.ru",
+        "gibdd.ru",
+        "mos.ru",
+        "pochta.ru",
+        "rzd.ru",
+
+        // Banks and payments
+        "sber.ru",
+        "sberbank.ru",
+        "tbank.ru",
+        "tinkoff.ru",
+        "vtb.ru",
+        "alfabank.ru",
+        "alfabank.st",
+        "gazprombank.ru",
+        "raiffeisen.ru",
+        "psbank.ru",
+        "open.ru",
+        "sovcombank.ru",
+        "rshb.ru",
+        "mkb.ru",
+        "pochtabank.ru",
+        "nspk.ru",
+        "mironline.ru",
+
+        // Yandex
+        "yandex.ru",
+        "ya.ru",
+        "yandex.net",
+        "yastatic.net",
+        "yandexcloud.net",
+        "kinopoisk.ru",
+        "dzen.ru",
+        "auto.ru",
+
+        // VK, Mail.ru, OK
+        "vk.com",
+        "vk.ru",
+        "vk.me",
+        "userapi.com",
+        "vk-cdn.net",
+        "vkuservideo.net",
+        "vkvideo.ru",
+        "ok.ru",
+        "mycdn.me",
+        "mail.ru",
+        "imgsmail.ru",
+
+        // Shops and services
+        "ozon.ru",
+        "ozone.ru",
+        "wildberries.ru",
+        "wbbasket.ru",
+        "wbstatic.net",
+        "avito.ru",
+        "avito.st",
+        "dns-shop.ru",
+        "citilink.ru",
+        "mvideo.ru",
+        "2gis.ru",
+        "hh.ru",
+        "cian.ru",
+        "domclick.ru",
+        "drom.ru",
+
+        // Mobile operators
+        "mts.ru",
+        "beeline.ru",
+        "megafon.ru",
+        "tele2.ru",
+
+        // Video services that geo-block foreign addresses
+        "rutube.ru",
+        "ivi.ru",
+        "okko.tv",
+        "premier.one",
+        "wink.ru"
+    ];
+
+    /// <summary>
+    /// Splits pasted text into domains. Anything a list can be separated by is accepted, so a
+    /// column copied out of a document and a comma-separated line both work.
+    /// </summary>
+    public static List<string> ParseDomains(string? text)
+    {
+        if (text.IsNullOrEmpty())
+        {
+            return [];
+        }
+
+        return text!
+            .Split(['\n', '\r', ',', ';', ' ', '\t'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(NormalizeDomain)
+            .Where(domain => domain.IsNotEmpty())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>
     /// Rebuilds the profile and makes it the active one. Saving the config is left to the caller,
     /// which usually has more to store than the profile id.
     /// </summary>

@@ -122,39 +122,70 @@
             </RadioButton>
         </StackPanel>
 
-        <Grid Grid.Row="1" Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+        <StackPanel Grid.Row="1" Margin="0,0,0,10">
+            <!--
+                Multi-line on purpose: a list is usually pasted, not typed. Enter still adds, so
+                typing one domain works as before; Shift+Enter breaks the line.
+            -->
             <TextBox
                 x:Name="txtDomain"
-                Height="44"
-                Padding="14,10"
-                materialDesign:HintAssist.Hint="example.com"
+                MinHeight="70"
+                MaxHeight="110"
+                Padding="13,9"
+                materialDesign:HintAssist.Hint="example.com — можно вставить сразу список"
+                AcceptsReturn="True"
                 Background="#1CFFFFFF"
                 BorderBrush="#3CFFFFFF"
                 BorderThickness="1"
                 CaretBrush="White"
                 Foreground="White"
-                MaxLines="1" />
-            <Button
-                x:Name="btnAddDomain"
-                Grid.Column="1"
-                Width="112"
-                Height="44"
-                Margin="10,0,0,0"
-                BorderThickness="0"
-                Content="Добавить"
-                Foreground="White">
-                <Button.Background>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                        <GradientStop Offset="0" Color="#6C6EF7" />
-                        <GradientStop Offset="1" Color="#35CDB8" />
-                    </LinearGradientBrush>
-                </Button.Background>
-            </Button>
-        </Grid>
+                TextWrapping="Wrap"
+                VerticalScrollBarVisibility="Auto" />
+            <Grid Margin="0,10,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button
+                    x:Name="btnAddDomain"
+                    Height="42"
+                    BorderThickness="0"
+                    Content="Добавить"
+                    Foreground="White">
+                    <Button.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Offset="0" Color="#6C6EF7" />
+                            <GradientStop Offset="1" Color="#35CDB8" />
+                        </LinearGradientBrush>
+                    </Button.Background>
+                </Button>
+                <Button
+                    x:Name="btnRussiaPreset"
+                    Grid.Column="1"
+                    Height="42"
+                    Margin="10,0,0,0"
+                    Padding="14,0"
+                    Background="#18FFFFFF"
+                    BorderBrush="#35FFFFFF"
+                    BorderThickness="1"
+                    Foreground="White"
+                    ToolTip="Госуслуги, банки, Яндекс, VK, маркетплейсы и их CDN — то, что обычно не работает с зарубежного адреса">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon
+                            Width="17"
+                            Height="17"
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Foreground="White"
+                            Kind="PlaylistPlus" />
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="12.5"
+                            Text="Набор для РФ" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </StackPanel>
 
         <Border
             Grid.Row="2"
