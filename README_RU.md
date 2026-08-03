@@ -9,6 +9,7 @@
 
 [![Релиз](https://img.shields.io/github/v/release/ValenokMC/SvoRay?style=flat-square&logo=github&label=%D1%80%D0%B5%D0%BB%D0%B8%D0%B7&color=1f6feb)](https://github.com/ValenokMC/SvoRay/releases/latest)
 [![Загрузки](https://img.shields.io/github/downloads/ValenokMC/SvoRay/total?style=flat-square&logo=github&label=%D0%B7%D0%B0%D0%B3%D1%80%D1%83%D0%B7%D0%BA%D0%B8&color=2ea043)](https://github.com/ValenokMC/SvoRay/releases)
+[![CI](https://github.com/ValenokMC/SvoRay/actions/workflows/ci.yml/badge.svg)](https://github.com/ValenokMC/SvoRay/actions/workflows/ci.yml)
 [![Лицензия](https://img.shields.io/badge/лицензия-GPL--3.0-fd7e14?style=flat-square)](LICENSE)
 [![Основан на v2rayN](https://img.shields.io/badge/основан_на-v2rayN_7.24.4-8957e5?style=flat-square)](https://github.com/2dust/v2rayN)
 
