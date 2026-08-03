@@ -3,6 +3,27 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## 0.3.1 — 3 August 2026
+
+Full notes: [docs/RELEASE_NOTES_0.3.1_RU.md](docs/RELEASE_NOTES_0.3.1_RU.md) (Russian).
+
+### Fixed
+
+- **Off now means off on the server.** With the switch off, the core kept running: in proxy mode
+  only the Windows proxy setting was removed, and merely launching the app started the core and
+  probed the tunnel. Connections opened before the switch went off stayed open through it, and the
+  app kept using its proxy port for subscription and geo updates, so the account stayed listed as
+  online on the server panel — and traffic was still counted — while the app showed a disconnected
+  VPN. Disconnecting now stops the core, and nothing that asks for a reload — startup, a different
+  profile, a routing or DNS change, an imported subscription — starts it again while the switch is
+  off.
+
+### Changed
+
+- In advanced mode, clearing the system proxy with the tunnel down is now the disconnected state
+  and stops the core, matching what the tray on/off already switched between. **Do not change** and
+  **PAC** are unaffected: both keep the core running for use through the local proxy port by hand.
+
 ## 0.3.0 — 2 August 2026
 
 Full notes: [docs/RELEASE_NOTES_0.3.0_RU.md](docs/RELEASE_NOTES_0.3.0_RU.md) (Russian).

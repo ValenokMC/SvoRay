@@ -509,14 +509,8 @@ public partial class MainWindow
         {
             if (!enable)
             {
-                statusBar.SystemProxySelected = (int)ESysProxyType.ForcedClear;
-                statusBar.EnableTun = false;
-
-                // Only the TUN switch restarts the core and reports the new state on its own.
-                if (_config.SvoRayItem.Mode == ESvoRayMode.Proxy)
-                {
-                    statusBar.SetConnectionState(ESvoRayConnectionState.Off);
-                }
+                // Both modes take the same path: the switches go down and the core is stopped.
+                await statusBar.Disconnect();
                 return;
             }
 
@@ -538,20 +532,18 @@ public partial class MainWindow
 
             if (_config.SvoRayItem.Mode == ESvoRayMode.Tun)
             {
-                statusBar.SystemProxySelected = (int)ESysProxyType.ForcedClear;
+                // The tunnel switch owns the rest of this path: it asks for administrator rights
+                // when they are missing, and its own reload is what starts the core.
+                await statusBar.ClearSystemProxy();
                 statusBar.EnableTun = true;
                 return;
             }
 
-            // Leaving TUN restarts the core by itself; starting from an already stopped tunnel
-            // does not, and the routing profile that was just rebuilt has to reach the core.
-            var wasTun = statusBar.EnableTun;
-            statusBar.EnableTun = false;
-            statusBar.SystemProxySelected = (int)ESysProxyType.ForcedChange;
-            if (!wasTun)
-            {
-                await ViewModel.Reload();
-            }
+            // The core is stopped while disconnected, so proxy mode always starts it here. Both
+            // switches are written first and awaited: the reload reads them to decide whether the
+            // core may run, and would take it straight back down if it still saw a cleared proxy.
+            await statusBar.ConnectViaSystemProxy();
+            await ViewModel.Reload();
         }
         catch (Exception ex)
         {

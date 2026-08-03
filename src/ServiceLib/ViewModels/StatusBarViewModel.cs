@@ -153,6 +153,48 @@ public class StatusBarViewModel : MyReactiveObject
         });
     }
 
+    /// <summary>
+    /// Puts both switches into the shape proxy mode connects with, and waits until the config
+    /// holds them. Assigning the reactive properties only schedules that work, and the caller
+    /// reloads right after: the reload decides whether the core may run and reads the switches,
+    /// so it has to see the final pair rather than whichever half arrived first.
+    /// </summary>
+    public async Task ConnectViaSystemProxy()
+    {
+        // The subscription bails out when the config already agrees, which is what keeps the
+        // tunnel switch from asking for a reload of its own here.
+        _config.TunModeItem.EnableTun = false;
+        EnableTun = false;
+        await SetListenerType(ESysProxyType.ForcedChange);
+        await ConfigHandler.SaveConfig(_config);
+    }
+
+    /// <summary>
+    /// Clears the system proxy and waits for it, leaving the tunnel alone. TUN mode routes at the
+    /// adapter and never wants the Windows proxy setting behind it, so it has to be down before
+    /// the tunnel comes up rather than whenever the reactive property happens to be serviced.
+    /// </summary>
+    public async Task ClearSystemProxy()
+    {
+        await SetListenerType(ESysProxyType.ForcedClear);
+    }
+
+    /// <summary>
+    /// Takes both switches down and stops the core, whichever mode was in use.
+    /// Off has to mean off on the server as well: the core holds its own connections to the
+    /// endpoint and the app keeps reaching for its proxy port on a timer, so a core left running
+    /// goes on reporting the account as online long after the switch was turned off.
+    /// </summary>
+    public async Task Disconnect()
+    {
+        _config.TunModeItem.EnableTun = false;
+        EnableTun = false;
+        await SetListenerType(ESysProxyType.ForcedClear);
+        await ConfigHandler.SaveConfig(_config);
+        await CoreManager.Instance.CoreStop();
+        SetConnectionState(ESvoRayConnectionState.Off);
+    }
+
     #endregion SvoRay simple mode
 
     public StatusBarViewModel()

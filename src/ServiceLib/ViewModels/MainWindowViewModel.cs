@@ -725,6 +725,18 @@ public class MainWindowViewModel : MyReactiveObject
         {
             SetReloadEnabled(false);
 
+            // A reload is what brings the core up, and plenty of things ask for one that have
+            // nothing to do with connecting: startup, a different profile picked in the selector,
+            // a routing or DNS change, an imported subscription. While the switch is off none of
+            // them may start the core - it would open its own connections to the endpoint and the
+            // server would list the account as online without the user having connected.
+            if (!IsCoreWanted(_config))
+            {
+                await CoreManager.Instance.CoreStop();
+                await SysProxyHandler.UpdateSysProxy(_config, false);
+                return;
+            }
+
             var profileItem = await ConfigHandler.GetDefaultServer(_config);
             if (profileItem == null)
             {
@@ -805,6 +817,18 @@ public class MainWindowViewModel : MyReactiveObject
         return config.SvoRayItem.Mode == ESvoRayMode.Proxy
             ? config.SystemProxyItem.SysProxyType == ESysProxyType.ForcedChange
             : config.TunModeItem.EnableTun;
+    }
+
+    /// <summary>
+    /// Whether the core is allowed to run at all. Simple mode disconnects by clearing the system
+    /// proxy and the tunnel together, and that pair is the disconnected state: the core is stopped
+    /// so nothing of ours reaches the server. Advanced mode keeps the v2rayN behaviour, where
+    /// "do not change" and PAC are ordinary ways to use the local proxy port by hand.
+    /// </summary>
+    public static bool IsCoreWanted(Config config)
+    {
+        return config.TunModeItem.EnableTun
+            || config.SystemProxyItem.SysProxyType != ESysProxyType.ForcedClear;
     }
 
     private void ReloadResult(bool showClashUI)
