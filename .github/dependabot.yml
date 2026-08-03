@@ -31,5 +31,6 @@ updates:
         update-types:
           - version-update:semver-major
       - dependency-name: ReactiveUI.Avalonia
-        versions:
-          - "[12.1.0,)"
+        update-types:
+          - version-update:semver-minor
+          - version-update:semver-major
