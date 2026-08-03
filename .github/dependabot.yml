@@ -23,3 +23,13 @@ updates:
     labels:
       - dependencies
       - nuget
+    ignore:
+      - dependency-name: ReactiveUI
+        update-types:
+          - version-update:semver-major
+      - dependency-name: ReactiveUI.WPF
+        update-types:
+          - version-update:semver-major
+      - dependency-name: ReactiveUI.Avalonia
+        versions:
+          - "[12.1.0,)"
