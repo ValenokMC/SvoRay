@@ -2,13 +2,13 @@
 ;
 ; Build it with build\BuildInstaller.ps1, which publishes a clean tree first and
 ; then calls:
-;   ISCC.exe /DAppVersion=0.3.1 /DSourceDir=<publish dir> build\SvoRay.iss
+;   ISCC.exe /DAppVersion=0.4.0 /DSourceDir=<publish dir> build\SvoRay.iss
 ;
 ; The application requires administrator rights at runtime because TUN does, so the
 ; installer is elevated too and installs per machine into Program Files.
 
 #ifndef AppVersion
-  #define AppVersion "0.3.1"
+  #define AppVersion "0.4.0"
 #endif
 #ifndef SourceDir
   #define SourceDir "..\dist\SvoRay-" + AppVersion + "-win-x64"

@@ -5,8 +5,8 @@
 		<AssemblyName>SvoRay</AssemblyName>
 		<Product>SvoRay</Product>
 		<Description>Simple and private Windows VPN client powered by v2rayN.</Description>
-		<Version>0.3.0</Version>
-		<InformationalVersion>0.3.0+v2rayN.7.24.4</InformationalVersion>
+		<Version>0.4.0</Version>
+		<InformationalVersion>0.4.0+v2rayN.7.24.4</InformationalVersion>
 		<TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
 		<GenerateSatelliteAssembliesForCore>true</GenerateSatelliteAssembliesForCore>
 		<UseWPF>true</UseWPF>

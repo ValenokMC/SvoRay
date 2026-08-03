@@ -28,6 +28,7 @@ You paste your own subscription link or a single profile, pick a server, and pre
 ## What it does
 
 - one screen: connection status, a power button, a profile selector
+- Russian and English simple interfaces, selected in the header and applied after restart
 - imports an HTTPS subscription or an individual `vless://`, `hysteria2://` and other links v2rayN supports
 - two connection modes: TUN for the whole system, or the Windows system proxy
 - a domain list that decides what the VPN carries: everything except the list, or the list only
@@ -36,6 +37,7 @@ You paste your own subscription link or a single profile, pick a server, and pre
 - Cloudflare DNS: `1.1.1.1` and `https://1.1.1.1/dns-query`
 - tray icon that shows state by shape, not only by colour
 - latency check for the selected profile, and a live check of the running tunnel that reports the exit country
+- a support button that uses the subscription provider's safe HTTP/HTTPS/Telegram link or falls back to GitHub Issues
 - the complete v2rayN interface for manual settings and diagnostics
 
 ## What it does not do
@@ -48,7 +50,7 @@ SvoRay routes your traffic through a server you supply. It does not provide anon
 2. Optionally verify the download against `SHA256SUMS.txt` published with the release:
 
    ```powershell
-   Get-FileHash .\SvoRay-0.3.1-setup.exe -Algorithm SHA256
+   Get-FileHash .\SvoRay-0.4.0-setup.exe -Algorithm SHA256
    ```
 
    The build is not signed with a commercial certificate, so comparing the hash is the only way to confirm you got the right file.
@@ -60,13 +62,16 @@ A Start-menu shortcut is created. No desktop shortcut.
 ## First run
 
 1. Launch SvoRay and confirm the UAC prompt.
-2. Paste your subscription link or a single profile into the field and press **Импортировать**.
-3. The form is replaced by a profile selector, and the first usable profile is selected automatically.
-4. Pick a mode: **Прокси** covers applications that honour the Windows system proxy, **TUN** covers the whole system.
-5. Press the power button. Press it again to disconnect.
-6. **Проверить** measures latency for the selected profile.
-7. **Маршрутизация** edits the domain list. Type `example.com`; subdomains are matched too, a whole list can be pasted at once, and **Набор для РФ** fills in the sites that commonly refuse a foreign address. DNS for a listed domain takes the same path as its traffic.
-8. **Настройки** opens the full v2rayN interface.
+2. The first launch follows the Windows UI language. Use **RU / EN** in the header to save another
+   language, then restart SvoRay as the notice says.
+3. Paste your subscription link or a single profile into the field and press **Import / Импортировать**.
+4. The form is replaced by a profile selector, and the first usable profile is selected automatically.
+5. Pick a mode: **Proxy / Прокси** covers applications that honour the Windows system proxy, **TUN** covers the whole system.
+6. Press the power button. Press it again to disconnect.
+7. **Check / Проверить** measures latency for the selected profile.
+8. **Routing / Маршрутизация** edits the domain list. Type `example.com`; subdomains are matched too, a whole list can be pasted at once, and the Russia preset fills in sites that commonly refuse a foreign address. DNS for a listed domain takes the same path as its traffic.
+9. **Support / Поддержка** opens the provider link supplied by the subscription, or GitHub Issues when none is available.
+10. The settings icon opens the full v2rayN interface.
 
 ## Update
 
@@ -100,13 +105,14 @@ Core binaries (`xray.exe`, `sing-box.exe`, `wintun.dll`) are copied from a local
 
 ## Status
 
-Version 0.3.1. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
+Version 0.4.0. What changed in each version: [CHANGELOG.md](CHANGELOG.md). Detailed 0.4.0
+notes: [docs/RELEASE_NOTES_0.4.0_RU.md](docs/RELEASE_NOTES_0.4.0_RU.md) (Russian).
 
 A pre-publication security audit has been completed — see [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for scope, findings, fixes and remaining risks. Notable fixes it produced: the downloaded subscription payload no longer reaches the log files, and profile links are kept out of the on-screen notice stream.
 
-Verified: clean install and first launch, install over a previous version, import and subscription update, latency check, tray behaviour, 102/102 unit tests, no threats found by Microsoft Defender in any release artifact.
+Verified for 0.4.0: Release build and installer, 115/115 unit tests, complete Russian/English resources, safe support-header parsing and SQLite schema update. The English simple screen and the RU/EN control were visually inspected. Earlier release testing covered clean install, install over a previous version, import and subscription update, latency check and tray behaviour.
 
-Not verified yet: uninstall with both answers to the user-data prompt, Windows display scaling at 125 % and 150 %, a live run of the 0.3.0 connection modes and domain routing, and the 0.3.1 core shutdown on disconnect.
+Not verified in a live 0.4.0 session: the full import/connect/check/routing flow on both languages, a provider-supplied `Support-Url`, clean install or upgrade with this installer, uninstall with both user-data answers, Windows scaling at 125 % and 150 %, and the 0.3.1 core shutdown on disconnect.
 
 Known open defect: a single unexplained `OutOfMemoryException` was observed once, raised while the thread pool was creating a worker thread. It has not been reproduced. If the client hangs or exits unexpectedly, please do not close the process — capture a dump first and open an issue.
 

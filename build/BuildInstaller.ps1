@@ -1,6 +1,6 @@
 ﻿param(
     [string]$CoreSource = "$env:LOCALAPPDATA\Programs\v2rayN\v2rayN-windows-64",
-    [string]$Version = '0.3.1',
+    [string]$Version = '0.4.0',
     [string]$Runtime = 'win-x64',
     [switch]$SkipPublish
 )

@@ -3,6 +3,35 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## 0.4.0 — 3 August 2026
+
+Full notes: [docs/RELEASE_NOTES_0.4.0_RU.md](docs/RELEASE_NOTES_0.4.0_RU.md) (Russian).
+
+### Added
+
+- **Russian and English simple interfaces.** Every label, status, error, tray caption and domain
+  routing message specific to SvoRay now comes from paired resources. A compact RU/EN selector in
+  the header remembers the choice and says explicitly that the app must be restarted before it
+  takes effect. A new installation starts in the Windows UI language when it is supported, with
+  English as the fallback.
+- **A support action that follows the subscription.** The simple profile card always has a
+  **Support** button. When the subscription server supplies `Support-Url`, SvoRay remembers it;
+  otherwise the button opens the project's GitHub Issues page.
+
+### Changed
+
+- Subscription downloads can retain response headers without changing the existing body-only API
+  used by geo files and update checks. The support link is stored as a nullable column on the
+  subscription record; sqlite-net adds it to existing databases without rebuilding them.
+- Provider support links are treated as untrusted input. Only absolute HTTP, HTTPS and Telegram
+  links up to 2,048 characters are accepted, and a link is opened only after an explicit click.
+
+### Fixed
+
+- The simple screen no longer stays partly Russian when the application culture is English. The
+  routing window, dynamic connection messages, error paths, title and tray now use the same
+  culture as the rest of the application.
+
 ## 0.3.1 — 3 August 2026
 
 Full notes: [docs/RELEASE_NOTES_0.3.1_RU.md](docs/RELEASE_NOTES_0.3.1_RU.md) (Russian).

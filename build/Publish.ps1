@@ -1,6 +1,6 @@
 ﻿param(
     [string]$CoreSource = "$env:LOCALAPPDATA\Programs\v2rayN\v2rayN-windows-64",
-    [string]$Version = '0.3.1',
+    [string]$Version = '0.4.0',
     [string]$Runtime = 'win-x64'
 )
 
@@ -33,10 +33,10 @@ function Reset-Directory {
 
 function Copy-CleanSourceTree {
     param([string]$Source, [string]$Destination)
-    # Keep this list aligned with .gitignore: the source archive must contain exactly what
-    # the public repository contains. Anything the client can create next to itself may
-    # hold a real subscription, and 'internal' holds unpublished working notes.
-    $skipDirectories = @('bin', 'obj', 'dist', '.git', '.vs', 'internal', 'guiConfigs', 'guiLogs', 'guiTemps', 'guiBackups', 'guiFonts', 'binConfigs')
+    # The source archive must contain only the public project. Client-generated folders may
+    # hold a real subscription, while local assistant workspaces and 'internal' hold
+    # unpublished working notes even when a developer has not ignored them globally.
+    $skipDirectories = @('bin', 'obj', 'dist', '.git', '.vs', '.claude', 'internal', 'guiConfigs', 'guiLogs', 'guiTemps', 'guiBackups', 'guiFonts', 'binConfigs')
     New-Item -ItemType Directory -Path $Destination -Force | Out-Null
     foreach ($entry in Get-ChildItem -LiteralPath $Source -Force) {
         if ($entry.PSIsContainer -and $skipDirectories -contains $entry.Name) {
@@ -56,7 +56,7 @@ New-Item -ItemType Directory -Path $distRoot -Force | Out-Null
 Reset-Directory $appDirectory
 $clientProject = Join-Path $projectRoot 'src\v2rayN\v2rayN.csproj'
 
-dotnet publish $clientProject -c Release -r $Runtime --self-contained true -o $appDirectory
+dotnet publish $clientProject -c Release -r $Runtime --self-contained true -o $appDirectory -p:Version=$Version -p:InformationalVersion="$Version+v2rayN.7.24.4"
 if ($LASTEXITCODE -ne 0) { throw 'SvoRay publish failed.' }
 
 $coreRoot = [System.IO.Path]::GetFullPath($CoreSource)
