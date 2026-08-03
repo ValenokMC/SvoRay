@@ -15,6 +15,7 @@
 [![Windows](https://img.shields.io/badge/Windows_10%2F11-supported-0078D4?style=flat-square)](#install)
 [![Cores](https://img.shields.io/badge/cores-Xray_·_sing--box-6e7681?style=flat-square)](#what-it-does)
 [![Support](https://img.shields.io/badge/support-open_an_issue-1f6feb?style=flat-square&logo=github&logoColor=white)](SUPPORT.md)
+[![Telegram](https://img.shields.io/badge/telegram-@SupporBiBot-229ED9?style=flat-square&logo=telegram&logoColor=white)](https://t.me/SupporBiBot)
 
 **English** · [Русский](README_RU.md) · [Changelog](CHANGELOG.md) · [Releases](https://github.com/ValenokMC/SvoRay/releases) · [Support](SUPPORT.md)
 
