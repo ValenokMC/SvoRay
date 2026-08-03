@@ -31,8 +31,14 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Restore dependencies
+      - name: Restore Windows app
+        run: dotnet restore .\src\v2rayN\v2rayN.csproj
+
+      - name: Restore test dependencies
         run: dotnet restore .\src\ServiceLib.Tests\ServiceLib.Tests.csproj
+
+      - name: Build Windows app
+        run: dotnet build .\src\v2rayN\v2rayN.csproj --configuration Release --no-restore --nologo
 
       - name: Run tests
         run: dotnet test .\src\ServiceLib.Tests\ServiceLib.Tests.csproj --configuration Release --no-restore --nologo
