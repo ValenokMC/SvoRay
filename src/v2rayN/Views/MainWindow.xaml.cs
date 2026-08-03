@@ -77,6 +77,7 @@ public partial class MainWindow
         btnImportSubscriptionSimple.Click += BtnImportSubscriptionSimple_Click;
         btnUpdateSimple.Click += BtnUpdateSimple_Click;
         btnCheckPing.Click += BtnCheckPing_Click;
+        btnSupport.Click += BtnSupport_Click;
         cmbSimpleServers.SelectionChanged += (_, _) => ResetPingResult();
         btnShowImport.Click += BtnShowImport_Click;
         btnCancelImport.Click += BtnCancelImport_Click;
@@ -532,6 +533,30 @@ public partial class MainWindow
             txtUpdateSubscription.Text = ResUI.SvoRayUpdate;
             btnUpdateSimple.IsEnabled = true;
         }
+    }
+
+    private async void BtnSupport_Click(object sender, RoutedEventArgs e)
+    {
+        string? supportUrl = null;
+        try
+        {
+            var indexId = ViewModel?.StatusBarViewModel.SelectedServer?.ID;
+            var profile = indexId.IsNullOrEmpty()
+                ? null
+                : await AppManager.Instance.GetProfileItem(indexId);
+            var subId = profile?.Subid;
+            var subscription = subId.IsNotEmpty()
+                ? await AppManager.Instance.GetSubItem(subId)
+                : null;
+            supportUrl = subscription?.SupportUrl;
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay support lookup", ex);
+        }
+
+        // A provider URL is opened only after this explicit click and only after validation.
+        ProcUtils.ProcessStart(SvoRaySupportUrl.Resolve(supportUrl));
     }
 
     private async void TogSvoRayConnect_Click(object sender, RoutedEventArgs e)

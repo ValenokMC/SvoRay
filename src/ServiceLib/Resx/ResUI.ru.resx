@@ -2145,4 +2145,10 @@
   <data name="SvoRayPasteSubscriptionFirst" xml:space="preserve">
     <value>Сначала вставьте ссылку подписки или профиль.</value>
   </data>
+  <data name="SvoRaySupport" xml:space="preserve">
+    <value>Поддержка</value>
+  </data>
+  <data name="SvoRaySupportTip" xml:space="preserve">
+    <value>Открыть поддержку провайдера подписки или обращения SvoRay</value>
+  </data>
 </root>

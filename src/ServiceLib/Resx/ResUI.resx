@@ -2163,4 +2163,10 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="SvoRayPasteSubscriptionFirst" xml:space="preserve">
     <value>Paste a subscription link or profile first.</value>
   </data>
+  <data name="SvoRaySupport" xml:space="preserve">
+    <value>Support</value>
+  </data>
+  <data name="SvoRaySupportTip" xml:space="preserve">
+    <value>Open subscription provider support or SvoRay issues</value>
+  </data>
 </root>

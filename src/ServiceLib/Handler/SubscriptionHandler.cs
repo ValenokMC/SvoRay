@@ -95,17 +95,17 @@ public static class SubscriptionHandler
         return downloadHandle;
     }
 
-    private static async Task<string> DownloadSubscriptionContent(DownloadService downloadHandle, string url, bool blProxy, string userAgent)
+    private static async Task<DownloadStringResult?> DownloadSubscriptionContent(DownloadService downloadHandle, string url, bool blProxy, string userAgent)
     {
-        var result = await downloadHandle.TryDownloadString(url, blProxy, userAgent);
+        var result = await downloadHandle.TryDownloadStringWithHeaders(url, blProxy, userAgent);
 
         // If download with proxy fails, try direct connection
-        if (blProxy && result.IsNullOrEmpty())
+        if (blProxy && (result is null || result.Content.IsNullOrEmpty()))
         {
-            result = await downloadHandle.TryDownloadString(url, false, userAgent);
+            result = await downloadHandle.TryDownloadStringWithHeaders(url, false, userAgent);
         }
 
-        return result ?? string.Empty;
+        return result;
     }
 
     private static async Task<string> DownloadAllSubscriptions(Config config, SubItem item, bool blProxy, DownloadService downloadHandle)
@@ -147,8 +147,15 @@ public static class SubscriptionHandler
             }
         }
 
-        // Download and return result directly
-        return await DownloadSubscriptionContent(downloadHandle, url, blProxy, item.UserAgent);
+        var download = await DownloadSubscriptionContent(downloadHandle, url, blProxy, item.UserAgent);
+        var supportUrl = SvoRaySupportUrl.Normalize(download?.GetHeaderValue("Support-Url"));
+        if (!string.Equals(item.SupportUrl, supportUrl, StringComparison.Ordinal))
+        {
+            item.SupportUrl = supportUrl;
+            await SQLiteHelper.Instance.UpdateAsync(item);
+        }
+
+        return download?.Content ?? string.Empty;
     }
 
     private static async Task<string> DownloadAdditionalSubscriptions(SubItem item, string mainResult, bool blProxy, DownloadService downloadHandle)
@@ -171,7 +178,7 @@ public static class SubscriptionHandler
                 continue;
             }
 
-            var additionalResult = await DownloadSubscriptionContent(downloadHandle, url2, blProxy, item.UserAgent);
+            var additionalResult = (await DownloadSubscriptionContent(downloadHandle, url2, blProxy, item.UserAgent))?.Content;
 
             if (additionalResult.IsNotEmpty())
             {

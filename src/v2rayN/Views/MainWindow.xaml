@@ -1097,10 +1097,9 @@
                                     </ComboBox>
                                     <!--
                                         Rows="1" with Columns left at 0 makes UniformGrid derive the
-                                        column count from its visible children only. Two buttons give
-                                        two columns; when the update button is hidden - a single
-                                        imported profile with no subscription - the check button gets
-                                        the whole row instead of half of it with a gap beside it.
+                                        column count from its visible children only. The update action
+                                        disappears for a standalone profile, while check and support
+                                        expand to share the row without leaving an empty column.
                                         Leaving Rows at 0 as well would not do this: for two children
                                         UniformGrid squares up to 2x2 and stacks them vertically.
                                         The negative outer margin cancels the 5px gutters so both
@@ -1155,6 +1154,30 @@
                                                     VerticalAlignment="Center"
                                                     FontSize="12.5"
                                                     Text="{x:Static resx:ResUI.SvoRayCheck}" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button
+                                            x:Name="btnSupport"
+                                            Height="42"
+                                            Margin="5,0"
+                                            Padding="4,0"
+                                            Background="#18FFFFFF"
+                                            BorderBrush="#35FFFFFF"
+                                            BorderThickness="1"
+                                            Foreground="White"
+                                            ToolTip="{x:Static resx:ResUI.SvoRaySupportTip}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <materialDesign:PackIcon
+                                                    Width="17"
+                                                    Height="17"
+                                                    Margin="0,0,7,0"
+                                                    VerticalAlignment="Center"
+                                                    Foreground="White"
+                                                    Kind="HelpCircleOutline" />
+                                                <TextBlock
+                                                    VerticalAlignment="Center"
+                                                    FontSize="12.5"
+                                                    Text="{x:Static resx:ResUI.SvoRaySupport}" />
                                             </StackPanel>
                                         </Button>
                                     </UniformGrid>

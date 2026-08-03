@@ -5876,5 +5876,17 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("SvoRayWithoutVpnCount", resourceCulture);
             }
         }
+
+        public static string SvoRaySupport {
+            get {
+                return ResourceManager.GetString("SvoRaySupport", resourceCulture);
+            }
+        }
+
+        public static string SvoRaySupportTip {
+            get {
+                return ResourceManager.GetString("SvoRaySupportTip", resourceCulture);
+            }
+        }
     }
 }
