@@ -24,13 +24,9 @@ updates:
       - dependencies
       - nuget
     ignore:
-      - dependency-name: ReactiveUI
-        update-types:
-          - version-update:semver-major
-      - dependency-name: ReactiveUI.WPF
+      - dependency-name: "*"
         update-types:
           - version-update:semver-major
       - dependency-name: ReactiveUI.Avalonia
         update-types:
           - version-update:semver-minor
-          - version-update:semver-major
