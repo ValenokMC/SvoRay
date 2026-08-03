@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="background" x1="80" y1="20" x2="1200" y2="650" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111B38"/>
+      <stop offset="0.55" stop-color="#142849"/>
+      <stop offset="1" stop-color="#261739"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="160" y1="120" x2="760" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7A7CFF"/>
+      <stop offset="0.5" stop-color="#4E7CF4"/>
+      <stop offset="1" stop-color="#2DD6B7"/>
+    </linearGradient>
+    <radialGradient id="glowBlue" cx="0" cy="0" r="1" gradientTransform="translate(295 136) rotate(35) scale(470 350)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7779FF" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#7779FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowGreen" cx="0" cy="0" r="1" gradientTransform="translate(1030 530) rotate(-145) scale(430 310)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20D8B2" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#20D8B2" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="26" stdDeviation="28" flood-color="#020612" flood-opacity="0.58"/>
+    </filter>
+    <clipPath id="windowClip">
+      <rect x="906" y="-38" width="350" height="714" rx="25"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#background)"/>
+  <rect width="1280" height="640" fill="url(#glowBlue)"/>
+  <rect width="1280" height="640" fill="url(#glowGreen)"/>
+  <path d="M0 545C190 470 315 510 468 575C627 643 751 655 884 592C1018 529 1131 455 1280 489V640H0V545Z" fill="#FFFFFF" opacity="0.025"/>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="64" width="104" height="104" rx="27" fill="#0E1429"/>
+    <path d="M122 77 159 92v26c0 24-15 40-37 51-22-11-37-27-37-51V92l37-15Z" fill="url(#accent)"/>
+    <path d="m103 122 12 12 27-30" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <text x="200" y="143" fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif" font-size="64" font-weight="700" letter-spacing="-1">SvoRay</text>
+  <text x="72" y="250" fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif" font-size="54" font-weight="700" letter-spacing="-1.4">One-click Windows VPN</text>
+  <text x="74" y="303" fill="#B9C8E8" font-family="Segoe UI, Arial, sans-serif" font-size="31" font-weight="400">Простой клиент для своей подписки</text>
+
+  <rect x="72" y="355" width="664" height="82" rx="21" fill="#FFFFFF" opacity="0.06" stroke="#FFFFFF" stroke-opacity="0.1"/>
+  <text x="108" y="407" fill="#E6ECFA" font-family="Segoe UI, Arial, sans-serif" font-size="27">Paste subscription</text>
+  <path d="M335 396h56" stroke="#6F87FF" stroke-width="4" stroke-linecap="round"/>
+  <path d="m379 383 15 13-15 13" fill="none" stroke="#6F87FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="423" y="407" fill="#E6ECFA" font-family="Segoe UI, Arial, sans-serif" font-size="27">Pick server</text>
+  <path d="M585 396h56" stroke="#3ECBB5" stroke-width="4" stroke-linecap="round"/>
+  <path d="m629 383 15 13-15 13" fill="none" stroke="#3ECBB5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="688" cy="396" r="20" fill="#35BFAE" opacity="0.25"/>
+  <path d="M688 383v14" stroke="#78F5DF" stroke-width="4" stroke-linecap="round"/>
+  <path d="M680 389a12 12 0 1 0 16 0" fill="none" stroke="#78F5DF" stroke-width="4" stroke-linecap="round"/>
+
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600">
+    <rect x="72" y="482" width="94" height="46" rx="23" fill="#6079F2" opacity="0.22" stroke="#8092FF" stroke-opacity="0.5"/>
+    <text x="94" y="512" fill="#DDE5FF">RU / EN</text>
+    <rect x="180" y="482" width="96" height="46" rx="23" fill="#FFFFFF" opacity="0.07"/>
+    <text x="204" y="512" fill="#CFD8EE">Xray</text>
+    <rect x="290" y="482" width="128" height="46" rx="23" fill="#FFFFFF" opacity="0.07"/>
+    <text x="313" y="512" fill="#CFD8EE">sing-box</text>
+    <rect x="432" y="482" width="88" height="46" rx="23" fill="#FFFFFF" opacity="0.07"/>
+    <text x="454" y="512" fill="#CFD8EE">TUN</text>
+    <rect x="534" y="482" width="174" height="46" rx="23" fill="#2ED2B4" opacity="0.14" stroke="#45E4C6" stroke-opacity="0.35"/>
+    <text x="559" y="512" fill="#A7F4E6">Open source</text>
+  </g>
+
+  <text x="74" y="587" fill="#7F91B4" font-family="Segoe UI, Arial, sans-serif" font-size="22">github.com/ValenokMC/SvoRay</text>
+
+  <g filter="url(#shadow)">
+    <rect x="886" y="-58" width="390" height="754" rx="38" fill="#081020" stroke="#8092FF" stroke-opacity="0.25" stroke-width="2"/>
+    <image href="svoray-simple-ru.jpg" x="906" y="-38" width="350" height="714" preserveAspectRatio="xMidYMid slice" clip-path="url(#windowClip)"/>
+  </g>
+</svg>
