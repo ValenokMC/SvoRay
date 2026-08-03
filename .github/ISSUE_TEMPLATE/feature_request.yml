@@ -1,0 +1,34 @@
+name: Предложение / Feature request
+description: Идея, которой не хватает простому экрану
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Смысл SvoRay — простой экран, который решает за пользователя. Предложения, добавляющие
+        ещё одну настройку, скорее всего останутся без реализации: то, что настраивается вручную,
+        уже доступно в расширенном режиме v2rayN.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую задачу это решает
+      description: Что вы пытались сделать и на чём остановились
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Как это должно работать
+      description: Что происходит на экране; чего клиент решает за пользователя, а что спрашивает
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Что пробовали вместо этого
+      description: Например, ручную настройку в расширенном режиме
+    validations:
+      required: false

@@ -1,10 +1,30 @@
-﻿# SvoRay
+﻿<div align="center">
 
-SvoRay — упрощённый Windows-клиент VPN на основе открытого исходного кода [v2rayN](https://github.com/2dust/v2rayN) 7.24.4. Он предназначен для пользователей, которым нужны одна большая кнопка подключения, выбор сервера и простая вставка собственной ссылки.
+<img src="assets/SvoRay-icon-preview.png" alt="" width="88">
 
-English version of this page: [README.md](README.md).
+# SvoRay
 
-Что изменилось по версиям: [CHANGELOG.md](CHANGELOG.md). Подробные заметки к 0.3.0: [docs/RELEASE_NOTES_0.3.0_RU.md](docs/RELEASE_NOTES_0.3.0_RU.md).
+**Упрощённый Windows-клиент VPN на основе открытого исходного кода [v2rayN](https://github.com/2dust/v2rayN) 7.24.4.**<br>
+**Вставьте свою подписку, выберите сервер, нажмите одну кнопку.**
+
+[![Релиз](https://img.shields.io/github/v/release/ValenokMC/SvoRay?style=flat-square&logo=github&label=%D1%80%D0%B5%D0%BB%D0%B8%D0%B7&color=1f6feb)](https://github.com/ValenokMC/SvoRay/releases/latest)
+[![Загрузки](https://img.shields.io/github/downloads/ValenokMC/SvoRay/total?style=flat-square&logo=github&label=%D0%B7%D0%B0%D0%B3%D1%80%D1%83%D0%B7%D0%BA%D0%B8&color=2ea043)](https://github.com/ValenokMC/SvoRay/releases)
+[![Лицензия](https://img.shields.io/badge/лицензия-GPL--3.0-fd7e14?style=flat-square)](LICENSE)
+[![Основан на v2rayN](https://img.shields.io/badge/основан_на-v2rayN_7.24.4-8957e5?style=flat-square)](https://github.com/2dust/v2rayN)
+
+[![Windows](https://img.shields.io/badge/Windows_10%2F11-поддерживается-0078D4?style=flat-square)](#установка)
+[![Ядра](https://img.shields.io/badge/ядра-Xray_·_sing--box-6e7681?style=flat-square)](#что-уже-настроено)
+[![Поддержка](https://img.shields.io/badge/поддержка-задать_вопрос-1f6feb?style=flat-square&logo=github&logoColor=white)](SUPPORT.md)
+
+[English](README.md) · **Русский** · [Изменения](CHANGELOG.md) · [Релизы](https://github.com/ValenokMC/SvoRay/releases) · [Поддержка](SUPPORT.md)
+
+</div>
+
+---
+
+Клиент предназначен для тех, кому нужны одна большая кнопка подключения, выбор сервера и простая вставка собственной ссылки. Полный интерфейс v2rayN остаётся в одном клике для всего, что не покрывает простой экран.
+
+Что изменилось по версиям: [CHANGELOG.md](CHANGELOG.md). Подробные заметки к 0.3.1: [docs/RELEASE_NOTES_0.3.1_RU.md](docs/RELEASE_NOTES_0.3.1_RU.md).
 
 Своих серверов у SvoRay нет — вы подключаетесь по собственной подписке.
 
@@ -22,7 +42,7 @@ English version of this page: [README.md](README.md).
 
 ## Установка
 
-1. Скачайте `SvoRay-0.3.0-setup.exe`.
+1. Скачайте `SvoRay-0.3.1-setup.exe`.
 2. Запустите установщик и подтвердите запрос Windows UAC.
 3. Windows SmartScreen может показать предупреждение «Неизвестный издатель»: сборка не подписана коммерческим сертификатом. Чтобы продолжить, нажмите «Подробнее» → «Выполнить в любом случае».
 4. По завершении можно сразу запустить приложение. Ярлык создаётся только в меню «Пуск».
@@ -69,7 +89,7 @@ English version of this page: [README.md](README.md).
 Поскольку подписи нет, единственный способ проверить загруженный файл — сверить его SHA256 с `SHA256SUMS.txt`, опубликованным рядом с релизом:
 
 ```powershell
-Get-FileHash .\SvoRay-0.3.0-setup.exe -Algorithm SHA256
+Get-FileHash .\SvoRay-0.3.1-setup.exe -Algorithm SHA256
 ```
 
 Что именно проверялось перед публикацией и какие риски остались — в `docs/SECURITY_AUDIT.md`.
@@ -86,4 +106,4 @@ Get-FileHash .\SvoRay-0.3.0-setup.exe -Algorithm SHA256
 .\build\BuildInstaller.ps1
 ```
 
-Скрипт публикует self-contained сборку, добавляет компоненты v2rayN/Xray/sing-box/geodata, собирает `SvoRay-0.3.0-setup.exe`, portable ZIP, source ZIP и `SHA256SUMS.txt` в каталог `dist`.
+Скрипт публикует self-contained сборку, добавляет компоненты v2rayN/Xray/sing-box/geodata, собирает `SvoRay-0.3.1-setup.exe`, portable ZIP, source ZIP и `SHA256SUMS.txt` в каталог `dist`.

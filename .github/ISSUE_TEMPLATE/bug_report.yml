@@ -1,0 +1,80 @@
+name: Ошибка / Bug report
+description: Клиент падает, не подключается или ведёт себя не так, как описано
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Не вставляйте сюда ссылку на подписку или профиль и не прикладывайте папку
+        `%LOCALAPPDATA%\SvoRay` — в них ваши учётные данные в открытом виде.**
+        Из логов уберите адреса серверов. Скриншот простого экрана безопасен: адрес сервера он
+        не показывает.
+
+  - type: input
+    id: version
+    attributes:
+      label: Версия SvoRay
+      description: Показана в заголовке окна
+      placeholder: "0.3.1"
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Версия Windows
+      placeholder: "Windows 11 24H2"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Режим подключения
+      options:
+        - Прокси
+        - TUN
+        - В обоих режимах
+        - Не относится к подключению
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Что вы делали
+      description: По шагам, от запуска клиента
+      placeholder: |
+        1. Запустил SvoRay
+        2. Выбрал профиль …
+        3. Нажал кнопку питания
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Что ожидали и что получили
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Строки из журнала
+      description: >-
+        Из `%LOCALAPPDATA%\SvoRay\guiLogs`, только относящиеся к делу и без адресов серверов.
+        Вставленное сюда автоматически оформляется как код.
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Перед отправкой
+      options:
+        - label: Проверил, что в тексте и логах нет ссылки на подписку, UUID и адресов серверов
+          required: true
+        - label: Проверил CHANGELOG — в свежей версии это не исправлено
+          required: true

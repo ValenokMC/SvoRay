@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Вопрос «как сделать» / Question
+    url: https://github.com/ValenokMC/SvoRay/discussions
+    about: Не ошибка, а вопрос по использованию — спросите в обсуждениях.
+  - name: Уязвимость / Security issue
+    url: https://github.com/ValenokMC/SvoRay/security/advisories/new
+    about: Приватный канал. Не сообщайте об уязвимостях публичным issue.
+  - name: Как получить поддержку / Support guide
+    url: https://github.com/ValenokMC/SvoRay/blob/main/SUPPORT.md
+    about: Что приложить к сообщению и что нельзя отправлять ни в коем случае.

@@ -1,12 +1,28 @@
+<div align="center">
+
+<img src="assets/SvoRay-icon-preview.png" alt="" width="88">
+
 # SvoRay
 
-A simplified Windows VPN client built on the open-source [v2rayN](https://github.com/2dust/v2rayN) 7.24.4 codebase.
+**A simplified Windows VPN client built on the open-source [v2rayN](https://github.com/2dust/v2rayN) 7.24.4 codebase.**<br>
+**Paste your own subscription, pick a server, press one button.**
 
-You paste your own subscription link or a single profile, pick a server, and press one button. Everything else — TUN routing, DNS, adapter selection — is configured for you. The full v2rayN interface stays one click away for anything the simple screen does not cover.
+[![Release](https://img.shields.io/github/v/release/ValenokMC/SvoRay?style=flat-square&logo=github&label=release&color=1f6feb)](https://github.com/ValenokMC/SvoRay/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/ValenokMC/SvoRay/total?style=flat-square&logo=github&label=downloads&color=2ea043)](https://github.com/ValenokMC/SvoRay/releases)
+[![License](https://img.shields.io/badge/license-GPL--3.0-fd7e14?style=flat-square)](LICENSE)
+[![Built on v2rayN](https://img.shields.io/badge/built_on-v2rayN_7.24.4-8957e5?style=flat-square)](https://github.com/2dust/v2rayN)
 
-**Русская версия этой страницы: [README_RU.md](README_RU.md).**
+[![Windows](https://img.shields.io/badge/Windows_10%2F11-supported-0078D4?style=flat-square)](#install)
+[![Cores](https://img.shields.io/badge/cores-Xray_·_sing--box-6e7681?style=flat-square)](#what-it-does)
+[![Support](https://img.shields.io/badge/support-open_an_issue-1f6feb?style=flat-square&logo=github&logoColor=white)](SUPPORT.md)
+
+**English** · [Русский](README_RU.md) · [Changelog](CHANGELOG.md) · [Releases](https://github.com/ValenokMC/SvoRay/releases) · [Support](SUPPORT.md)
+
+</div>
 
 ---
+
+You paste your own subscription link or a single profile, pick a server, and press one button. Everything else — TUN routing, DNS, adapter selection — is configured for you. The full v2rayN interface stays one click away for anything the simple screen does not cover.
 
 ## What it does
 
@@ -31,7 +47,7 @@ SvoRay routes your traffic through a server you supply. It does not provide anon
 2. Optionally verify the download against `SHA256SUMS.txt` published with the release:
 
    ```powershell
-   Get-FileHash .\SvoRay-0.3.0-setup.exe -Algorithm SHA256
+   Get-FileHash .\SvoRay-0.3.1-setup.exe -Algorithm SHA256
    ```
 
    The build is not signed with a commercial certificate, so comparing the hash is the only way to confirm you got the right file.
@@ -83,13 +99,13 @@ Core binaries (`xray.exe`, `sing-box.exe`, `wintun.dll`) are copied from a local
 
 ## Status
 
-Version 0.3.0. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
+Version 0.3.1. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
 A pre-publication security audit has been completed — see [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for scope, findings, fixes and remaining risks. Notable fixes it produced: the downloaded subscription payload no longer reaches the log files, and profile links are kept out of the on-screen notice stream.
 
-Verified: clean install and first launch, install over a previous version, import and subscription update, latency check, tray behaviour, 91/91 unit tests, no threats found by Microsoft Defender in any release artifact.
+Verified: clean install and first launch, install over a previous version, import and subscription update, latency check, tray behaviour, 102/102 unit tests, no threats found by Microsoft Defender in any release artifact.
 
-Not verified yet: uninstall with both answers to the user-data prompt, Windows display scaling at 125 % and 150 %, and a live run of the 0.3.0 connection modes and domain routing.
+Not verified yet: uninstall with both answers to the user-data prompt, Windows display scaling at 125 % and 150 %, a live run of the 0.3.0 connection modes and domain routing, and the 0.3.1 core shutdown on disconnect.
 
 Known open defect: a single unexplained `OutOfMemoryException` was observed once, raised while the thread pool was creating a worker thread. It has not been reproduced. If the client hangs or exits unexpectedly, please do not close the process — capture a dump first and open an issue.
 
