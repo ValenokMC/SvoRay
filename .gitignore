@@ -16,6 +16,17 @@ guiFonts/
 binConfigs/
 *.log
 
+# Secrets by shape, not by location. The list above names the folders the client is known
+# to create; this catches a key or a token dropped into the tree by hand, which is the way
+# these actually get committed.
+*.env
+.env.*
+*.db
+*.pem
+*.key
+*.pfx
+*.p12
+
 # Working notes: specs, session prompts and handoffs. Kept locally because they are
 # useful for future work, but they are not part of the product and are not released.
 internal/
