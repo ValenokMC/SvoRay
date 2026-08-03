@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/SvoRay-icon-preview.png" alt="" width="88">
+<img src="assets/social-preview.png" alt="SvoRay — one-click Windows VPN client with a simple Russian and English interface" width="960">
 
 # SvoRay
 
@@ -19,11 +19,33 @@
 
 **English** · [Русский](README_RU.md) · [Changelog](CHANGELOG.md) · [Releases](https://github.com/ValenokMC/SvoRay/releases) · [Support](SUPPORT.md)
 
+[**Download SvoRay for Windows →**](https://github.com/ValenokMC/SvoRay/releases/latest)<br>
+Windows 10/11 x64 · installer and portable ZIP · no account required
+
 </div>
 
 ---
 
 You paste your own subscription link or a single profile, pick a server, and press one button. Everything else — TUN routing, DNS, adapter selection — is configured for you. The full v2rayN interface stays one click away for anything the simple screen does not cover.
+
+> ⭐ If SvoRay makes v2rayN easier for you, star the repository. It helps other Windows users find
+> the project without ads or paid promotion.
+
+## Why SvoRay
+
+SvoRay is for people who already have a v2rayN-compatible subscription but do not want to manage
+the full client every day. It keeps the proven v2rayN, Xray and sing-box foundation and adds a
+focused front screen for the actions that matter most.
+
+| You want to… | SvoRay simple screen | Full v2rayN interface |
+| --- | --- | --- |
+| Connect for everyday use | One power button | Available in one click |
+| Choose a server | Compact profile selector | Full profile table and groups |
+| Route selected domains | Guided domain list and Russia preset | Complete routing editor |
+| Diagnose or tune the core | Basic latency and exit checks | All advanced controls |
+
+SvoRay is not a subscription seller and does not lock you into a provider. Bring your own
+subscription or profile and keep the option to use every upstream v2rayN setting.
 
 ## What it does
 
@@ -115,6 +137,36 @@ Verified for 0.4.0: Release build and installer, 115/115 unit tests, complete Ru
 Not verified in a live 0.4.0 session: the full import/connect/check/routing flow on both languages, a provider-supplied `Support-Url`, clean install or upgrade with this installer, uninstall with both user-data answers, Windows scaling at 125 % and 150 %, and the 0.3.1 core shutdown on disconnect.
 
 Known open defect: a single unexplained `OutOfMemoryException` was observed once, raised while the thread pool was creating a worker thread. It has not been reproduced. If the client hangs or exits unexpectedly, please do not close the process — capture a dump first and open an issue.
+
+## Frequently asked questions
+
+### Does SvoRay include VPN servers?
+
+No. SvoRay is a client for your own subscription or individual profile. It does not sell or bundle
+access to third-party servers.
+
+### Why does it request administrator rights?
+
+TUN mode needs elevated rights to route system traffic. Proxy mode is also available, but the app
+currently starts elevated so both modes can be selected without relaunching it.
+
+### Is the installer signed?
+
+Not with a commercial code-signing certificate. Windows SmartScreen may therefore show
+“Unknown publisher.” Verify the installer against the `SHA256SUMS.txt` file attached to the same
+release before running it.
+
+### Can I still use advanced v2rayN settings?
+
+Yes. The settings button opens the complete v2rayN interface for diagnostics and manual tuning.
+
+## Help SvoRay grow
+
+- Star the repository if the focused interface is useful to you.
+- Share a reproducible bug or idea through [Issues](https://github.com/ValenokMC/SvoRay/issues).
+- Ask usage questions in [Discussions](https://github.com/ValenokMC/SvoRay/discussions).
+- Improve code, documentation or translations using [CONTRIBUTING.md](CONTRIBUTING.md).
+- Use the ready-made bilingual copy and images in the [community sharing kit](docs/SHARE_SVORAY.md).
 
 ## License
 
