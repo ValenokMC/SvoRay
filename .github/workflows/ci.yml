@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   test:
-    name: Windows tests
+    name: Windows builds and tests
     runs-on: windows-latest
     timeout-minutes: 20
 
@@ -34,11 +34,17 @@ jobs:
       - name: Restore Windows app
         run: dotnet restore .\src\v2rayN\v2rayN.csproj
 
+      - name: Restore cross-platform desktop app
+        run: dotnet restore .\src\v2rayN.Desktop\v2rayN.Desktop.csproj
+
       - name: Restore test dependencies
         run: dotnet restore .\src\ServiceLib.Tests\ServiceLib.Tests.csproj
 
       - name: Build Windows app
         run: dotnet build .\src\v2rayN\v2rayN.csproj --configuration Release --no-restore --nologo
+
+      - name: Build cross-platform desktop app
+        run: dotnet build .\src\v2rayN.Desktop\v2rayN.Desktop.csproj --configuration Release --no-restore --nologo
 
       - name: Run tests
         run: dotnet test .\src\ServiceLib.Tests\ServiceLib.Tests.csproj --configuration Release --no-restore --nologo
