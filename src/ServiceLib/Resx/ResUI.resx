@@ -1848,4 +1848,319 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="TbIpv4Address" xml:space="preserve">
     <value>Ipv4 Address</value>
   </data>
++  <data name="SvoRayAdd" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="SvoRayAddAndSelectProfileFirst" xml:space="preserve">
+    <value>Add a connection and select a profile first.</value>
+  </data>
+  <data name="SvoRayAddConnection" xml:space="preserve">
+    <value>Add connection</value>
+  </data>
+  <data name="SvoRayAddedCount" xml:space="preserve">
+    <value>Added: {0}.</value>
+  </data>
+  <data name="SvoRayAdministrator" xml:space="preserve">
+    <value>Administrator</value>
+  </data>
+  <data name="SvoRayAdvancedMode" xml:space="preserve">
+    <value>Advanced mode and settings</value>
+  </data>
+  <data name="SvoRayAdvancedModeTip" xml:space="preserve">
+    <value>Advanced mode and v2rayN settings</value>
+  </data>
+  <data name="SvoRayAllDomainsAlreadyListed" xml:space="preserve">
+    <value>All these domains are already in the list.</value>
+  </data>
+  <data name="SvoRayAllTrafficViaVpn" xml:space="preserve">
+    <value>All traffic via VPN</value>
+  </data>
+  <data name="SvoRayApplyingRouting" xml:space="preserve">
+    <value>Applying routing…</value>
+  </data>
+  <data name="SvoRayCheck" xml:space="preserve">
+    <value>Check</value>
+  </data>
+  <data name="SvoRayCheckLiveTip" xml:space="preserve">
+    <value>Check that traffic is actually going through the VPN</value>
+  </data>
+  <data name="SvoRayCheckProfileTip" xml:space="preserve">
+    <value>Measure the selected profile's delay through its proxy</value>
+  </data>
+  <data name="SvoRayCheckUnavailableTip" xml:space="preserve">
+    <value>Available while the VPN is on or off</value>
+  </data>
+  <data name="SvoRayChecking" xml:space="preserve">
+    <value>Checking…</value>
+  </data>
+  <data name="SvoRayCheckingRussiaList" xml:space="preserve">
+    <value>Checking the current list…</value>
+  </data>
+  <data name="SvoRayConnecting" xml:space="preserve">
+    <value>Connecting…</value>
+  </data>
+  <data name="SvoRayConnectionError" xml:space="preserve">
+    <value>Connection error</value>
+  </data>
+  <data name="SvoRayConnectionProfile" xml:space="preserve">
+    <value>Connection profile</value>
+  </data>
+  <data name="SvoRayConnectionStartFailed" xml:space="preserve">
+    <value>Could not start the connection. Details are available in advanced mode.</value>
+  </data>
+  <data name="SvoRayDisable" xml:space="preserve">
+    <value>Turn off</value>
+  </data>
+  <data name="SvoRayDomainAlreadyListed" xml:space="preserve">
+    <value>Domain {0} is already in the list.</value>
+  </data>
+  <data name="SvoRayDomainFew" xml:space="preserve">
+    <value>domains</value>
+  </data>
+  <data name="SvoRayDomainListHint" xml:space="preserve">
+    <value>example.com — you can paste a whole list</value>
+  </data>
+  <data name="SvoRayDomainMany" xml:space="preserve">
+    <value>domains</value>
+  </data>
+  <data name="SvoRayDomainOne" xml:space="preserve">
+    <value>domain</value>
+  </data>
+  <data name="SvoRayEmptyDomainList" xml:space="preserve">
+    <value>The list is empty. Add a domain; its subdomains will be included automatically.</value>
+  </data>
+  <data name="SvoRayEnable" xml:space="preserve">
+    <value>Turn on</value>
+  </data>
+  <data name="SvoRayEnterDomain" xml:space="preserve">
+    <value>Enter a domain, for example example.com.</value>
+  </data>
+  <data name="SvoRayError" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="SvoRayImport" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="SvoRayImportError" xml:space="preserve">
+    <value>Import failed. Details are available in advanced mode.</value>
+  </data>
+  <data name="SvoRayImportFailed" xml:space="preserve">
+    <value>Could not import the link. Check it and try again.</value>
+  </data>
+  <data name="SvoRayImporting" xml:space="preserve">
+    <value>Importing…</value>
+  </data>
+  <data name="SvoRayLanguage" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="SvoRayLanguageRestartNotice" xml:space="preserve">
+    <value>Language saved. Restart SvoRay to apply it.</value>
+  </data>
+  <data name="SvoRayLanguageTip" xml:space="preserve">
+    <value>Choose the interface language. Restart SvoRay to apply the change.</value>
+  </data>
+  <data name="SvoRayMilliseconds" xml:space="preserve">
+    <value>{0} ms</value>
+  </data>
+  <data name="SvoRayModeSwitchFailed" xml:space="preserve">
+    <value>Could not change mode. Open advanced settings.</value>
+  </data>
+  <data name="SvoRayNoResponse" xml:space="preserve">
+    <value>No response</value>
+  </data>
+  <data name="SvoRayOpenWindow" xml:space="preserve">
+    <value>Open window</value>
+  </data>
+  <data name="SvoRayPersonalVpn" xml:space="preserve">
+    <value>Personal VPN</value>
+  </data>
+  <data name="SvoRayPoweredByV2rayN" xml:space="preserve">
+    <value>Powered by the open-source v2rayN engine</value>
+  </data>
+  <data name="SvoRayPresetAlreadyListed" xml:space="preserve">
+    <value>The preset is already in the list.</value>
+  </data>
+  <data name="SvoRayProfile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="SvoRayProfileNoResponse" xml:space="preserve">
+    <value>The profile did not respond. Try another one or update the subscription.</value>
+  </data>
+  <data name="SvoRayProfileNotFound" xml:space="preserve">
+    <value>Profile not found. Update the subscription.</value>
+  </data>
+  <data name="SvoRayProxy" xml:space="preserve">
+    <value>Proxy</value>
+  </data>
+  <data name="SvoRayProxyMode" xml:space="preserve">
+    <value>System proxy mode</value>
+  </data>
+  <data name="SvoRayProxyOnDescription" xml:space="preserve">
+    <value>Apps that follow the system proxy settings go through the VPN</value>
+  </data>
+  <data name="SvoRayRemoveFromList" xml:space="preserve">
+    <value>Remove from the list</value>
+  </data>
+  <data name="SvoRayReplace" xml:space="preserve">
+    <value>Replace</value>
+  </data>
+  <data name="SvoRayReplaceTip" xml:space="preserve">
+    <value>Paste another subscription link or profile</value>
+  </data>
+  <data name="SvoRayRouting" xml:space="preserve">
+    <value>Routing</value>
+  </data>
+  <data name="SvoRayRoutingBypassListed" xml:space="preserve">
+    <value>Everything via VPN except the list</value>
+  </data>
+  <data name="SvoRayRoutingBypassListedDescription" xml:space="preserve">
+    <value>Domains in the list connect directly — for example, a bank or local service.</value>
+  </data>
+  <data name="SvoRayRoutingHowToApply" xml:space="preserve">
+    <value>HOW TO APPLY THE LIST</value>
+  </data>
+  <data name="SvoRayRoutingModeChangedSuffix" xml:space="preserve">
+    <value> Mode changed to “everything via VPN except the list”.</value>
+  </data>
+  <data name="SvoRayRoutingProxyListed" xml:space="preserve">
+    <value>Only the list via VPN</value>
+  </data>
+  <data name="SvoRayRoutingProxyListedDescription" xml:space="preserve">
+    <value>All other traffic connects directly. An empty list means the VPN is not used at all.</value>
+  </data>
+  <data name="SvoRayRoutingSaveFailed" xml:space="preserve">
+    <value>Could not save routing. Open advanced settings.</value>
+  </data>
+  <data name="SvoRayRoutingSaved" xml:space="preserve">
+    <value>Routing saved.</value>
+  </data>
+  <data name="SvoRayRoutingTip" xml:space="preserve">
+    <value>Domains for which the VPN is enabled or disabled separately</value>
+  </data>
+  <data name="SvoRayRuleListedViaVpn" xml:space="preserve">
+    <value>SvoRay: listed domains via VPN</value>
+  </data>
+  <data name="SvoRayRuleListedWithoutVpn" xml:space="preserve">
+    <value>SvoRay: listed domains without VPN</value>
+  </data>
+  <data name="SvoRayRulePrivateDomains" xml:space="preserve">
+    <value>SvoRay: private domains</value>
+  </data>
+  <data name="SvoRayRulePrivateNetwork" xml:space="preserve">
+    <value>SvoRay: private network</value>
+  </data>
+  <data name="SvoRayRuleQuicViaVpn" xml:space="preserve">
+    <value>SvoRay: QUIC via VPN</value>
+  </data>
+  <data name="SvoRayRuleRestDirect" xml:space="preserve">
+    <value>SvoRay: everything else direct</value>
+  </data>
+  <data name="SvoRayRuleRestViaVpn" xml:space="preserve">
+    <value>SvoRay: everything else via VPN</value>
+  </data>
+  <data name="SvoRayRussiaListDownloadFailedSuffix" xml:space="preserve">
+    <value> The online list could not be updated; the built-in preset was added.</value>
+  </data>
+  <data name="SvoRayRussiaPreset" xml:space="preserve">
+    <value>Russia preset</value>
+  </data>
+  <data name="SvoRayRussiaPresetTip" xml:space="preserve">
+    <value>Government services, banks, Yandex, VK, marketplaces, and their CDNs — sites that often reject a foreign address</value>
+  </data>
+  <data name="SvoRaySave" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="SvoRaySelectProfileAndConnect" xml:space="preserve">
+    <value>Select a profile and connect</value>
+  </data>
+  <data name="SvoRaySelectProfileFirst" xml:space="preserve">
+    <value>Select a profile first.</value>
+  </data>
+  <data name="SvoRayServerListUpdated" xml:space="preserve">
+    <value>Server list updated.</value>
+  </data>
+  <data name="SvoRaySimpleMode" xml:space="preserve">
+    <value>Simple mode</value>
+  </data>
+  <data name="SvoRaySkippedCountSuffix" xml:space="preserve">
+    <value> Skipped (already listed): {0}.</value>
+  </data>
+  <data name="SvoRayStandardMode" xml:space="preserve">
+    <value>Standard mode</value>
+  </data>
+  <data name="SvoRaySubscriptionDownloadFailed" xml:space="preserve">
+    <value>Could not retrieve the subscription. Check the connection and link, then try again.</value>
+  </data>
+  <data name="SvoRaySubscriptionOrProfile" xml:space="preserve">
+    <value>Subscription link or profile</value>
+  </data>
+  <data name="SvoRaySubscriptionUpdateFailed" xml:space="preserve">
+    <value>Could not update the subscription. Check the connection and try again.</value>
+  </data>
+  <data name="SvoRaySystemProxyTip" xml:space="preserve">
+    <value>Windows system proxy: browsers and apps that follow it use the VPN</value>
+  </data>
+  <data name="SvoRayTrafficCheckFailed" xml:space="preserve">
+    <value>Traffic is not passing through the VPN. Try another profile or reconnect.</value>
+  </data>
+  <data name="SvoRayTrayConnecting" xml:space="preserve">
+    <value>SvoRay — connecting…</value>
+  </data>
+  <data name="SvoRayTrayError" xml:space="preserve">
+    <value>SvoRay — connection error</value>
+  </data>
+  <data name="SvoRayTrayOff" xml:space="preserve">
+    <value>SvoRay — off</value>
+  </data>
+  <data name="SvoRayTrayOn" xml:space="preserve">
+    <value>SvoRay — on</value>
+  </data>
+  <data name="SvoRayTunMode" xml:space="preserve">
+    <value>TUN mode</value>
+  </data>
+  <data name="SvoRayTunModeTip" xml:space="preserve">
+    <value>Virtual adapter: all system traffic goes through the VPN</value>
+  </data>
+  <data name="SvoRayTunOnDescription" xml:space="preserve">
+    <value>All system traffic goes through the VPN</value>
+  </data>
+  <data name="SvoRayUpdate" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="SvoRayUpdated" xml:space="preserve">
+    <value>Updated</value>
+  </data>
+  <data name="SvoRayUpdating" xml:space="preserve">
+    <value>Updating…</value>
+  </data>
+  <data name="SvoRayViaVpnCount" xml:space="preserve">
+    <value>Via VPN: {0} {1}</value>
+  </data>
+  <data name="SvoRayVpnNotUsed" xml:space="preserve">
+    <value>VPN is not used</value>
+  </data>
+  <data name="SvoRayVpnOff" xml:space="preserve">
+    <value>VPN is off</value>
+  </data>
+  <data name="SvoRayVpnOn" xml:space="preserve">
+    <value>VPN is on</value>
+  </data>
+  <data name="SvoRayVpnSwitchFailed" xml:space="preserve">
+    <value>Could not switch the VPN. Open advanced settings.</value>
+  </data>
+  <data name="SvoRayVpnWorks" xml:space="preserve">
+    <value>VPN is working and traffic goes through the server. Delay: {0}.</value>
+  </data>
+  <data name="SvoRayVpnWorksCountry" xml:space="preserve">
+    <value>VPN is working. Internet exit: {0}. Delay: {1}.</value>
+  </data>
+  <data name="SvoRayWithoutVpnCount" xml:space="preserve">
+    <value>Without VPN: {0} {1}</value>
+  </data>
+  <data name="SvoRayLanguageSaveFailed" xml:space="preserve">
+    <value>Could not save the language selection. Try again.</value>
+  </data>
+  <data name="SvoRayPasteSubscriptionFirst" xml:space="preserve">
+    <value>Paste a subscription link or profile first.</value>
+  </data>
 </root>

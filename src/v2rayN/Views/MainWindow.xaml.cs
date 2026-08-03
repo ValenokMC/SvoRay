@@ -48,6 +48,9 @@ public partial class MainWindow
     /// <summary>Set while the mode radio buttons are being set from the config rather than by the user.</summary>
     private bool _suppressModeEvents;
 
+    /// <summary>Prevents restoring the saved language from being treated as a user change.</summary>
+    private bool _suppressLanguageEvents;
+
     private Size? _simpleSize;
     private Size? _advancedSize;
 
@@ -81,6 +84,8 @@ public partial class MainWindow
         togSvoRayConnect.Click += TogSvoRayConnect_Click;
         rdoModeProxy.Checked += async (_, _) => await ApplyModeAsync(ESvoRayMode.Proxy);
         rdoModeTun.Checked += async (_, _) => await ApplyModeAsync(ESvoRayMode.Tun);
+        rdoLanguageRu.Checked += async (_, _) => await ApplyLanguageAsync("ru");
+        rdoLanguageEn.Checked += async (_, _) => await ApplyLanguageAsync("en");
         menuTrayToggle.Click += MenuTrayToggle_Click;
         menuShowWindow.Click += (_, _) => ShowHideWindow(true);
         menuTrayExit.Click += MenuTrayExit_Click;
@@ -252,7 +257,7 @@ public partial class MainWindow
 
         var appVersion = typeof(MainWindow).Assembly.GetName().Version;
         var displayVersion = appVersion is null ? "dev" : $"{appVersion.Major}.{appVersion.Minor}.{appVersion.Build}";
-        Title = $"SvoRay · {displayVersion} · {(Utils.IsAdministrator() ? "Администратор" : "Обычный режим")}";
+        Title = $"SvoRay · {displayVersion} · {(Utils.IsAdministrator() ? ResUI.SvoRayAdministrator : ResUI.SvoRayStandardMode)}";
         if (_config.UiItem.AutoHideStartup)
         {
             WindowState = WindowState.Minimized;
@@ -276,12 +281,48 @@ public partial class MainWindow
     /// </summary>
     private void InitSimpleMode()
     {
+        _suppressLanguageEvents = true;
+        rdoLanguageRu.IsChecked = _config.UiItem.CurrentLanguage.Equals("ru", StringComparison.OrdinalIgnoreCase);
+        rdoLanguageEn.IsChecked = rdoLanguageRu.IsChecked != true;
+        _suppressLanguageEvents = false;
+
         _suppressModeEvents = true;
         rdoModeProxy.IsChecked = _config.SvoRayItem.Mode == ESvoRayMode.Proxy;
         rdoModeTun.IsChecked = _config.SvoRayItem.Mode == ESvoRayMode.Tun;
         _suppressModeEvents = false;
 
         UpdateRoutingSummary();
+    }
+
+    private async Task ApplyLanguageAsync(string language)
+    {
+        if (_suppressLanguageEvents
+            || _config.UiItem.CurrentLanguage.Equals(language, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var previous = _config.UiItem.CurrentLanguage;
+        _config.UiItem.CurrentLanguage = language;
+        try
+        {
+            await ConfigHandler.SaveConfig(_config);
+            txtLanguageRestartNotice.Text = ResUI.SvoRayLanguageRestartNotice;
+            txtLanguageRestartNotice.Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xC8, 0x6A));
+            txtLanguageRestartNotice.Visibility = Visibility.Visible;
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay language", ex);
+            _config.UiItem.CurrentLanguage = previous;
+            _suppressLanguageEvents = true;
+            rdoLanguageRu.IsChecked = previous.Equals("ru", StringComparison.OrdinalIgnoreCase);
+            rdoLanguageEn.IsChecked = rdoLanguageRu.IsChecked != true;
+            _suppressLanguageEvents = false;
+            txtLanguageRestartNotice.Text = ResUI.SvoRayLanguageSaveFailed;
+            txtLanguageRestartNotice.Foreground = new SolidColorBrush(Color.FromRgb(0xF0, 0xA9, 0xA9));
+            txtLanguageRestartNotice.Visibility = Visibility.Visible;
+        }
     }
 
     #region Event
@@ -427,12 +468,12 @@ public partial class MainWindow
         var value = txtSubscriptionUrl.Text.TrimEx();
         if (value.IsNullOrEmpty())
         {
-            ShowImportError("Сначала вставьте ссылку подписки или профиль.");
+            ShowImportError(ResUI.SvoRayPasteSubscriptionFirst);
             return;
         }
 
         btnImportSubscriptionSimple.IsEnabled = false;
-        txtImportButton.Text = "Импортируем…";
+        txtImportButton.Text = ResUI.SvoRayImporting;
         txtImportStatus.Visibility = Visibility.Collapsed;
         try
         {
@@ -444,18 +485,18 @@ public partial class MainWindow
             }
             else
             {
-                ShowImportError("Не удалось импортировать ссылку. Проверьте её и повторите.");
+                ShowImportError(ResUI.SvoRayImportFailed);
             }
         }
         catch (Exception ex)
         {
             // Log the failure kind only: the exception message can echo the private URL.
             Logging.SaveLog($"SvoRay import failed: {ex.GetType().Name}");
-            ShowImportError("Ошибка импорта. Подробности доступны в расширенном режиме.");
+            ShowImportError(ResUI.SvoRayImportError);
         }
         finally
         {
-            txtImportButton.Text = "Импортировать";
+            txtImportButton.Text = ResUI.SvoRayImport;
             btnImportSubscriptionSimple.IsEnabled = true;
         }
     }
@@ -463,7 +504,7 @@ public partial class MainWindow
     private async void BtnUpdateSimple_Click(object sender, RoutedEventArgs e)
     {
         btnUpdateSimple.IsEnabled = false;
-        txtUpdateSubscription.Text = "Обновляем…";
+        txtUpdateSubscription.Text = ResUI.SvoRayUpdating;
         try
         {
             // A failed download does not throw; the handler reports it through the result.
@@ -472,23 +513,23 @@ public partial class MainWindow
 
             if (updated)
             {
-                txtUpdateSubscription.Text = "Обновлено";
-                ShowSimpleStatus("Список серверов обновлён.", false);
+                txtUpdateSubscription.Text = ResUI.SvoRayUpdated;
+                ShowSimpleStatus(ResUI.SvoRayServerListUpdated, false);
             }
             else
             {
-                ShowSimpleStatus("Не удалось получить подписку. Проверьте соединение и ссылку, затем повторите.", true);
+                ShowSimpleStatus(ResUI.SvoRaySubscriptionDownloadFailed, true);
             }
             await Task.Delay(2000);
         }
         catch (Exception ex)
         {
             Logging.SaveLog($"SvoRay subscription update failed: {ex.GetType().Name}");
-            ShowSimpleStatus("Не удалось обновить подписку. Проверьте соединение и повторите.", true);
+            ShowSimpleStatus(ResUI.SvoRaySubscriptionUpdateFailed, true);
         }
         finally
         {
-            txtUpdateSubscription.Text = "Обновить";
+            txtUpdateSubscription.Text = ResUI.SvoRayUpdate;
             btnUpdateSimple.IsEnabled = true;
         }
     }
@@ -519,7 +560,7 @@ public partial class MainWindow
             {
                 togSvoRayConnect.IsChecked = false;
                 statusBar.SetConnectionState(
-                    ESvoRayConnectionState.Error, "Сначала добавьте подключение и выберите профиль.");
+                    ESvoRayConnectionState.Error, ResUI.SvoRayAddAndSelectProfileFirst);
                 return;
             }
 
@@ -550,7 +591,7 @@ public partial class MainWindow
             Logging.SaveLog("SvoRay connect", ex);
             togSvoRayConnect.IsChecked = MainWindowViewModel.IsSvoRayConnectionRequested(_config);
             statusBar.SetConnectionState(
-                ESvoRayConnectionState.Error, "Не удалось переключить VPN. Откройте расширенные настройки.");
+                ESvoRayConnectionState.Error, ResUI.SvoRayVpnSwitchFailed);
         }
     }
 
@@ -585,7 +626,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             Logging.SaveLog("SvoRay mode", ex);
-            ShowSimpleStatus("Не удалось сменить режим. Откройте расширенные настройки.", true);
+            ShowSimpleStatus(ResUI.SvoRayModeSwitchFailed, true);
         }
     }
 
@@ -613,18 +654,18 @@ public partial class MainWindow
             // rebuilt for the new list to mean anything.
             if (_lastConnectionState is not ESvoRayConnectionState.Off)
             {
-                ShowSimpleStatus("Применяем маршрутизацию…", false);
+                ShowSimpleStatus(ResUI.SvoRayApplyingRouting, false);
                 await ViewModel.Reload();
             }
             else
             {
-                ShowSimpleStatus("Маршрутизация сохранена.", false);
+                ShowSimpleStatus(ResUI.SvoRayRoutingSaved, false);
             }
         }
         catch (Exception ex)
         {
             Logging.SaveLog("SvoRay routing", ex);
-            ShowSimpleStatus("Не удалось сохранить маршрутизацию. Откройте расширенные настройки.", true);
+            ShowSimpleStatus(ResUI.SvoRayRoutingSaveFailed, true);
         }
     }
 
@@ -633,10 +674,10 @@ public partial class MainWindow
         var count = _config.SvoRayItem.RuleDomains.Count;
         txtRoutingSummary.Text = _config.SvoRayItem.RoutingMode switch
         {
-            ESvoRayRoutingMode.ProxyListed when count > 0 => $"Через VPN: {count} {DomainsWord(count)}",
-            ESvoRayRoutingMode.ProxyListed => "VPN не используется",
-            _ when count > 0 => $"Без VPN: {count} {DomainsWord(count)}",
-            _ => "Весь трафик через VPN"
+            ESvoRayRoutingMode.ProxyListed when count > 0 => string.Format(ResUI.SvoRayViaVpnCount, count, DomainsWord(count)),
+            ESvoRayRoutingMode.ProxyListed => ResUI.SvoRayVpnNotUsed,
+            _ when count > 0 => string.Format(ResUI.SvoRayWithoutVpnCount, count, DomainsWord(count)),
+            _ => ResUI.SvoRayAllTrafficViaVpn
         };
     }
 
@@ -646,13 +687,13 @@ public partial class MainWindow
         var ones = count % 10;
         if (tens is >= 11 and <= 14)
         {
-            return "доменов";
+            return ResUI.SvoRayDomainMany;
         }
         return ones switch
         {
-            1 => "домен",
-            2 or 3 or 4 => "домена",
-            _ => "доменов"
+            1 => ResUI.SvoRayDomainOne,
+            2 or 3 or 4 => ResUI.SvoRayDomainFew,
+            _ => ResUI.SvoRayDomainMany
         };
     }
 
@@ -665,8 +706,8 @@ public partial class MainWindow
 
         menuTrayState.Header = WindowsManager.GetNotifyToolTip(state);
         menuTrayToggle.Header = state is ESvoRayConnectionState.On or ESvoRayConnectionState.Connecting
-            ? "Выключить"
-            : "Включить";
+            ? ResUI.SvoRayDisable
+            : ResUI.SvoRayEnable;
         menuTrayToggle.IsEnabled = state != ESvoRayConnectionState.Connecting;
 
         tbNotify.ToolTipText = WindowsManager.GetNotifyToolTip(state);
@@ -703,14 +744,14 @@ public partial class MainWindow
         var indexId = ViewModel?.StatusBarViewModel.SelectedServer?.ID;
         if (indexId.IsNullOrEmpty())
         {
-            ShowSimpleStatus("Сначала выберите профиль.", true);
+            ShowSimpleStatus(ResUI.SvoRaySelectProfileFirst, true);
             return;
         }
 
         var profile = await AppManager.Instance.GetProfileItem(indexId);
         if (profile is null)
         {
-            ShowSimpleStatus("Профиль не найден. Обновите подписку.", true);
+            ShowSimpleStatus(ResUI.SvoRayProfileNotFound, true);
             return;
         }
 
@@ -739,7 +780,7 @@ public partial class MainWindow
         btnCheckPing.IsEnabled = false;
         icoCheckPing.Kind = PackIconKind.TimerSandEmpty;
         icoCheckPing.Foreground = Brushes.White;
-        txtCheckPing.Text = "Проверяем…";
+        txtCheckPing.Text = ResUI.SvoRayChecking;
         txtCheckPing.Foreground = Brushes.White;
 
         try
@@ -750,8 +791,8 @@ public partial class MainWindow
             var delay = await ConnectionHandler.GetRealPingTime(proxy);
             if (delay <= 0)
             {
-                ShowPingFailure("Нет ответа");
-                ShowSimpleStatus("Трафик через VPN не проходит. Попробуйте другой профиль или переподключитесь.", true);
+                ShowPingFailure(ResUI.SvoRayNoResponse);
+                ShowSimpleStatus(ResUI.SvoRayTrafficCheckFailed, true);
                 return;
             }
 
@@ -761,18 +802,19 @@ public partial class MainWindow
             var country = info?.Country;
 
             icoCheckPing.Kind = PackIconKind.ShieldCheck;
-            txtCheckPing.Text = $"{delay} мс";
+            var delayText = string.Format(ResUI.SvoRayMilliseconds, delay);
+            txtCheckPing.Text = delayText;
             var green = new SolidColorBrush(Color.FromRgb(0x5F, 0xE3, 0xB4));
             txtCheckPing.Foreground = green;
             icoCheckPing.Foreground = green;
             ShowSimpleStatus(country.IsNullOrEmpty() || country == "unknown"
-                ? $"VPN работает, трафик идёт через сервер. Задержка {delay} мс."
-                : $"VPN работает, выход в интернет: {country}. Задержка {delay} мс.", false);
+                ? string.Format(ResUI.SvoRayVpnWorks, delayText)
+                : string.Format(ResUI.SvoRayVpnWorksCountry, country, delayText), false);
         }
         catch (Exception ex)
         {
             Logging.SaveLog("SvoRay live check", ex);
-            ShowPingFailure("Ошибка");
+            ShowPingFailure(ResUI.SvoRayError);
         }
         finally
         {
@@ -785,7 +827,7 @@ public partial class MainWindow
         _pingIndexId = indexId;
         btnCheckPing.IsEnabled = false;
         icoCheckPing.Kind = PackIconKind.TimerSandEmpty;
-        txtCheckPing.Text = "Проверяем…";
+        txtCheckPing.Text = ResUI.SvoRayChecking;
         txtCheckPing.Foreground = Brushes.White;
 
         // The run can end without ever reporting a delay - the core may fail to start at all.
@@ -823,12 +865,12 @@ public partial class MainWindow
         if (delay <= 0)
         {
             // The underlying message can carry the server address, so it stays out of simple mode.
-            ShowPingFailure("Нет ответа");
+            ShowPingFailure(ResUI.SvoRayNoResponse);
             return;
         }
 
         icoCheckPing.Kind = PackIconKind.SpeedometerMedium;
-        txtCheckPing.Text = $"{delay} мс";
+        txtCheckPing.Text = string.Format(ResUI.SvoRayMilliseconds, delay);
         var color = delay switch
         {
             < 150 => Color.FromRgb(0x5F, 0xE3, 0xB4),
@@ -844,7 +886,7 @@ public partial class MainWindow
         _pingTimeoutTimer?.Stop();
         _pingIndexId = null;
         btnCheckPing.IsEnabled = true;
-        ShowPingFailure("Нет ответа");
+        ShowPingFailure(ResUI.SvoRayNoResponse);
     }
 
     private void ShowPingFailure(string text)
@@ -854,7 +896,7 @@ public partial class MainWindow
         icoCheckPing.Foreground = red;
         txtCheckPing.Text = text;
         txtCheckPing.Foreground = red;
-        ShowSimpleStatus("Профиль не ответил. Попробуйте другой или обновите подписку.", true);
+        ShowSimpleStatus(ResUI.SvoRayProfileNoResponse, true);
     }
 
     /// <summary>
@@ -869,7 +911,7 @@ public partial class MainWindow
             is ESvoRayConnectionState.Off or ESvoRayConnectionState.On;
         icoCheckPing.Kind = PackIconKind.SpeedometerMedium;
         icoCheckPing.Foreground = Brushes.White;
-        txtCheckPing.Text = "Проверить";
+        txtCheckPing.Text = ResUI.SvoRayCheck;
         txtCheckPing.Foreground = Brushes.White;
     }
 
@@ -890,34 +932,34 @@ public partial class MainWindow
             && _pingIndexId is null;
         btnCheckPing.ToolTip = state switch
         {
-            ESvoRayConnectionState.On => "Проверить, что трафик действительно идёт через VPN",
-            ESvoRayConnectionState.Off => "Измерить задержку выбранного профиля через сам прокси",
-            _ => "Доступно, когда VPN включён или выключен"
+            ESvoRayConnectionState.On => ResUI.SvoRayCheckLiveTip,
+            ESvoRayConnectionState.Off => ResUI.SvoRayCheckProfileTip,
+            _ => ResUI.SvoRayCheckUnavailableTip
         };
 
         switch (state)
         {
             case ESvoRayConnectionState.Connecting:
-                txtConnectionTitle.Text = "Подключение…";
+                txtConnectionTitle.Text = ResUI.SvoRayConnecting;
                 txtConnectionSubtitle.Text = string.Empty;
                 break;
 
             case ESvoRayConnectionState.On:
-                txtConnectionTitle.Text = "VPN включён";
+                txtConnectionTitle.Text = ResUI.SvoRayVpnOn;
                 txtConnectionSubtitle.Text = _config.SvoRayItem.Mode == ESvoRayMode.Proxy
-                    ? "Через прокси идут программы, которые учитывают системные настройки"
-                    : "Через VPN идёт весь трафик системы";
+                    ? ResUI.SvoRayProxyOnDescription
+                    : ResUI.SvoRayTunOnDescription;
                 break;
 
             case ESvoRayConnectionState.Error:
-                txtConnectionTitle.Text = "Ошибка подключения";
+                txtConnectionTitle.Text = ResUI.SvoRayConnectionError;
                 txtConnectionSubtitle.Text = ViewModel?.StatusBarViewModel.ConnectionErrorText
-                    ?? "Не удалось запустить подключение. Подробности — в расширенном режиме.";
+                    ?? ResUI.SvoRayConnectionStartFailed;
                 break;
 
             default:
-                txtConnectionTitle.Text = "VPN выключен";
-                txtConnectionSubtitle.Text = "Выберите профиль и подключитесь";
+                txtConnectionTitle.Text = ResUI.SvoRayVpnOff;
+                txtConnectionSubtitle.Text = ResUI.SvoRaySelectProfileAndConnect;
                 break;
         }
     }

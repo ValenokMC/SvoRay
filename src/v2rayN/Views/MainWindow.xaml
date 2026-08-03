@@ -561,7 +561,7 @@
                             Background="#1FFFFFFF"
                             BorderBrush="#33FFFFFF"
                             BorderThickness="1"
-                            Content="Простой режим"
+                            Content="{x:Static resx:ResUI.SvoRaySimpleMode}"
                             Foreground="White" />
 
                         <materialDesign:PopupBox
@@ -758,7 +758,8 @@
                     </Grid.RowDefinitions>
 
                     <!--  Header  -->
-                    <Grid Grid.Row="0" Margin="2,0,2,12">
+                    <StackPanel Grid.Row="0" Margin="2,0,2,12">
+                        <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -800,33 +801,75 @@
                                 Margin="1,1,0,0"
                                 FontSize="11"
                                 Foreground="#AFC8D5E5"
-                                Text="Личный VPN" />
+                                Text="{x:Static resx:ResUI.SvoRayPersonalVpn}" />
                         </StackPanel>
 
                         <!--
                             Icon only: at phone width a labelled button would take a third of the
                             header row. The tooltip and the automation name carry the wording.
                         -->
-                        <Button
-                            x:Name="btnAdvancedMode"
-                            Grid.Column="2"
-                            Width="38"
-                            Height="38"
-                            Padding="0"
-                            VerticalAlignment="Center"
-                            AutomationProperties.Name="Расширенный режим и настройки"
-                            Background="#18FFFFFF"
-                            BorderBrush="#35FFFFFF"
-                            BorderThickness="1"
-                            Foreground="White"
-                            ToolTip="Расширенный режим и настройки v2rayN">
-                            <materialDesign:PackIcon
-                                Width="19"
-                                Height="19"
-                                Foreground="White"
-                                Kind="TuneVariant" />
-                        </Button>
-                    </Grid>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                <Border
+                                    Width="80"
+                                    Height="38"
+                                    Margin="0,0,8,0"
+                                    Padding="2"
+                                    AutomationProperties.Name="{x:Static resx:ResUI.SvoRayLanguage}"
+                                    Background="#16FFFFFF"
+                                    BorderBrush="#35FFFFFF"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    ToolTip="{x:Static resx:ResUI.SvoRayLanguageTip}">
+                                    <UniformGrid Rows="1">
+                                        <RadioButton
+                                            x:Name="rdoLanguageRu"
+                                            Height="32"
+                                            Padding="6,0"
+                                            Content="RU"
+                                            FontSize="11"
+                                            GroupName="SvoRayLanguage"
+                                            Style="{StaticResource SvoRaySegmentButton}" />
+                                        <RadioButton
+                                            x:Name="rdoLanguageEn"
+                                            Height="32"
+                                            Padding="6,0"
+                                            Content="EN"
+                                            FontSize="11"
+                                            GroupName="SvoRayLanguage"
+                                            Style="{StaticResource SvoRaySegmentButton}" />
+                                    </UniformGrid>
+                                </Border>
+                                <Button
+                                    x:Name="btnAdvancedMode"
+                                    Width="38"
+                                    Height="38"
+                                    Padding="0"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.Name="{x:Static resx:ResUI.SvoRayAdvancedMode}"
+                                    Background="#18FFFFFF"
+                                    BorderBrush="#35FFFFFF"
+                                    BorderThickness="1"
+                                    Foreground="White"
+                                    ToolTip="{x:Static resx:ResUI.SvoRayAdvancedModeTip}">
+                                    <materialDesign:PackIcon
+                                        Width="19"
+                                        Height="19"
+                                        Foreground="White"
+                                        Kind="TuneVariant" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock
+                            x:Name="txtLanguageRestartNotice"
+                            Margin="0,6,0,0"
+                            HorizontalAlignment="Right"
+                            FontSize="10.5"
+                            Foreground="#D8E8C76A"
+                            Text="{x:Static resx:ResUI.SvoRayLanguageRestartNotice}"
+                            TextAlignment="Right"
+                            TextWrapping="Wrap"
+                            Visibility="Collapsed" />
+                    </StackPanel>
 
                     <!--
                         The card scrolls rather than clips. Its height depends on the state - the
@@ -858,7 +901,7 @@
                                     FontSize="20"
                                     FontWeight="SemiBold"
                                     Foreground="White"
-                                    Text="VPN выключен"
+                                    Text="{x:Static resx:ResUI.SvoRayVpnOff}"
                                     TextAlignment="Center"
                                     TextWrapping="Wrap" />
                                 <TextBlock
@@ -867,7 +910,7 @@
                                     HorizontalAlignment="Center"
                                     FontSize="12"
                                     Foreground="#AFC8D5E5"
-                                    Text="Выберите профиль и подключитесь"
+                                    Text="{x:Static resx:ResUI.SvoRaySelectProfileAndConnect}"
                                     TextAlignment="Center"
                                     TextWrapping="Wrap" />
 
@@ -882,18 +925,18 @@
                                     <UniformGrid Rows="1">
                                         <RadioButton
                                             x:Name="rdoModeProxy"
-                                            AutomationProperties.Name="Режим системного прокси"
-                                            Content="Прокси"
+                                            AutomationProperties.Name="{x:Static resx:ResUI.SvoRayProxyMode}"
+                                            Content="{x:Static resx:ResUI.SvoRayProxy}"
                                             GroupName="SvoRayMode"
                                             Style="{StaticResource SvoRaySegmentButton}"
-                                            ToolTip="Системный прокси Windows: через VPN идут браузеры и программы, которые его учитывают" />
+                                            ToolTip="{x:Static resx:ResUI.SvoRaySystemProxyTip}" />
                                         <RadioButton
                                             x:Name="rdoModeTun"
-                                            AutomationProperties.Name="Режим TUN"
+                                            AutomationProperties.Name="{x:Static resx:ResUI.SvoRayTunMode}"
                                             Content="TUN"
                                             GroupName="SvoRayMode"
                                             Style="{StaticResource SvoRaySegmentButton}"
-                                            ToolTip="Виртуальный адаптер: через VPN идёт весь трафик системы" />
+                                            ToolTip="{x:Static resx:ResUI.SvoRayTunModeTip}" />
                                     </UniformGrid>
                                 </Border>
 
@@ -963,7 +1006,7 @@
                                             FontSize="14"
                                             FontWeight="SemiBold"
                                             Foreground="White"
-                                            Text="Добавить подключение" />
+                                            Text="{x:Static resx:ResUI.SvoRayAddConnection}" />
                                         <Button
                                             x:Name="btnCancelImport"
                                             Height="24"
@@ -972,7 +1015,7 @@
                                             VerticalAlignment="Center"
                                             Background="Transparent"
                                             BorderThickness="0"
-                                            Content="Отмена"
+                                            Content="{x:Static resx:ResUI.TbCancel}"
                                             FontSize="11.5"
                                             Foreground="#A7C3D0E0"
                                             Style="{StaticResource MaterialDesignFlatButton}"
@@ -982,7 +1025,7 @@
                                         x:Name="txtSubscriptionUrl"
                                         Height="46"
                                         Padding="13,10"
-                                        materialDesign:HintAssist.Hint="Ссылка подписки или профиль"
+                                        materialDesign:HintAssist.Hint="{x:Static resx:ResUI.SvoRaySubscriptionOrProfile}"
                                         Background="#20FFFFFF"
                                         BorderBrush="#42FFFFFF"
                                         BorderThickness="1"
@@ -1005,7 +1048,7 @@
                                             x:Name="txtImportButton"
                                             VerticalAlignment="Center"
                                             FontWeight="SemiBold"
-                                            Text="Импортировать" />
+                                            Text="{x:Static resx:ResUI.SvoRayImport}" />
                                     </Button>
                                     <TextBlock
                                         x:Name="txtImportStatus"
@@ -1024,7 +1067,7 @@
                                             VerticalAlignment="Center"
                                             FontSize="11"
                                             Foreground="#94B8C6D8"
-                                            Text="ПРОФИЛЬ ПОДКЛЮЧЕНИЯ" />
+                                            Text="{x:Static resx:ResUI.SvoRayConnectionProfile}" />
                                         <Button
                                             x:Name="btnShowImport"
                                             Height="24"
@@ -1033,11 +1076,11 @@
                                             VerticalAlignment="Center"
                                             Background="Transparent"
                                             BorderThickness="0"
-                                            Content="Заменить"
+                                            Content="{x:Static resx:ResUI.SvoRayReplace}"
                                             FontSize="11.5"
                                             Foreground="#9FD9CE"
                                             Style="{StaticResource MaterialDesignFlatButton}"
-                                            ToolTip="Вставить другую ссылку подписки или профиль" />
+                                            ToolTip="{x:Static resx:ResUI.SvoRayReplaceTip}" />
                                     </Grid>
                                     <ComboBox
                                         x:Name="cmbSimpleServers"
@@ -1085,7 +1128,7 @@
                                                     x:Name="txtUpdateSubscription"
                                                     VerticalAlignment="Center"
                                                     FontSize="12.5"
-                                                    Text="Обновить" />
+                                                    Text="{x:Static resx:ResUI.SvoRayUpdate}" />
                                             </StackPanel>
                                         </Button>
                                         <Button
@@ -1097,7 +1140,7 @@
                                             BorderBrush="#35FFFFFF"
                                             BorderThickness="1"
                                             Foreground="White"
-                                            ToolTip="Измерить задержку выбранного профиля через сам прокси">
+                                            ToolTip="{x:Static resx:ResUI.SvoRayCheckProfileTip}">
                                             <StackPanel Orientation="Horizontal">
                                                 <materialDesign:PackIcon
                                                     x:Name="icoCheckPing"
@@ -1111,7 +1154,7 @@
                                                     x:Name="txtCheckPing"
                                                     VerticalAlignment="Center"
                                                     FontSize="12.5"
-                                                    Text="Проверить" />
+                                                    Text="{x:Static resx:ResUI.SvoRayCheck}" />
                                             </StackPanel>
                                         </Button>
                                     </UniformGrid>
@@ -1125,7 +1168,7 @@
                                         BorderBrush="#28FFFFFF"
                                         BorderThickness="1"
                                         Foreground="White"
-                                        ToolTip="Домены, для которых VPN включается или отключается отдельно">
+                                        ToolTip="{x:Static resx:ResUI.SvoRayRoutingTip}">
                                         <!--
                                             The summary takes the flexible column and trims: at phone
                                             width a long one would otherwise push the label out of
@@ -1148,7 +1191,7 @@
                                                 Grid.Column="1"
                                                 VerticalAlignment="Center"
                                                 FontSize="12.5"
-                                                Text="Маршрутизация" />
+                                                Text="{x:Static resx:ResUI.SvoRayRouting}" />
                                             <TextBlock
                                                 x:Name="txtRoutingSummary"
                                                 Grid.Column="2"
@@ -1157,7 +1200,7 @@
                                                 VerticalAlignment="Center"
                                                 FontSize="11.5"
                                                 Foreground="#9FB8C6D8"
-                                                Text="Весь трафик через VPN"
+                                                Text="{x:Static resx:ResUI.SvoRayAllTrafficViaVpn}"
                                                 TextTrimming="CharacterEllipsis" />
                                         </Grid>
                                     </Button>
@@ -1181,7 +1224,7 @@
                         HorizontalAlignment="Center"
                         FontSize="10.5"
                         Foreground="#70AFC1D0"
-                        Text="Работает на открытом движке v2rayN"
+                        Text="{x:Static resx:ResUI.SvoRayPoweredByV2rayN}"
                         TextAlignment="Center"
                         TextWrapping="Wrap" />
                 </Grid>
@@ -1221,18 +1264,18 @@
                         <MenuItem
                             x:Name="menuTrayToggle"
                             Height="{StaticResource MenuItemHeight}"
-                            Header="Включить" />
+                            Header="{x:Static resx:ResUI.SvoRayEnable}" />
                         <MenuItem
                             x:Name="menuTrayProfiles"
                             Height="Auto"
-                            AutomationProperties.Name="Профиль подключения">
+                            AutomationProperties.Name="{x:Static resx:ResUI.SvoRayConnectionProfile}">
                             <MenuItem.Header>
                                 <DockPanel>
                                     <ComboBox
                                         x:Name="cmbTrayServers"
                                         MaxWidth="300"
-                                        materialDesign:HintAssist.Hint="Профиль"
-                                        AutomationProperties.Name="Профиль подключения"
+                                        materialDesign:HintAssist.Hint="{x:Static resx:ResUI.SvoRayProfile}"
+                                        AutomationProperties.Name="{x:Static resx:ResUI.SvoRayConnectionProfile}"
                                         DisplayMemberPath="Text"
                                         FontSize="{DynamicResource StdFontSize}"
                                         Style="{StaticResource MaterialDesignFilledComboBox}" />
@@ -1242,16 +1285,16 @@
                         <MenuItem
                             x:Name="menuTraySubUpdate"
                             Height="{StaticResource MenuItemHeight}"
-                            Header="Обновить подписку" />
+                            Header="{x:Static resx:ResUI.menuSubUpdate}" />
                         <Separator />
                         <MenuItem
                             x:Name="menuShowWindow"
                             Height="{StaticResource MenuItemHeight}"
-                            Header="Открыть окно" />
+                            Header="{x:Static resx:ResUI.SvoRayOpenWindow}" />
                         <MenuItem
                             x:Name="menuTrayExit"
                             Height="{StaticResource MenuItemHeight}"
-                            Header="Выход" />
+                            Header="{x:Static resx:ResUI.menuExit}" />
                     </ContextMenu>
                 </tb:TaskbarIcon.ContextMenu>
             </tb:TaskbarIcon>

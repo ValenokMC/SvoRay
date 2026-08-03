@@ -42,10 +42,10 @@ public sealed class WindowsManager
     {
         return state switch
         {
-            ESvoRayConnectionState.Connecting => "SvoRay — подключение…",
-            ESvoRayConnectionState.On => "SvoRay — включён",
-            ESvoRayConnectionState.Error => "SvoRay — ошибка подключения",
-            _ => "SvoRay — выключен"
+            ESvoRayConnectionState.Connecting => ResUI.SvoRayTrayConnecting,
+            ESvoRayConnectionState.On => ResUI.SvoRayTrayOn,
+            ESvoRayConnectionState.Error => ResUI.SvoRayTrayError,
+            _ => ResUI.SvoRayTrayOff
         };
     }
 

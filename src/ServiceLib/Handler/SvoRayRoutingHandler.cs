@@ -38,7 +38,7 @@ public static class SvoRayRoutingHandler
         // rosreestr.gov.ru, fssp.gov.ru and the rest need no separate entry.
         "gosuslugi.ru",
         "gu-st.ru",
-        "xn--90aijkdmaud0d.xn--p1ai", // госуслуги.рф
+        "xn--90aijkdmaud0d.xn--p1ai", // gosuslugi.rf in punycode.
         "gov.ru",
         "nalog.ru",
         "gibdd.ru",
@@ -245,7 +245,7 @@ public static class SvoRayRoutingHandler
         {
             rules.Add(new RulesItem
             {
-                Remarks = "SvoRay: QUIC через VPN",
+                Remarks = ResUI.SvoRayRuleQuicViaVpn,
                 OutboundTag = Global.BlockTag,
                 Port = "443",
                 Network = "udp",
@@ -257,7 +257,7 @@ public static class SvoRayRoutingHandler
         {
             rules.Add(new RulesItem
             {
-                Remarks = onlyListed ? "SvoRay: только эти домены через VPN" : "SvoRay: эти домены без VPN",
+                Remarks = onlyListed ? ResUI.SvoRayRuleListedViaVpn : ResUI.SvoRayRuleListedWithoutVpn,
                 OutboundTag = listedTag,
                 Domain = domains
             });
@@ -265,13 +265,13 @@ public static class SvoRayRoutingHandler
 
         rules.Add(new RulesItem
         {
-            Remarks = "SvoRay: локальная сеть",
+            Remarks = ResUI.SvoRayRulePrivateNetwork,
             OutboundTag = Global.DirectTag,
             Ip = ["geoip:private"]
         });
         rules.Add(new RulesItem
         {
-            Remarks = "SvoRay: локальные домены",
+            Remarks = ResUI.SvoRayRulePrivateDomains,
             OutboundTag = Global.DirectTag,
             Domain = ["geosite:private"]
         });
@@ -280,7 +280,7 @@ public static class SvoRayRoutingHandler
         {
             rules.Add(new RulesItem
             {
-                Remarks = "SvoRay: QUIC через VPN",
+                Remarks = ResUI.SvoRayRuleQuicViaVpn,
                 OutboundTag = Global.BlockTag,
                 Port = "443",
                 Network = "udp"
@@ -289,7 +289,7 @@ public static class SvoRayRoutingHandler
 
         rules.Add(new RulesItem
         {
-            Remarks = onlyListed ? "SvoRay: остальное напрямую" : "SvoRay: остальное через VPN",
+            Remarks = onlyListed ? ResUI.SvoRayRuleRestDirect : ResUI.SvoRayRuleRestViaVpn,
             OutboundTag = finalTag,
             Port = "0-65535"
         });

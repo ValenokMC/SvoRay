@@ -1830,4 +1830,319 @@
   <data name="TbRootCertificateProviderTip" xml:space="preserve">
     <value>Применяется только к загрузкам и сетевым запросам графического интерфейса v2rayN. Не влияет на проверку сертификатов ядром.</value>
   </data>
++  <data name="SvoRayAdd" xml:space="preserve">
+    <value>Добавить</value>
+  </data>
+  <data name="SvoRayAddAndSelectProfileFirst" xml:space="preserve">
+    <value>Сначала добавьте подключение и выберите профиль.</value>
+  </data>
+  <data name="SvoRayAddConnection" xml:space="preserve">
+    <value>Добавить подключение</value>
+  </data>
+  <data name="SvoRayAddedCount" xml:space="preserve">
+    <value>Добавлено: {0}.</value>
+  </data>
+  <data name="SvoRayAdministrator" xml:space="preserve">
+    <value>Администратор</value>
+  </data>
+  <data name="SvoRayAdvancedMode" xml:space="preserve">
+    <value>Расширенный режим и настройки</value>
+  </data>
+  <data name="SvoRayAdvancedModeTip" xml:space="preserve">
+    <value>Расширенный режим и настройки v2rayN</value>
+  </data>
+  <data name="SvoRayAllDomainsAlreadyListed" xml:space="preserve">
+    <value>Все эти домены уже в списке.</value>
+  </data>
+  <data name="SvoRayAllTrafficViaVpn" xml:space="preserve">
+    <value>Весь трафик через VPN</value>
+  </data>
+  <data name="SvoRayApplyingRouting" xml:space="preserve">
+    <value>Применяем маршрутизацию…</value>
+  </data>
+  <data name="SvoRayCheck" xml:space="preserve">
+    <value>Проверить</value>
+  </data>
+  <data name="SvoRayCheckLiveTip" xml:space="preserve">
+    <value>Проверить, что трафик действительно идёт через VPN</value>
+  </data>
+  <data name="SvoRayCheckProfileTip" xml:space="preserve">
+    <value>Измерить задержку выбранного профиля через сам прокси</value>
+  </data>
+  <data name="SvoRayCheckUnavailableTip" xml:space="preserve">
+    <value>Доступно, когда VPN включён или выключен</value>
+  </data>
+  <data name="SvoRayChecking" xml:space="preserve">
+    <value>Проверяем…</value>
+  </data>
+  <data name="SvoRayCheckingRussiaList" xml:space="preserve">
+    <value>Проверяем актуальный список…</value>
+  </data>
+  <data name="SvoRayConnecting" xml:space="preserve">
+    <value>Подключение…</value>
+  </data>
+  <data name="SvoRayConnectionError" xml:space="preserve">
+    <value>Ошибка подключения</value>
+  </data>
+  <data name="SvoRayConnectionProfile" xml:space="preserve">
+    <value>Профиль подключения</value>
+  </data>
+  <data name="SvoRayConnectionStartFailed" xml:space="preserve">
+    <value>Не удалось запустить подключение. Подробности — в расширенном режиме.</value>
+  </data>
+  <data name="SvoRayDisable" xml:space="preserve">
+    <value>Выключить</value>
+  </data>
+  <data name="SvoRayDomainAlreadyListed" xml:space="preserve">
+    <value>Домен {0} уже в списке.</value>
+  </data>
+  <data name="SvoRayDomainFew" xml:space="preserve">
+    <value>домена</value>
+  </data>
+  <data name="SvoRayDomainListHint" xml:space="preserve">
+    <value>example.com — можно вставить сразу список</value>
+  </data>
+  <data name="SvoRayDomainMany" xml:space="preserve">
+    <value>доменов</value>
+  </data>
+  <data name="SvoRayDomainOne" xml:space="preserve">
+    <value>домен</value>
+  </data>
+  <data name="SvoRayEmptyDomainList" xml:space="preserve">
+    <value>Список пуст. Добавьте домен — поддомены попадут в правило автоматически.</value>
+  </data>
+  <data name="SvoRayEnable" xml:space="preserve">
+    <value>Включить</value>
+  </data>
+  <data name="SvoRayEnterDomain" xml:space="preserve">
+    <value>Введите домен, например example.com.</value>
+  </data>
+  <data name="SvoRayError" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="SvoRayImport" xml:space="preserve">
+    <value>Импортировать</value>
+  </data>
+  <data name="SvoRayImportError" xml:space="preserve">
+    <value>Ошибка импорта. Подробности доступны в расширенном режиме.</value>
+  </data>
+  <data name="SvoRayImportFailed" xml:space="preserve">
+    <value>Не удалось импортировать ссылку. Проверьте её и повторите.</value>
+  </data>
+  <data name="SvoRayImporting" xml:space="preserve">
+    <value>Импортируем…</value>
+  </data>
+  <data name="SvoRayLanguage" xml:space="preserve">
+    <value>Язык</value>
+  </data>
+  <data name="SvoRayLanguageRestartNotice" xml:space="preserve">
+    <value>Язык сохранён. Перезапустите SvoRay, чтобы применить его.</value>
+  </data>
+  <data name="SvoRayLanguageTip" xml:space="preserve">
+    <value>Выберите язык интерфейса. Чтобы применить изменение, перезапустите SvoRay.</value>
+  </data>
+  <data name="SvoRayMilliseconds" xml:space="preserve">
+    <value>{0} мс</value>
+  </data>
+  <data name="SvoRayModeSwitchFailed" xml:space="preserve">
+    <value>Не удалось сменить режим. Откройте расширенные настройки.</value>
+  </data>
+  <data name="SvoRayNoResponse" xml:space="preserve">
+    <value>Нет ответа</value>
+  </data>
+  <data name="SvoRayOpenWindow" xml:space="preserve">
+    <value>Открыть окно</value>
+  </data>
+  <data name="SvoRayPersonalVpn" xml:space="preserve">
+    <value>Личный VPN</value>
+  </data>
+  <data name="SvoRayPoweredByV2rayN" xml:space="preserve">
+    <value>Работает на открытом движке v2rayN</value>
+  </data>
+  <data name="SvoRayPresetAlreadyListed" xml:space="preserve">
+    <value>Набор уже в списке.</value>
+  </data>
+  <data name="SvoRayProfile" xml:space="preserve">
+    <value>Профиль</value>
+  </data>
+  <data name="SvoRayProfileNoResponse" xml:space="preserve">
+    <value>Профиль не ответил. Попробуйте другой или обновите подписку.</value>
+  </data>
+  <data name="SvoRayProfileNotFound" xml:space="preserve">
+    <value>Профиль не найден. Обновите подписку.</value>
+  </data>
+  <data name="SvoRayProxy" xml:space="preserve">
+    <value>Прокси</value>
+  </data>
+  <data name="SvoRayProxyMode" xml:space="preserve">
+    <value>Режим системного прокси</value>
+  </data>
+  <data name="SvoRayProxyOnDescription" xml:space="preserve">
+    <value>Через прокси идут программы, которые учитывают системные настройки</value>
+  </data>
+  <data name="SvoRayRemoveFromList" xml:space="preserve">
+    <value>Удалить из списка</value>
+  </data>
+  <data name="SvoRayReplace" xml:space="preserve">
+    <value>Заменить</value>
+  </data>
+  <data name="SvoRayReplaceTip" xml:space="preserve">
+    <value>Вставить другую ссылку подписки или профиль</value>
+  </data>
+  <data name="SvoRayRouting" xml:space="preserve">
+    <value>Маршрутизация</value>
+  </data>
+  <data name="SvoRayRoutingBypassListed" xml:space="preserve">
+    <value>Всё через VPN, кроме списка</value>
+  </data>
+  <data name="SvoRayRoutingBypassListedDescription" xml:space="preserve">
+    <value>Домены из списка идут напрямую — например банк или локальные сервисы.</value>
+  </data>
+  <data name="SvoRayRoutingHowToApply" xml:space="preserve">
+    <value>КАК ПРИМЕНЯТЬ СПИСОК</value>
+  </data>
+  <data name="SvoRayRoutingModeChangedSuffix" xml:space="preserve">
+    <value> Режим переключён на «всё через VPN, кроме списка».</value>
+  </data>
+  <data name="SvoRayRoutingProxyListed" xml:space="preserve">
+    <value>Через VPN только список</value>
+  </data>
+  <data name="SvoRayRoutingProxyListedDescription" xml:space="preserve">
+    <value>Остальной трафик идёт напрямую. Пустой список означает, что VPN не используется вовсе.</value>
+  </data>
+  <data name="SvoRayRoutingSaveFailed" xml:space="preserve">
+    <value>Не удалось сохранить маршрутизацию. Откройте расширенные настройки.</value>
+  </data>
+  <data name="SvoRayRoutingSaved" xml:space="preserve">
+    <value>Маршрутизация сохранена.</value>
+  </data>
+  <data name="SvoRayRoutingTip" xml:space="preserve">
+    <value>Домены, для которых VPN включается или отключается отдельно</value>
+  </data>
+  <data name="SvoRayRuleListedViaVpn" xml:space="preserve">
+    <value>SvoRay: только эти домены через VPN</value>
+  </data>
+  <data name="SvoRayRuleListedWithoutVpn" xml:space="preserve">
+    <value>SvoRay: эти домены без VPN</value>
+  </data>
+  <data name="SvoRayRulePrivateDomains" xml:space="preserve">
+    <value>SvoRay: локальные домены</value>
+  </data>
+  <data name="SvoRayRulePrivateNetwork" xml:space="preserve">
+    <value>SvoRay: локальная сеть</value>
+  </data>
+  <data name="SvoRayRuleQuicViaVpn" xml:space="preserve">
+    <value>SvoRay: QUIC через VPN</value>
+  </data>
+  <data name="SvoRayRuleRestDirect" xml:space="preserve">
+    <value>SvoRay: остальное напрямую</value>
+  </data>
+  <data name="SvoRayRuleRestViaVpn" xml:space="preserve">
+    <value>SvoRay: остальное через VPN</value>
+  </data>
+  <data name="SvoRayRussiaListDownloadFailedSuffix" xml:space="preserve">
+    <value> Обновить список из интернета не удалось, добавлен встроенный набор.</value>
+  </data>
+  <data name="SvoRayRussiaPreset" xml:space="preserve">
+    <value>Набор для РФ</value>
+  </data>
+  <data name="SvoRayRussiaPresetTip" xml:space="preserve">
+    <value>Госуслуги, банки, Яндекс, VK, маркетплейсы и их CDN — то, что обычно не работает с зарубежного адреса</value>
+  </data>
+  <data name="SvoRaySave" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="SvoRaySelectProfileAndConnect" xml:space="preserve">
+    <value>Выберите профиль и подключитесь</value>
+  </data>
+  <data name="SvoRaySelectProfileFirst" xml:space="preserve">
+    <value>Сначала выберите профиль.</value>
+  </data>
+  <data name="SvoRayServerListUpdated" xml:space="preserve">
+    <value>Список серверов обновлён.</value>
+  </data>
+  <data name="SvoRaySimpleMode" xml:space="preserve">
+    <value>Простой режим</value>
+  </data>
+  <data name="SvoRaySkippedCountSuffix" xml:space="preserve">
+    <value> Пропущено (уже в списке): {0}.</value>
+  </data>
+  <data name="SvoRayStandardMode" xml:space="preserve">
+    <value>Обычный режим</value>
+  </data>
+  <data name="SvoRaySubscriptionDownloadFailed" xml:space="preserve">
+    <value>Не удалось получить подписку. Проверьте соединение и ссылку, затем повторите.</value>
+  </data>
+  <data name="SvoRaySubscriptionOrProfile" xml:space="preserve">
+    <value>Ссылка подписки или профиль</value>
+  </data>
+  <data name="SvoRaySubscriptionUpdateFailed" xml:space="preserve">
+    <value>Не удалось обновить подписку. Проверьте соединение и повторите.</value>
+  </data>
+  <data name="SvoRaySystemProxyTip" xml:space="preserve">
+    <value>Системный прокси Windows: через VPN идут браузеры и программы, которые его учитывают</value>
+  </data>
+  <data name="SvoRayTrafficCheckFailed" xml:space="preserve">
+    <value>Трафик через VPN не проходит. Попробуйте другой профиль или переподключитесь.</value>
+  </data>
+  <data name="SvoRayTrayConnecting" xml:space="preserve">
+    <value>SvoRay — подключение…</value>
+  </data>
+  <data name="SvoRayTrayError" xml:space="preserve">
+    <value>SvoRay — ошибка подключения</value>
+  </data>
+  <data name="SvoRayTrayOff" xml:space="preserve">
+    <value>SvoRay — выключен</value>
+  </data>
+  <data name="SvoRayTrayOn" xml:space="preserve">
+    <value>SvoRay — включён</value>
+  </data>
+  <data name="SvoRayTunMode" xml:space="preserve">
+    <value>Режим TUN</value>
+  </data>
+  <data name="SvoRayTunModeTip" xml:space="preserve">
+    <value>Виртуальный адаптер: через VPN идёт весь трафик системы</value>
+  </data>
+  <data name="SvoRayTunOnDescription" xml:space="preserve">
+    <value>Через VPN идёт весь трафик системы</value>
+  </data>
+  <data name="SvoRayUpdate" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
+  <data name="SvoRayUpdated" xml:space="preserve">
+    <value>Обновлено</value>
+  </data>
+  <data name="SvoRayUpdating" xml:space="preserve">
+    <value>Обновляем…</value>
+  </data>
+  <data name="SvoRayViaVpnCount" xml:space="preserve">
+    <value>Через VPN: {0} {1}</value>
+  </data>
+  <data name="SvoRayVpnNotUsed" xml:space="preserve">
+    <value>VPN не используется</value>
+  </data>
+  <data name="SvoRayVpnOff" xml:space="preserve">
+    <value>VPN выключен</value>
+  </data>
+  <data name="SvoRayVpnOn" xml:space="preserve">
+    <value>VPN включён</value>
+  </data>
+  <data name="SvoRayVpnSwitchFailed" xml:space="preserve">
+    <value>Не удалось переключить VPN. Откройте расширенные настройки.</value>
+  </data>
+  <data name="SvoRayVpnWorks" xml:space="preserve">
+    <value>VPN работает, трафик идёт через сервер. Задержка {0}.</value>
+  </data>
+  <data name="SvoRayVpnWorksCountry" xml:space="preserve">
+    <value>VPN работает, выход в интернет: {0}. Задержка {1}.</value>
+  </data>
+  <data name="SvoRayWithoutVpnCount" xml:space="preserve">
+    <value>Без VPN: {0} {1}</value>
+  </data>
+  <data name="SvoRayLanguageSaveFailed" xml:space="preserve">
+    <value>Не удалось сохранить выбор языка. Повторите попытку.</value>
+  </data>
+  <data name="SvoRayPasteSubscriptionFirst" xml:space="preserve">
+    <value>Сначала вставьте ссылку подписки или профиль.</value>
+  </data>
 </root>

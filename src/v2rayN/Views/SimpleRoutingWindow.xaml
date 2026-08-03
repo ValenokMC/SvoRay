@@ -5,7 +5,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="Маршрутизация"
+    xmlns:resx="clr-namespace:ServiceLib.Resx;assembly=ServiceLib"
+    Title="{x:Static resx:ResUI.SvoRayRouting}"
     Width="520"
     Height="620"
     Background="#141A2E"
@@ -82,7 +83,7 @@
             <TextBlock
                 FontSize="12"
                 Foreground="#94B8C6D8"
-                Text="КАК ПРИМЕНЯТЬ СПИСОК" />
+                Text="{x:Static resx:ResUI.SvoRayRoutingHowToApply}" />
             <RadioButton
                 x:Name="rdoBypassListed"
                 Margin="0,9,0,8"
@@ -93,12 +94,12 @@
                         FontSize="14"
                         FontWeight="SemiBold"
                         Foreground="White"
-                        Text="Всё через VPN, кроме списка" />
+                        Text="{x:Static resx:ResUI.SvoRayRoutingBypassListed}" />
                     <TextBlock
                         Margin="0,3,0,0"
                         FontSize="12"
                         Foreground="#A7C3D0E0"
-                        Text="Домены из списка идут напрямую — например банк или локальные сервисы."
+                        Text="{x:Static resx:ResUI.SvoRayRoutingBypassListedDescription}"
                         TextWrapping="Wrap" />
                 </StackPanel>
             </RadioButton>
@@ -111,12 +112,12 @@
                         FontSize="14"
                         FontWeight="SemiBold"
                         Foreground="White"
-                        Text="Через VPN только список" />
+                        Text="{x:Static resx:ResUI.SvoRayRoutingProxyListed}" />
                     <TextBlock
                         Margin="0,3,0,0"
                         FontSize="12"
                         Foreground="#A7C3D0E0"
-                        Text="Остальной трафик идёт напрямую. Пустой список означает, что VPN не используется вовсе."
+                        Text="{x:Static resx:ResUI.SvoRayRoutingProxyListedDescription}"
                         TextWrapping="Wrap" />
                 </StackPanel>
             </RadioButton>
@@ -132,7 +133,7 @@
                 MinHeight="70"
                 MaxHeight="110"
                 Padding="13,9"
-                materialDesign:HintAssist.Hint="example.com — можно вставить сразу список"
+                materialDesign:HintAssist.Hint="{x:Static resx:ResUI.SvoRayDomainListHint}"
                 AcceptsReturn="True"
                 Background="#1CFFFFFF"
                 BorderBrush="#3CFFFFFF"
@@ -150,7 +151,7 @@
                     x:Name="btnAddDomain"
                     Height="42"
                     BorderThickness="0"
-                    Content="Добавить"
+                    Content="{x:Static resx:ResUI.SvoRayAdd}"
                     Foreground="White">
                     <Button.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
@@ -169,7 +170,7 @@
                     BorderBrush="#35FFFFFF"
                     BorderThickness="1"
                     Foreground="White"
-                    ToolTip="Госуслуги, банки, Яндекс, VK, маркетплейсы и их CDN — то, что обычно не работает с зарубежного адреса">
+                    ToolTip="{x:Static resx:ResUI.SvoRayRussiaPresetTip}">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon
                             Width="17"
@@ -181,7 +182,7 @@
                         <TextBlock
                             VerticalAlignment="Center"
                             FontSize="12.5"
-                            Text="Набор для РФ" />
+                            Text="{x:Static resx:ResUI.SvoRayRussiaPreset}" />
                     </StackPanel>
                 </Button>
             </Grid>
@@ -201,7 +202,7 @@
                     VerticalAlignment="Center"
                     FontSize="12.5"
                     Foreground="#8FB0BFD2"
-                    Text="Список пуст. Добавьте домен — поддомены попадут в правило автоматически."
+                    Text="{x:Static resx:ResUI.SvoRayEmptyDomainList}"
                     TextAlignment="Center"
                     TextWrapping="Wrap" />
                 <ListBox
@@ -252,7 +253,7 @@
                                         Foreground="#E8A9A9"
                                         Style="{StaticResource MaterialDesignFlatButton}"
                                         Tag="{Binding}"
-                                        ToolTip="Удалить из списка">
+                                        ToolTip="{x:Static resx:ResUI.SvoRayRemoveFromList}">
                                         <materialDesign:PackIcon
                                             Width="17"
                                             Height="17"
@@ -288,14 +289,14 @@
                 Background="Transparent"
                 BorderBrush="#35FFFFFF"
                 BorderThickness="1"
-                Content="Отмена"
+                Content="{x:Static resx:ResUI.TbCancel}"
                 Foreground="White" />
             <Button
                 x:Name="btnSave"
                 Width="140"
                 Height="42"
                 BorderThickness="0"
-                Content="Сохранить"
+                Content="{x:Static resx:ResUI.SvoRaySave}"
                 Foreground="White">
                 <Button.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">

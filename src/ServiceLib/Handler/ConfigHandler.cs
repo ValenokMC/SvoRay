@@ -1,4 +1,5 @@
 using System.Data;
+using System.Globalization;
 
 namespace ServiceLib.Handler;
 
@@ -111,9 +112,11 @@ public static class ConfigHandler
 
         if (config.UiItem.CurrentLanguage.IsNullOrEmpty())
         {
-            config.UiItem.CurrentLanguage = Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.CurrentCultureIgnoreCase)
+            var systemLanguage = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            config.UiItem.CurrentLanguage = systemLanguage.Equals("zh", StringComparison.OrdinalIgnoreCase)
                 ? Global.Languages.First()
-                : Global.Languages[2];
+                : Global.Languages.FirstOrDefault(language =>
+                    language.Equals(systemLanguage, StringComparison.OrdinalIgnoreCase)) ?? Global.Languages[2];
         }
 
         config.ConstItem ??= new ConstItem();

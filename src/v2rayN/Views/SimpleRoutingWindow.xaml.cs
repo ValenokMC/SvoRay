@@ -69,7 +69,7 @@ public partial class SimpleRoutingWindow : Window
         var parsed = SvoRayRoutingHandler.ParseDomains(txtDomain.Text);
         if (parsed.Count == 0)
         {
-            ShowStatus("Введите домен, например example.com.", true);
+            ShowStatus(ResUI.SvoRayEnterDomain, true);
             return false;
         }
 
@@ -77,8 +77,8 @@ public partial class SimpleRoutingWindow : Window
         if (added == 0)
         {
             ShowStatus(parsed.Count == 1
-                ? $"Домен {parsed[0]} уже в списке."
-                : "Все эти домены уже в списке.", true);
+                ? string.Format(ResUI.SvoRayDomainAlreadyListed, parsed[0])
+                : ResUI.SvoRayAllDomainsAlreadyListed, true);
             return false;
         }
 
@@ -107,7 +107,7 @@ public partial class SimpleRoutingWindow : Window
         var added = Append(SvoRayRoutingHandler.RussiaPreset);
 
         btnRussiaPreset.IsEnabled = false;
-        ShowStatus("Проверяем актуальный список…", false);
+        ShowStatus(ResUI.SvoRayCheckingRussiaList, false);
         List<string> maintained;
         try
         {
@@ -120,14 +120,16 @@ public partial class SimpleRoutingWindow : Window
 
         added += Append(maintained);
 
-        var message = added == 0 ? "Набор уже в списке." : $"Добавлено: {added}.";
+        var message = added == 0
+            ? ResUI.SvoRayPresetAlreadyListed
+            : string.Format(ResUI.SvoRayAddedCount, added);
         if (maintained.Count == 0)
         {
-            message += " Обновить список из интернета не удалось, добавлен встроенный набор.";
+            message += ResUI.SvoRayRussiaListDownloadFailedSuffix;
         }
         if (switched)
         {
-            message += " Режим переключён на «всё через VPN, кроме списка».";
+            message += ResUI.SvoRayRoutingModeChangedSuffix;
         }
 
         ShowStatus(message, false);
@@ -150,8 +152,10 @@ public partial class SimpleRoutingWindow : Window
 
     private static string DescribeAdded(int added, int skipped)
     {
-        var text = $"Добавлено: {added}.";
-        return skipped > 0 ? $"{text} Пропущено (уже в списке): {skipped}." : text;
+        var text = string.Format(ResUI.SvoRayAddedCount, added);
+        return skipped > 0
+            ? text + string.Format(ResUI.SvoRaySkippedCountSuffix, skipped)
+            : text;
     }
 
     private void BtnRemoveDomain_Click(object sender, RoutedEventArgs e)
