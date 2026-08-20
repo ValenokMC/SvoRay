@@ -27,7 +27,7 @@ Include:
 - logs or screenshots only after removing subscription URLs, UUIDs, passwords, and server
   addresses.
 
-If you cannot use GitHub, contact [@SupporBiBot](https://t.me/SupporBiBot) and ask for a private
+If you cannot use GitHub, contact [@SupporBiBot](https://t.me/SupporBiBot?start=svoray) and ask for a private
 security contact without sending technical details or credentials in the first message.
 
 ## Сообщить об уязвимости

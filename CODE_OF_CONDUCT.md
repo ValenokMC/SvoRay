@@ -51,7 +51,7 @@ an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported privately via
-[@SupporBiBot](https://t.me/SupporBiBot). Do not use a public issue when the report contains
+[@SupporBiBot](https://t.me/SupporBiBot?start=svoray). Do not use a public issue when the report contains
 personal information. All complaints will be reviewed and investigated fairly. Community leaders
 are obligated to respect the privacy and security of the reporter.
 
@@ -120,4 +120,4 @@ ladder](https://github.com/mozilla/diversity).
 Обсуждайте код и идеи, а не личность автора. Не допускаются оскорбления, угрозы, дискриминация,
 спам, накрутка реакций, публикация чужих данных и запросы украденных подписок. Не пересылайте чужие
 логи, ссылки, UUID, пароли или личные сообщения. О нарушении можно сообщить приватно через
-[@SupporBiBot](https://t.me/SupporBiBot).
+[@SupporBiBot](https://t.me/SupporBiBot?start=svoray).
