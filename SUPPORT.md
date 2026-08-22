@@ -12,7 +12,7 @@
 | Не работает, падает, ведёт себя не так | [Открыть issue → Ошибка](https://github.com/ValenokMC/SvoRay/issues/new?template=bug_report.yml) |
 | Вопрос «как сделать» или «почему так» | [Обсуждения → Q&A](https://github.com/ValenokMC/SvoRay/discussions) |
 | Идея или пожелание | [Открыть issue → Предложение](https://github.com/ValenokMC/SvoRay/issues/new?template=feature_request.yml) |
-| Нет аккаунта GitHub, или писать публично неудобно | [Telegram: @SupporBiBot](https://t.me/SupporBiBot) |
+| Нет аккаунта GitHub, или писать публично неудобно | [Telegram: @SupporBiBot](https://t.me/SupporBiBot?start=svoray) |
 | Уязвимость | Не в публичный issue — см. [Безопасность](#безопасность) |
 
 Issue лучше бота: ответ виден следующему, у кого та же проблема, и вопрос не теряется.
@@ -61,7 +61,7 @@ Check [CHANGELOG.md](CHANGELOG.md) first — the problem may already be fixed in
 - **Something is broken** → [open a bug report](https://github.com/ValenokMC/SvoRay/issues/new?template=bug_report.yml)
 - **A question** → [Discussions](https://github.com/ValenokMC/SvoRay/discussions)
 - **An idea** → [open a feature request](https://github.com/ValenokMC/SvoRay/issues/new?template=feature_request.yml)
-- **No GitHub account, or you would rather not post publicly** → [Telegram: @SupporBiBot](https://t.me/SupporBiBot)
+- **No GitHub account, or you would rather not post publicly** → [Telegram: @SupporBiBot](https://t.me/SupporBiBot?start=svoray)
 - **A vulnerability** → [report it privately](https://github.com/ValenokMC/SvoRay/security/advisories/new), never in a public issue
 
 Include the SvoRay version, your Windows version, the connection mode, what you expected, what
