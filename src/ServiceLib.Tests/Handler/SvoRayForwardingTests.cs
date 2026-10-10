@@ -120,3 +120,22 @@ public class SvoRayForwardingTests : IDisposable
         _commands.Should().BeEmpty();
     }
 }
+
+/// <summary>The real reader, on the machine the tests run on: it must answer per adapter.</summary>
+[Collection("SvoRayForwarding")]
+public class SvoRayForwardingReaderTests
+{
+    [Fact]
+    public void IsForwardingEnabled_ShouldReadTheLoopbackInterfacesOwnFlag()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        // Index 1 is Windows' loopback pseudo-interface; .NET's own property would not even
+        // tell which adapter it describes, only the global switch.
+        SvoRayForwarding.IsForwardingEnabled(1).Should().NotBeNull();
+        SvoRayForwarding.IsForwardingEnabled(int.MaxValue).Should().BeNull();
+    }
+}

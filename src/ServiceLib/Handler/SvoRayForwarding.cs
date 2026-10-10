@@ -129,20 +129,39 @@ public static class SvoRayForwarding
         }
     }
 
+    /// <summary>
+    /// The adapter's own forwarding flag. .NET's <c>IPv4InterfaceProperties.IsForwardingEnabled</c>
+    /// cannot be used: on Windows it reports the global routing switch, which is off even while
+    /// an adapter forwards, so it said "off" on exactly the PCs this guard exists for.
+    /// </summary>
     private static bool? ReadForwarding(int interfaceIndex)
     {
-        try
-        {
-            return NetworkInterface.GetAllNetworkInterfaces()
-                .Select(n => n.GetIPProperties().GetIPv4Properties())
-                .FirstOrDefault(p => p?.Index == interfaceIndex)
-                ?.IsForwardingEnabled;
-        }
-        catch (Exception ex) when (ex is NetworkInformationException or PlatformNotSupportedException)
+        if (!OperatingSystem.IsWindows())
         {
             return null;
         }
+
+        // MIB_IPINTERFACE_ROW: Family at 0, the 8-byte InterfaceLuid at 8, InterfaceIndex at 16,
+        // ForwardingEnabled at 41. 512 bytes is well over the structure's size.
+        var row = Marshal.AllocHGlobal(512);
+        try
+        {
+            for (var i = 0; i < 512; i++)
+            {
+                Marshal.WriteByte(row, i, 0);
+            }
+            Marshal.WriteInt16(row, 0, 2);
+            Marshal.WriteInt32(row, 16, interfaceIndex);
+            return GetIpInterfaceEntry(row) == 0 ? Marshal.ReadByte(row, 41) != 0 : null;
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(row);
+        }
     }
+
+    [DllImport("iphlpapi.dll")]
+    private static extern int GetIpInterfaceEntry(IntPtr row);
 
     private static int? ReadInterfaceIndex(string name)
     {
