@@ -66,6 +66,8 @@ Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
 ; flag the launch fails with error 740. The flag reuses the token Setup already has, so the
 ; user is not asked to confirm UAC a second time.
 Filename: "{app}\{#AppExe}"; Description: "Запустить {#AppName}"; Flags: nowait postinstall skipifsilent runascurrentuser
+; An update started from SvoRay itself runs /SILENT and passes /LAUNCH=1: bring the new version back.
+Filename: "{app}\{#AppExe}"; Flags: nowait skipifnotsilent runascurrentuser; Check: LaunchAfterSilentUpdate
 
 [UninstallDelete]
 ; Anything the app generated inside its own program folder.
@@ -106,6 +108,11 @@ begin
   StopProcess('xray.exe');
   StopProcess('sing-box.exe');
   Sleep(1200);
+end;
+
+function LaunchAfterSilentUpdate(): Boolean;
+begin
+  Result := ExpandConstant('{param:LAUNCH|0}') = '1';
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;

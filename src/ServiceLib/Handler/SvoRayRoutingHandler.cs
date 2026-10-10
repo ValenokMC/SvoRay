@@ -254,7 +254,7 @@ public static class SvoRayRoutingHandler
             ServerProfile = profile,
             GeoSiteTags = siteTags,
             GeoIpTags = ipTags,
-            GameFolders = settings.GameMode ? SvoRayGames.FindGameFolders() : [],
+            GameFolders = settings.GameMode ? SvoRayGames.FindGameFolders(settings.CustomGameFolders) : [],
         };
 
         static IReadOnlySet<string>? ReadTags(string fileName)
@@ -265,23 +265,40 @@ public static class SvoRayRoutingHandler
     }
 
     /// <summary>
-    /// The profile of the subscription the selected server came from; failing that, the first
-    /// subscription that has one - simple mode usually holds a single subscription anyway.
+    /// The profile of the subscription the selected server came from, and only that one. With
+    /// several subscriptions another provider's rules must not apply, and a server added on its
+    /// own has no provider whose rules it could inherit.
     /// </summary>
-    private static async Task<SvoRayServerRoutingProfile?> FindServerProfileAsync(Config config)
+    public static async Task<SvoRayServerRoutingProfile?> FindServerProfileAsync(Config config)
+    {
+        var sub = await FindSelectedSubscriptionAsync(config);
+        return SvoRayServerRouting.Parse(sub?.RoutingProfile);
+    }
+
+    /// <summary>The subscription of the selected server; null for a server added on its own.</summary>
+    public static async Task<SubItem?> FindSelectedSubscriptionAsync(Config config)
     {
         var node = await AppManager.Instance.GetProfileItem(config.IndexId);
-        var sub = node?.Subid.IsNotEmpty() == true ? await AppManager.Instance.GetSubItem(node.Subid) : null;
-        var profile = SvoRayServerRouting.Parse(sub?.RoutingProfile);
-        if (profile is not null)
+        return node?.Subid.IsNotEmpty() == true ? await AppManager.Instance.GetSubItem(node.Subid) : null;
+    }
+
+    /// <summary>
+    /// Rebuilds the simple profile when it is the active one. Called when another server is
+    /// picked: its subscription may send other rules, and the reload that follows would otherwise
+    /// keep the previous provider's rules and the game folders found at connect.
+    /// </summary>
+    public static async Task RefreshIfActiveAsync(Config config)
+    {
+        if (config.SvoRayItem?.RoutingId.IsNullOrEmpty() != false)
         {
-            return profile;
+            return;
         }
 
-        var subs = await AppManager.Instance.SubItems() ?? [];
-        return subs
-            .Select(s => SvoRayServerRouting.Parse(s.RoutingProfile))
-            .FirstOrDefault(p => p is not null);
+        var items = await AppManager.Instance.RoutingItems() ?? [];
+        if (items.Any(t => t.Id == config.SvoRayItem.RoutingId && t.IsActive))
+        {
+            await ApplyAsync(config);
+        }
     }
 
     public static List<RulesItem> BuildRules(SvoRayItem settings)

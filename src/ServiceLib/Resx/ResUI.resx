@@ -2005,7 +2005,7 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
     <value>Replace</value>
   </data>
   <data name="SvoRayReplaceTip" xml:space="preserve">
-    <value>Paste another subscription link or profile</value>
+    <value>Swap the current subscription or server for another link</value>
   </data>
   <data name="SvoRayRouting" xml:space="preserve">
     <value>Routing</value>
@@ -2097,9 +2097,6 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="SvoRaySubscriptionUpdateFailed" xml:space="preserve">
     <value>Could not update the subscription. Check the connection and try again.</value>
   </data>
-  <data name="SvoRaySystemProxyTip" xml:space="preserve">
-    <value>Windows system proxy: browsers and apps that follow it use the VPN</value>
-  </data>
   <data name="SvoRayTrafficCheckFailed" xml:space="preserve">
     <value>Traffic is not passing through the VPN. Try another profile or reconnect.</value>
   </data>
@@ -2118,20 +2115,11 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="SvoRayTunMode" xml:space="preserve">
     <value>TUN mode</value>
   </data>
-  <data name="SvoRayTunModeTip" xml:space="preserve">
-    <value>Virtual adapter: all system traffic goes through the VPN</value>
-  </data>
   <data name="SvoRayTunOnDescription" xml:space="preserve">
     <value>All system traffic goes through the VPN</value>
   </data>
   <data name="SvoRayUpdate" xml:space="preserve">
     <value>Update</value>
-  </data>
-  <data name="SvoRayUpdated" xml:space="preserve">
-    <value>Updated</value>
-  </data>
-  <data name="SvoRayUpdating" xml:space="preserve">
-    <value>Updating…</value>
   </data>
   <data name="SvoRayViaVpnCount" xml:space="preserve">
     <value>Via VPN: {0} {1}</value>
@@ -2232,11 +2220,121 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="SvoRayRoutingServerPlus" xml:space="preserve">
     <value>Server + {0} {1}</value>
   </data>
-  <data name="SvoRayModeHelp" xml:space="preserve">
-    <value>About the modes</value>
+  <data name="SvoRayProxyModeHint" xml:space="preserve">
+    <value>Browsers and apps using the Windows system proxy go through the VPN; games and Discord bypass it. No admin rights needed.</value>
   </data>
-  <data name="SvoRayModeHint" xml:space="preserve">
-    <value>Proxy — programs that use the Windows system proxy go through the VPN, mostly browsers. Games and most other programs go direct. No administrator rights needed.
-TUN — a virtual network adapter: all of the computer's traffic goes through the VPN. Requires running as administrator. Game mode works in TUN.</value>
+  <data name="SvoRayTunModeHint" xml:space="preserve">
+    <value>All computer traffic goes through the VPN, games and Discord too; game mode works. Needs admin rights (virtual adapter).</value>
+  </data>
+  <data name="SvoRayAboutProxyMode" xml:space="preserve">
+    <value>About Proxy mode</value>
+  </data>
+  <data name="SvoRayAboutTunMode" xml:space="preserve">
+    <value>About TUN mode</value>
+  </data>
+  <data name="SvoRayAddTip" xml:space="preserve">
+    <value>Add another subscription or server; the current ones stay</value>
+  </data>
+  <data name="SvoRayReplaceConnection" xml:space="preserve">
+    <value>Replace connection</value>
+  </data>
+  <data name="SvoRayUpdateSubscriptions" xml:space="preserve">
+    <value>Update subscriptions</value>
+  </data>
+  <data name="SvoRayMore" xml:space="preserve">
+    <value>More</value>
+  </data>
+  <data name="SvoRayRemoveSubscription" xml:space="preserve">
+    <value>Remove subscription “{0}”</value>
+  </data>
+  <data name="SvoRayRemoveServer" xml:space="preserve">
+    <value>Remove server “{0}”</value>
+  </data>
+  <data name="SvoRayRemoveSubscriptionConfirm" xml:space="preserve">
+    <value>Remove subscription “{0}” and all of its servers ({1})?</value>
+  </data>
+  <data name="SvoRayRemoveServerConfirm" xml:space="preserve">
+    <value>Remove server “{0}”?</value>
+  </data>
+  <data name="SvoRayRemoved" xml:space="preserve">
+    <value>Removed.</value>
+  </data>
+  <data name="SvoRayRemoveFailed" xml:space="preserve">
+    <value>Could not remove it.</value>
+  </data>
+  <data name="SvoRayCheckForUpdates" xml:space="preserve">
+    <value>Check for updates</value>
+  </data>
+  <data name="SvoRayCheckingUpdates" xml:space="preserve">
+    <value>Checking…</value>
+  </data>
+  <data name="SvoRayLatestVersion" xml:space="preserve">
+    <value>Up to date</value>
+  </data>
+  <data name="SvoRayUpdateTo" xml:space="preserve">
+    <value>Update to {0}</value>
+  </data>
+  <data name="SvoRayDownloadingUpdate" xml:space="preserve">
+    <value>Downloading… {0}%</value>
+  </data>
+  <data name="SvoRayUpdateTip" xml:space="preserve">
+    <value>SvoRay updates from GitHub</value>
+  </data>
+  <data name="SvoRayUpdateCheckFailed" xml:space="preserve">
+    <value>Could not reach GitHub.</value>
+  </data>
+  <data name="SvoRayUpdateDownloadFailed" xml:space="preserve">
+    <value>Could not download the update.</value>
+  </data>
+  <data name="SvoRayUpdateHashMismatch" xml:space="preserve">
+    <value>The update failed its SHA-256 check and will not be run.</value>
+  </data>
+  <data name="SvoRayUpdateLaunchFailed" xml:space="preserve">
+    <value>Could not start the installer.</value>
+  </data>
+  <data name="SvoRayUpdateTitle" xml:space="preserve">
+    <value>SvoRay update</value>
+  </data>
+  <data name="SvoRayUpdateQuestion" xml:space="preserve">
+    <value>Install SvoRay {0}? You have {1}.</value>
+  </data>
+  <data name="SvoRayUpdateDetails" xml:space="preserve">
+    <value>SvoRay will download the installer from GitHub and check its checksum. Then the VPN is turned off and SvoRay closes; it starts again once the update is installed.</value>
+  </data>
+  <data name="SvoRayWhatsNew" xml:space="preserve">
+    <value>What's new in {0}</value>
+  </data>
+  <data name="SvoRayInstall" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="SvoRayLater" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="SvoRayCustomGameFolders" xml:space="preserve">
+    <value>YOUR GAME FOLDERS</value>
+  </data>
+  <data name="SvoRayCustomGameFoldersTip" xml:space="preserve">
+    <value>With game mode on, everything started from these folders bypasses the VPN. For games SvoRay did not find by itself.</value>
+  </data>
+  <data name="SvoRayAddGameFolder" xml:space="preserve">
+    <value>Add a game folder</value>
+  </data>
+  <data name="SvoRayGameFolderMissing" xml:space="preserve">
+    <value>That folder does not exist.</value>
+  </data>
+  <data name="SvoRayGameFolderTooBroad" xml:space="preserve">
+    <value>Too broad: a drive root, Windows, Program Files or a whole profile. Pick the game's own folder.</value>
+  </data>
+  <data name="SvoRayGameFolderSvoRay" xml:space="preserve">
+    <value>That is SvoRay's own folder; it cannot bypass the VPN.</value>
+  </data>
+  <data name="SvoRayGameFolderAdded" xml:space="preserve">
+    <value>Folder added.</value>
+  </data>
+  <data name="SvoRayGameFolderAlreadyListed" xml:space="preserve">
+    <value>That folder is already listed.</value>
+  </data>
+  <data name="SvoRayRemove" xml:space="preserve">
+    <value>Remove</value>
   </data>
 </root>

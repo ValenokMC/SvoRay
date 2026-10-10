@@ -572,63 +572,58 @@
                                 Text="{x:Static resx:ResUI.SvoRaySelectProfileAndConnect}"
                                 TextAlignment="Center" />
 
-                            <!--  Proxy on the left, TUN on the right, as in 0.4.0; the "i" explains both  -->
+                            <!--
+                                Proxy on the left, TUN on the right, as in 0.4.0: the full width, two equal
+                                halves. Each half has its own "i", laid over the segment rather than inside
+                                the button, so pointing at it or clicking it never switches the mode.
+                            -->
                             <Grid Margin="0,20,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <Border Style="{StaticResource SvoRay.SegmentHost}">
+                                <Border x:Name="segMode" Style="{StaticResource SvoRay.SegmentHost}">
                                     <UniformGrid Rows="1">
                                         <RadioButton
                                             x:Name="rdoModeProxy"
                                             AutomationProperties.Name="{x:Static resx:ResUI.SvoRayProxyMode}"
                                             Content="{x:Static resx:ResUI.SvoRayProxy}"
                                             GroupName="SvoRayMode"
-                                            Style="{StaticResource SvoRaySegmentButton}"
-                                            ToolTip="{x:Static resx:ResUI.SvoRaySystemProxyTip}" />
+                                            Style="{StaticResource SvoRaySegmentButton}" />
                                         <RadioButton
                                             x:Name="rdoModeTun"
                                             AutomationProperties.Name="{x:Static resx:ResUI.SvoRayTunMode}"
                                             Content="TUN"
                                             GroupName="SvoRayMode"
-                                            Style="{StaticResource SvoRaySegmentButton}"
-                                            ToolTip="{x:Static resx:ResUI.SvoRayTunModeTip}" />
+                                            Style="{StaticResource SvoRaySegmentButton}" />
                                     </UniformGrid>
                                 </Border>
-                                <!--
-                                    A Label rather than a Border so screen readers find it and read the hint;
-                                    the transparent background makes the whole 36 px square show it, not just the glyph.
-                                -->
-                                <Label
-                                    x:Name="iconModeHelp"
-                                    Grid.Column="1"
-                                    Width="36"
-                                    Height="36"
-                                    Margin="6,0,-6,0"
-                                    Padding="0"
-                                    HorizontalContentAlignment="Center"
-                                    VerticalContentAlignment="Center"
-                                    AutomationProperties.HelpText="{x:Static resx:ResUI.SvoRayModeHint}"
-                                    AutomationProperties.Name="{x:Static resx:ResUI.SvoRayModeHelp}"
-                                    Background="Transparent"
-                                    Focusable="True"
-                                    FocusVisualStyle="{x:Null}"
-                                    Style="{x:Null}"
-                                    ToolTipService.InitialShowDelay="150"
-                                    ToolTipService.Placement="Left"
-                                    ToolTipService.ShowDuration="60000">
-                                    <Label.ToolTip>
-                                        <ToolTip>
-                                            <TextBlock Text="{x:Static resx:ResUI.SvoRayModeHint}" TextWrapping="Wrap" />
-                                        </ToolTip>
-                                    </Label.ToolTip>
-                                    <materialDesign:PackIcon
-                                        Width="19"
-                                        Height="19"
-                                        Foreground="{x:Static common:SvoRayPalette.TextSecondary}"
-                                        Kind="InformationOutline" />
-                                </Label>
+                                <UniformGrid Margin="3" Rows="1">
+                                    <Label
+                                        x:Name="iconProxyHelp"
+                                        Margin="0,0,4,0"
+                                        HorizontalAlignment="Right"
+                                        AutomationProperties.HelpText="{x:Static resx:ResUI.SvoRayProxyModeHint}"
+                                        AutomationProperties.Name="{x:Static resx:ResUI.SvoRayAboutProxyMode}"
+                                        Style="{StaticResource SvoRay.HelpMark}"
+                                        ToolTipService.PlacementTarget="{Binding ElementName=segMode}">
+                                        <Label.ToolTip>
+                                            <ToolTip>
+                                                <TextBlock Text="{x:Static resx:ResUI.SvoRayProxyModeHint}" TextWrapping="Wrap" />
+                                            </ToolTip>
+                                        </Label.ToolTip>
+                                    </Label>
+                                    <Label
+                                        x:Name="iconTunHelp"
+                                        Margin="0,0,4,0"
+                                        HorizontalAlignment="Right"
+                                        AutomationProperties.HelpText="{x:Static resx:ResUI.SvoRayTunModeHint}"
+                                        AutomationProperties.Name="{x:Static resx:ResUI.SvoRayAboutTunMode}"
+                                        Style="{StaticResource SvoRay.HelpMark}"
+                                        ToolTipService.PlacementTarget="{Binding ElementName=segMode}">
+                                        <Label.ToolTip>
+                                            <ToolTip>
+                                                <TextBlock Text="{x:Static resx:ResUI.SvoRayTunModeHint}" TextWrapping="Wrap" />
+                                            </ToolTip>
+                                        </Label.ToolTip>
+                                    </Label>
+                                </UniformGrid>
                             </Grid>
 
                             <!--  ImportState: shown while no profile exists, or on explicit "add or replace"  -->
@@ -637,6 +632,7 @@
                                     <TextBlock
                                         FontSize="14"
                                         FontWeight="SemiBold"
+                                        x:Name="txtImportTitle"
                                         Style="{StaticResource SvoRay.Body}"
                                         Text="{x:Static resx:ResUI.SvoRayAddConnection}" />
                                     <Button
@@ -670,18 +666,68 @@
                                 x:Name="ProfilesStatePanel"
                                 Margin="0,20,0,0"
                                 Visibility="Collapsed">
+                                <!--
+                                    Everything about where servers come from sits on this line: refresh
+                                    every subscription, add another source, replace the current one, and
+                                    a short menu to remove one.
+                                -->
                                 <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
                                     <TextBlock Style="{StaticResource SvoRay.Label}" Text="{x:Static resx:ResUI.SvoRayServer}" />
-                                    <Button
-                                        x:Name="btnShowImport"
-                                        Height="26"
-                                        Margin="0,-6,-6,0"
-                                        HorizontalAlignment="Right"
+                                    <StackPanel
+                                        Grid.Column="1"
+                                        Margin="0,-7,-6,0"
                                         VerticalAlignment="Top"
-                                        Content="{x:Static resx:ResUI.SvoRayReplace}"
-                                        FontSize="12"
-                                        Style="{StaticResource SvoRay.GhostButton}"
-                                        ToolTip="{x:Static resx:ResUI.SvoRayReplaceTip}" />
+                                        Orientation="Horizontal">
+                                        <Button
+                                            x:Name="btnUpdateSubscriptions"
+                                            Width="28"
+                                            Height="26"
+                                            AutomationProperties.Name="{x:Static resx:ResUI.SvoRayUpdateSubscriptions}"
+                                            Style="{StaticResource SvoRay.IconButton}"
+                                            ToolTip="{x:Static resx:ResUI.SvoRayUpdateSubscriptions}">
+                                            <materialDesign:PackIcon
+                                                Width="15"
+                                                Height="15"
+                                                Kind="Refresh"
+                                                RenderTransformOrigin="0.5,0.5">
+                                                <materialDesign:PackIcon.RenderTransform>
+                                                    <RotateTransform x:Name="rotUpdateSubscriptions" />
+                                                </materialDesign:PackIcon.RenderTransform>
+                                            </materialDesign:PackIcon>
+                                        </Button>
+                                        <Button
+                                            x:Name="btnAddSource"
+                                            Height="26"
+                                            Padding="8,0"
+                                            Content="{x:Static resx:ResUI.SvoRayAdd}"
+                                            FontSize="12"
+                                            Style="{StaticResource SvoRay.GhostButton}"
+                                            ToolTip="{x:Static resx:ResUI.SvoRayAddTip}" />
+                                        <Button
+                                            x:Name="btnShowImport"
+                                            Height="26"
+                                            Padding="8,0"
+                                            Content="{x:Static resx:ResUI.SvoRayReplace}"
+                                            FontSize="12"
+                                            Style="{StaticResource SvoRay.GhostButton}"
+                                            ToolTip="{x:Static resx:ResUI.SvoRayReplaceTip}" />
+                                        <Button
+                                            x:Name="btnSourceMenu"
+                                            Width="28"
+                                            Height="26"
+                                            AutomationProperties.Name="{x:Static resx:ResUI.SvoRayMore}"
+                                            Style="{StaticResource SvoRay.IconButton}"
+                                            ToolTip="{x:Static resx:ResUI.SvoRayMore}">
+                                            <materialDesign:PackIcon
+                                                Width="16"
+                                                Height="16"
+                                                Kind="DotsHorizontal" />
+                                        </Button>
+                                    </StackPanel>
                                 </Grid>
                                 <!--
                                     The delay sits inside the server row, where it belongs: it is a
@@ -726,6 +772,15 @@
                                         </StackPanel>
                                     </Button>
                                 </Grid>
+
+                                <!--  The quota of the selected server's subscription, under that server  -->
+                                <TextBlock
+                                    x:Name="txtUsage"
+                                    Margin="4,6,4,0"
+                                    FontSize="12"
+                                    Foreground="{x:Static common:SvoRayPalette.TextMuted}"
+                                    TextTrimming="CharacterEllipsis"
+                                    Visibility="Collapsed" />
 
                                 <ToggleButton
                                     x:Name="togGameMode"
@@ -792,39 +847,41 @@
                         </StackPanel>
                     </ScrollViewer>
 
-                    <!--  Footer: subscription refresh and traffic on the left, language on the right  -->
+                    <!--  Footer: SvoRay's own update on the left, language on the right  -->
                     <Grid Grid.Row="2" Margin="0,10,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Orientation="Horizontal">
-                            <Button
-                                x:Name="btnUpdateSimple"
-                                Margin="-8,0,4,0"
-                                Style="{StaticResource SvoRay.GhostButton}"
-                                ToolTip="{x:Static resx:ResUI.menuSubUpdate}">
-                                <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon
-                                        Width="15"
-                                        Height="15"
-                                        Margin="0,0,6,0"
-                                        VerticalAlignment="Center"
-                                        Kind="Refresh" />
-                                    <TextBlock
-                                        x:Name="txtUpdateSubscription"
-                                        VerticalAlignment="Center"
-                                        Text="{x:Static resx:ResUI.SvoRayUpdate}" />
-                                </StackPanel>
-                            </Button>
-                            <TextBlock
-                                x:Name="txtUsage"
-                                FontSize="12"
-                                Foreground="{x:Static common:SvoRayPalette.TextMuted}"
-                                TextTrimming="CharacterEllipsis"
-                                VerticalAlignment="Center"
-                                Visibility="Collapsed" />
-                        </StackPanel>
+                        <Button
+                            x:Name="btnAppUpdate"
+                            Margin="-8,0,8,0"
+                            HorizontalAlignment="Left"
+                            Style="{StaticResource SvoRay.GhostButton}"
+                            ToolTip="{x:Static resx:ResUI.SvoRayUpdateTip}">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse
+                                    x:Name="dotAppUpdate"
+                                    Width="7"
+                                    Height="7"
+                                    Margin="0,0,7,0"
+                                    VerticalAlignment="Center"
+                                    Fill="{x:Static common:SvoRayPalette.Accent}"
+                                    Visibility="Collapsed" />
+                                <materialDesign:PackIcon
+                                    x:Name="icoAppUpdate"
+                                    Width="15"
+                                    Height="15"
+                                    Margin="0,0,6,0"
+                                    VerticalAlignment="Center"
+                                    Kind="Update" />
+                                <TextBlock
+                                    x:Name="txtAppUpdate"
+                                    VerticalAlignment="Center"
+                                    Text="{x:Static resx:ResUI.SvoRayCheckForUpdates}"
+                                    TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Button>
                         <Border
                             Grid.Column="1"
                             Padding="2"
@@ -878,47 +935,75 @@
                 NoLeftClickDelay="True"
                 ToolTipText="SvoRay">
                 <tb:TaskbarIcon.ContextMenu>
-                    <ContextMenu Style="{StaticResource DefContextMenu}">
+                    <!--  The same dark card as the "..." menu of the main screen  -->
+                    <ContextMenu Style="{StaticResource SvoRay.ContextMenu}">
                         <MenuItem
                             x:Name="menuTrayState"
-                            Height="{StaticResource MenuItemHeight}"
                             Header="SvoRay"
-                            IsHitTestVisible="False" />
-                        <Separator />
-                        <MenuItem
-                            x:Name="menuTrayToggle"
-                            Height="{StaticResource MenuItemHeight}"
-                            Header="{x:Static resx:ResUI.SvoRayEnable}" />
+                            Style="{StaticResource SvoRay.MenuCaption}" />
+                        <Separator Style="{StaticResource SvoRay.MenuSeparator}" />
+                        <MenuItem x:Name="menuTrayToggle" Header="{x:Static resx:ResUI.SvoRayEnable}">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon
+                                    Width="16"
+                                    Height="16"
+                                    Foreground="{x:Static common:SvoRayPalette.Accent}"
+                                    Kind="Power" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <!--
+                            Stays open on click: the selector inside it opens its own list, and a
+                            click on it must not count as choosing a menu command.
+                        -->
                         <MenuItem
                             x:Name="menuTrayProfiles"
-                            Height="Auto"
-                            AutomationProperties.Name="{x:Static resx:ResUI.SvoRayConnectionProfile}">
+                            AutomationProperties.Name="{x:Static resx:ResUI.SvoRayConnectionProfile}"
+                            Cursor="Arrow"
+                            StaysOpenOnClick="True">
                             <MenuItem.Header>
-                                <DockPanel>
-                                    <ComboBox
-                                        x:Name="cmbTrayServers"
-                                        MaxWidth="300"
-                                        materialDesign:HintAssist.Hint="{x:Static resx:ResUI.SvoRayProfile}"
-                                        AutomationProperties.Name="{x:Static resx:ResUI.SvoRayConnectionProfile}"
-                                        DisplayMemberPath="Text"
-                                        FontSize="{DynamicResource StdFontSize}"
-                                        Style="{StaticResource MaterialDesignFilledComboBox}" />
-                                </DockPanel>
+                                <!--  SvoRay.ComboBox shows items through a template, so DisplayMemberPath would print the type name  -->
+                                <ComboBox
+                                    x:Name="cmbTrayServers"
+                                    Width="256"
+                                    Height="40"
+                                    AutomationProperties.Name="{x:Static resx:ResUI.SvoRayConnectionProfile}"
+                                    Style="{StaticResource SvoRay.ComboBox}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Text}" TextTrimming="CharacterEllipsis" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
                             </MenuItem.Header>
                         </MenuItem>
-                        <MenuItem
-                            x:Name="menuTraySubUpdate"
-                            Height="{StaticResource MenuItemHeight}"
-                            Header="{x:Static resx:ResUI.menuSubUpdate}" />
-                        <Separator />
-                        <MenuItem
-                            x:Name="menuShowWindow"
-                            Height="{StaticResource MenuItemHeight}"
-                            Header="{x:Static resx:ResUI.SvoRayOpenWindow}" />
-                        <MenuItem
-                            x:Name="menuTrayExit"
-                            Height="{StaticResource MenuItemHeight}"
-                            Header="{x:Static resx:ResUI.menuExit}" />
+                        <MenuItem x:Name="menuTraySubUpdate" Header="{x:Static resx:ResUI.SvoRayUpdateSubscriptions}">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon
+                                    Width="16"
+                                    Height="16"
+                                    Foreground="{x:Static common:SvoRayPalette.TextSecondary}"
+                                    Kind="Refresh" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator Style="{StaticResource SvoRay.MenuSeparator}" />
+                        <MenuItem x:Name="menuShowWindow" Header="{x:Static resx:ResUI.SvoRayOpenWindow}">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon
+                                    Width="16"
+                                    Height="16"
+                                    Foreground="{x:Static common:SvoRayPalette.TextSecondary}"
+                                    Kind="WindowMaximize" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem x:Name="menuTrayExit" Header="{x:Static resx:ResUI.menuExit}">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon
+                                    Width="16"
+                                    Height="16"
+                                    Foreground="{x:Static common:SvoRayPalette.TextSecondary}"
+                                    Kind="Logout" />
+                            </MenuItem.Icon>
+                        </MenuItem>
                     </ContextMenu>
                 </tb:TaskbarIcon.ContextMenu>
             </tb:TaskbarIcon>

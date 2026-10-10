@@ -11,23 +11,39 @@ Full notes: [docs/RELEASE_NOTES_0.5.0_RU.md](docs/RELEASE_NOTES_0.5.0_RU.md) (Ru
 
 - **Game mode.** One switch on the main screen sends everything started from game folders past
   the tunnel while Discord, the browser and the rest stay on it. Steam libraries are found through
-  the registry and `libraryfolders.vdf` on any drive, Epic games through the launcher's manifests,
-  plus the usual EA, Battle.net, Riot, Ubisoft and GOG folders and the launchers' and anti-cheat
-  processes. It covers UDP game traffic too and can be switched mid-connection.
+  the registry and `libraryfolders.vdf` on any drive; Epic, Battle.net (uninstall entries and
+  `product.db`), EA app, Rockstar, GOG, Ubisoft, Riot on any drive, Lesta / Wargaming Game Center,
+  HoYoPlay, Xbox game roots (`.GamingRoot`), Roblox, Easy Anti-Cheat and BattlEye are found from
+  each launcher's own records, and folders can be added by hand in the routing window. Folders are
+  matched by their final path, so junctions work, and anything as wide as a drive root or Program
+  Files is refused from every source. It covers UDP game traffic too and can be switched
+  mid-connection.
 - **Rules from the server.** The routing profile a subscription sends in the Happ format — the
   same one Happ and INCY apply on the phone — now applies on Windows: block, proxy and direct
   groups in the server's order, after the user's own list. Its geo files are downloaded next to
   the stock ones and reached through `ext:`; a category a file lacks is left out instead of
   stopping Xray from starting. A switch in the routing window turns it off.
-- **Traffic left on the subscription** in the footer, from `Subscription-Userinfo`, highlighted
-  once 90 % of a quota is used.
+- **Several subscriptions.** The server row gains ↻ (refresh every subscription), Add (another
+  subscription or a single server), Replace (swap the selected server's source) and … (remove a
+  subscription or a single server, with a themed confirmation). The selector lists the servers of
+  every subscription and names the subscription when there is more than one, from the
+  `profile-title` header or the link's host. The same link added twice creates no duplicate, and
+  servers added on their own no longer belong to whichever subscription was current.
+- **Traffic left on the subscription** under the server row, from the selected server's
+  `Subscription-Userinfo`, highlighted once 90 % of a quota is used.
+- **SvoRay updates itself** from its GitHub releases: a daily check and one on demand, stable
+  releases only, versions compared as numbers. The installer and `SHA256SUMS.txt` are taken only
+  from that release's assets and the installer runs only when its SHA-256 matches; the system proxy
+  is cleared and the core stopped first, the installer runs `/SILENT` and starts the new version.
+  v2rayN's own self-update, which would have installed v2rayN, is disabled.
 
 ### Changed
 
 - **A new look.** Graphite surfaces with one mint accent, a single connect button with distinct
   connecting and error states, a server row with the delay inside it, settings-style rows for
-  game mode and routing, and a hint next to the Proxy / TUN switch that explains what each mode
-  sends through the VPN. New application and tray icons: a ring, with tray states that differ by
+  game mode and routing, and a full-width Proxy | TUN switch whose halves each carry an "i" that
+  explains that mode on hover or keyboard focus; confirmations and the tray menu use the same
+  dark style instead of Windows' light dialogs. New application and tray icons: a ring, with tray states that differ by
   shape — off, connecting, on, game mode and error. The routing window and advanced mode's accent follow the same palette.
 - **TUN is the default mode.** New installations start in TUN, and installations upgraded from
   0.4.x are switched to it once; a mode chosen after that is kept.
@@ -36,6 +52,14 @@ Full notes: [docs/RELEASE_NOTES_0.5.0_RU.md](docs/RELEASE_NOTES_0.5.0_RU.md) (Ru
   monitor's refresh rate instead of WPF's 60 fps cap, and the large blurs and shadows are gone.
 
 ### Fixed
+
+- **UDP port exhaustion in TUN mode.** Xray was seen holding ~16,000 UDP sockets — nearly every
+  dynamic port — most likely a loop: with the physical adapter briefly gone, the core's own
+  unbound sockets came back through its TUN and "process self → direct" opened another one each
+  time. The core's own traffic arriving through its TUN is now dropped, which ends such a loop at
+  once and never matches while the binding works.
+- Picking a server of another subscription mid-connection kept the previous subscription's rules
+  and the game folders found at connect until the next reconnect.
 
 - A failure while the main window initialises is now logged with its cause. Before, it vanished
   and left the server list empty; it also left the certificate policy without its config, so

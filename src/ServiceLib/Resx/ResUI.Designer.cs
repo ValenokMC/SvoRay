@@ -5757,12 +5757,6 @@ namespace ServiceLib.Resx {
             }
         }
 
-        public static string SvoRaySystemProxyTip {
-            get {
-                return ResourceManager.GetString("SvoRaySystemProxyTip", resourceCulture);
-            }
-        }
-
         public static string SvoRayTrafficCheckFailed {
             get {
                 return ResourceManager.GetString("SvoRayTrafficCheckFailed", resourceCulture);
@@ -5799,12 +5793,6 @@ namespace ServiceLib.Resx {
             }
         }
 
-        public static string SvoRayTunModeTip {
-            get {
-                return ResourceManager.GetString("SvoRayTunModeTip", resourceCulture);
-            }
-        }
-
         public static string SvoRayTunOnDescription {
             get {
                 return ResourceManager.GetString("SvoRayTunOnDescription", resourceCulture);
@@ -5814,18 +5802,6 @@ namespace ServiceLib.Resx {
         public static string SvoRayUpdate {
             get {
                 return ResourceManager.GetString("SvoRayUpdate", resourceCulture);
-            }
-        }
-
-        public static string SvoRayUpdated {
-            get {
-                return ResourceManager.GetString("SvoRayUpdated", resourceCulture);
-            }
-        }
-
-        public static string SvoRayUpdating {
-            get {
-                return ResourceManager.GetString("SvoRayUpdating", resourceCulture);
             }
         }
 
@@ -6012,15 +5988,237 @@ namespace ServiceLib.Resx {
             }
         }
 
-        public static string SvoRayModeHelp {
+        public static string SvoRayProxyModeHint {
             get {
-                return ResourceManager.GetString("SvoRayModeHelp", resourceCulture);
+                return ResourceManager.GetString("SvoRayProxyModeHint", resourceCulture);
             }
         }
 
-        public static string SvoRayModeHint {
+        public static string SvoRayTunModeHint {
             get {
-                return ResourceManager.GetString("SvoRayModeHint", resourceCulture);
+                return ResourceManager.GetString("SvoRayTunModeHint", resourceCulture);
+            }
+        }
+
+        public static string SvoRayAboutProxyMode {
+            get {
+                return ResourceManager.GetString("SvoRayAboutProxyMode", resourceCulture);
+            }
+        }
+
+        public static string SvoRayAboutTunMode {
+            get {
+                return ResourceManager.GetString("SvoRayAboutTunMode", resourceCulture);
+            }
+        }
+
+        public static string SvoRayAddTip {
+            get {
+                return ResourceManager.GetString("SvoRayAddTip", resourceCulture);
+            }
+        }
+
+        public static string SvoRayReplaceConnection {
+            get {
+                return ResourceManager.GetString("SvoRayReplaceConnection", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUpdateSubscriptions {
+            get {
+                return ResourceManager.GetString("SvoRayUpdateSubscriptions", resourceCulture);
+            }
+        }
+
+        public static string SvoRayMore {
+            get {
+                return ResourceManager.GetString("SvoRayMore", resourceCulture);
+            }
+        }
+
+        public static string SvoRayRemoveSubscription {
+            get {
+                return ResourceManager.GetString("SvoRayRemoveSubscription", resourceCulture);
+            }
+        }
+
+        public static string SvoRayRemoveServer {
+            get {
+                return ResourceManager.GetString("SvoRayRemoveServer", resourceCulture);
+            }
+        }
+
+        public static string SvoRayRemoveSubscriptionConfirm {
+            get {
+                return ResourceManager.GetString("SvoRayRemoveSubscriptionConfirm", resourceCulture);
+            }
+        }
+
+        public static string SvoRayRemoveServerConfirm {
+            get {
+                return ResourceManager.GetString("SvoRayRemoveServerConfirm", resourceCulture);
+            }
+        }
+
+        public static string SvoRayRemoved {
+            get {
+                return ResourceManager.GetString("SvoRayRemoved", resourceCulture);
+            }
+        }
+
+        public static string SvoRayRemoveFailed {
+            get {
+                return ResourceManager.GetString("SvoRayRemoveFailed", resourceCulture);
+            }
+        }
+
+        public static string SvoRayCheckForUpdates {
+            get {
+                return ResourceManager.GetString("SvoRayCheckForUpdates", resourceCulture);
+            }
+        }
+
+        public static string SvoRayCheckingUpdates {
+            get {
+                return ResourceManager.GetString("SvoRayCheckingUpdates", resourceCulture);
+            }
+        }
+
+        public static string SvoRayLatestVersion {
+            get {
+                return ResourceManager.GetString("SvoRayLatestVersion", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUpdateTo {
+            get {
+                return ResourceManager.GetString("SvoRayUpdateTo", resourceCulture);
+            }
+        }
+
+        public static string SvoRayDownloadingUpdate {
+            get {
+                return ResourceManager.GetString("SvoRayDownloadingUpdate", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUpdateTip {
+            get {
+                return ResourceManager.GetString("SvoRayUpdateTip", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUpdateCheckFailed {
+            get {
+                return ResourceManager.GetString("SvoRayUpdateCheckFailed", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUpdateDownloadFailed {
+            get {
+                return ResourceManager.GetString("SvoRayUpdateDownloadFailed", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUpdateHashMismatch {
+            get {
+                return ResourceManager.GetString("SvoRayUpdateHashMismatch", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUpdateLaunchFailed {
+            get {
+                return ResourceManager.GetString("SvoRayUpdateLaunchFailed", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUpdateTitle {
+            get {
+                return ResourceManager.GetString("SvoRayUpdateTitle", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUpdateQuestion {
+            get {
+                return ResourceManager.GetString("SvoRayUpdateQuestion", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUpdateDetails {
+            get {
+                return ResourceManager.GetString("SvoRayUpdateDetails", resourceCulture);
+            }
+        }
+
+        public static string SvoRayWhatsNew {
+            get {
+                return ResourceManager.GetString("SvoRayWhatsNew", resourceCulture);
+            }
+        }
+
+        public static string SvoRayInstall {
+            get {
+                return ResourceManager.GetString("SvoRayInstall", resourceCulture);
+            }
+        }
+
+        public static string SvoRayLater {
+            get {
+                return ResourceManager.GetString("SvoRayLater", resourceCulture);
+            }
+        }
+
+        public static string SvoRayCustomGameFolders {
+            get {
+                return ResourceManager.GetString("SvoRayCustomGameFolders", resourceCulture);
+            }
+        }
+
+        public static string SvoRayCustomGameFoldersTip {
+            get {
+                return ResourceManager.GetString("SvoRayCustomGameFoldersTip", resourceCulture);
+            }
+        }
+
+        public static string SvoRayAddGameFolder {
+            get {
+                return ResourceManager.GetString("SvoRayAddGameFolder", resourceCulture);
+            }
+        }
+
+        public static string SvoRayGameFolderMissing {
+            get {
+                return ResourceManager.GetString("SvoRayGameFolderMissing", resourceCulture);
+            }
+        }
+
+        public static string SvoRayGameFolderTooBroad {
+            get {
+                return ResourceManager.GetString("SvoRayGameFolderTooBroad", resourceCulture);
+            }
+        }
+
+        public static string SvoRayGameFolderSvoRay {
+            get {
+                return ResourceManager.GetString("SvoRayGameFolderSvoRay", resourceCulture);
+            }
+        }
+
+        public static string SvoRayGameFolderAdded {
+            get {
+                return ResourceManager.GetString("SvoRayGameFolderAdded", resourceCulture);
+            }
+        }
+
+        public static string SvoRayGameFolderAlreadyListed {
+            get {
+                return ResourceManager.GetString("SvoRayGameFolderAlreadyListed", resourceCulture);
+            }
+        }
+
+        public static string SvoRayRemove {
+            get {
+                return ResourceManager.GetString("SvoRayRemove", resourceCulture);
             }
         }
     }

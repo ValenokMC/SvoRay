@@ -9,7 +9,7 @@
     xmlns:resx="clr-namespace:ServiceLib.Resx;assembly=ServiceLib"
     Title="{x:Static resx:ResUI.SvoRayRouting}"
     Width="500"
-    Height="760"
+    Height="860"
     MinWidth="380"
     MinHeight="600"
     Background="{x:Static common:SvoRayPalette.Background}"
@@ -83,6 +83,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -105,7 +106,74 @@
                 Text="{x:Static resx:ResUI.SvoRayUseServerRoutingTip}" />
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Margin="0,0,0,10">
+        <!--
+            Folders the user adds for games no launcher reports. Sits here because, like the
+            domain list, it decides what leaves the VPN; game mode itself is switched on the
+            main screen.
+        -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,18">
+            <TextBlock Style="{StaticResource SvoRay.Label}" Text="{x:Static resx:ResUI.SvoRayCustomGameFolders}" />
+            <ItemsControl x:Name="lstGameFolders">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border
+                            Margin="0,0,0,6"
+                            Padding="12,2,2,2"
+                            Background="{x:Static common:SvoRayPalette.Surface}"
+                            BorderBrush="{x:Static common:SvoRayPalette.Border}"
+                            BorderThickness="1"
+                            CornerRadius="10">
+                            <DockPanel LastChildFill="True">
+                                <Button
+                                    Width="30"
+                                    Height="30"
+                                    AutomationProperties.Name="{x:Static resx:ResUI.SvoRayRemoveFromList}"
+                                    Click="BtnRemoveGameFolder_Click"
+                                    DockPanel.Dock="Right"
+                                    Style="{StaticResource SvoRay.IconButton}"
+                                    Tag="{Binding}"
+                                    ToolTip="{x:Static resx:ResUI.SvoRayRemoveFromList}">
+                                    <materialDesign:PackIcon
+                                        Width="15"
+                                        Height="15"
+                                        Kind="Close" />
+                                </Button>
+                                <materialDesign:PackIcon
+                                    Width="16"
+                                    Height="16"
+                                    Margin="0,0,10,0"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Foreground="{x:Static common:SvoRayPalette.TextSecondary}"
+                                    Kind="FolderOutline" />
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontSize="12.5"
+                                    Text="{Binding}"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTip="{Binding}" />
+                            </DockPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button
+                x:Name="btnAddGameFolder"
+                Height="42"
+                Padding="14,0"
+                Style="{StaticResource SvoRay.Row}">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="FolderPlusOutline" Style="{StaticResource SvoRay.RowIcon}" />
+                    <TextBlock Style="{StaticResource SvoRay.Body}" Text="{x:Static resx:ResUI.SvoRayAddGameFolder}" />
+                </StackPanel>
+            </Button>
+            <TextBlock
+                Margin="4,8,4,0"
+                Style="{StaticResource SvoRay.Caption}"
+                Text="{x:Static resx:ResUI.SvoRayCustomGameFoldersTip}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Margin="0,0,0,10">
             <TextBlock Style="{StaticResource SvoRay.Label}" Text="{x:Static resx:ResUI.SvoRayRoutingHowToApply}" />
             <RadioButton
                 x:Name="rdoBypassListed"
@@ -140,7 +208,7 @@
             </RadioButton>
         </StackPanel>
 
-        <StackPanel Grid.Row="2" Margin="0,8,0,10">
+        <StackPanel Grid.Row="3" Margin="0,8,0,10">
             <!--
                 Multi-line on purpose: a list is usually pasted, not typed. Enter still adds, so
                 typing one domain works as before; Shift+Enter breaks the line.
@@ -187,7 +255,7 @@
         </StackPanel>
 
         <Border
-            Grid.Row="3"
+            Grid.Row="4"
             Background="{x:Static common:SvoRayPalette.Surface}"
             BorderBrush="{x:Static common:SvoRayPalette.Border}"
             BorderThickness="1"
@@ -265,12 +333,12 @@
 
         <TextBlock
             x:Name="txtStatus"
-            Grid.Row="4"
+            Grid.Row="5"
             Margin="4,10,4,0"
             Style="{StaticResource SvoRay.Caption}"
             Visibility="Collapsed" />
 
-        <Grid Grid.Row="5" Margin="0,16,0,0">
+        <Grid Grid.Row="6" Margin="0,16,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />

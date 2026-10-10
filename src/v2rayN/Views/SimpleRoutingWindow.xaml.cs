@@ -12,11 +12,19 @@ namespace v2rayN.Views;
 public partial class SimpleRoutingWindow : Window
 {
     private readonly ObservableCollection<string> _domains = [];
+    private readonly ObservableCollection<string> _gameFolders = [];
 
     public SimpleRoutingWindow(ESvoRayRoutingMode mode, IEnumerable<string> domains,
-        bool useServerRouting, bool serverRoutingAvailable)
+        bool useServerRouting, bool serverRoutingAvailable, IEnumerable<string> gameFolders)
     {
         InitializeComponent();
+
+        foreach (var folder in gameFolders)
+        {
+            _gameFolders.Add(folder);
+        }
+        lstGameFolders.ItemsSource = _gameFolders;
+        btnAddGameFolder.Click += (_, _) => AddGameFolder();
 
         // Left editable even before a profile arrives: the choice still applies to the one the
         // next subscription update may bring.
@@ -60,6 +68,7 @@ public partial class SimpleRoutingWindow : Window
                 : ESvoRayRoutingMode.BypassListed;
             ResultDomains = [.. _domains];
             ResultUseServerRouting = chkServerRouting.IsChecked == true;
+            ResultGameFolders = [.. _gameFolders];
             DialogResult = true;
         };
         btnCancel.Click += (_, _) => DialogResult = false;
@@ -72,6 +81,52 @@ public partial class SimpleRoutingWindow : Window
     public List<string> ResultDomains { get; private set; } = [];
 
     public bool ResultUseServerRouting { get; private set; }
+
+    public List<string> ResultGameFolders { get; private set; } = [];
+
+    /// <summary>
+    /// Picks a folder with the system dialog and keeps it only when game mode may use it: it
+    /// exists, it is narrower than a system folder, and it is not SvoRay's own.
+    /// </summary>
+    private void AddGameFolder()
+    {
+        var dialog = new Microsoft.Win32.OpenFolderDialog { Title = ResUI.SvoRayAddGameFolder };
+        if (dialog.ShowDialog(this) != true || dialog.FolderName.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        var folder = dialog.FolderName;
+        var check = SvoRayGames.CheckCustomFolder(folder);
+        if (check != ESvoRayFolderCheck.Ok)
+        {
+            ShowStatus(check switch
+            {
+                ESvoRayFolderCheck.Missing => ResUI.SvoRayGameFolderMissing,
+                ESvoRayFolderCheck.TooBroad => ResUI.SvoRayGameFolderTooBroad,
+                _ => ResUI.SvoRayGameFolderSvoRay,
+            }, true);
+            return;
+        }
+
+        var final = SvoRayGames.ExactCase(folder) ?? folder;
+        if (_gameFolders.Any(f => string.Equals(SvoRayGames.ExactCase(f) ?? f, final, StringComparison.OrdinalIgnoreCase)))
+        {
+            ShowStatus(ResUI.SvoRayGameFolderAlreadyListed, true);
+            return;
+        }
+
+        _gameFolders.Add(final);
+        ShowStatus(ResUI.SvoRayGameFolderAdded, false);
+    }
+
+    private void BtnRemoveGameFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string folder })
+        {
+            _gameFolders.Remove(folder);
+        }
+    }
 
     private bool AddDomain()
     {

@@ -347,4 +347,19 @@ public class SvoRayItem
     /// After that the user's choice of mode is kept as is.
     /// </summary>
     public bool TunDefaultMigrated { get; set; }
+
+    /// <summary>
+    /// Folders the user added to game mode by hand, for games no launcher reports. Checked again
+    /// at every connect, so a folder that was removed or turned into something too broad is skipped.
+    /// </summary>
+    public List<string> CustomGameFolders { get; set; } = [];
+
+    /// <summary>Unix time of the last look at SvoRay's latest release, for the daily check.</summary>
+    public long LastUpdateCheck { get; set; }
+
+    /// <summary>
+    /// The newer release that check found, so the footer keeps offering it after a restart until
+    /// the next check; null when the running build was the latest.
+    /// </summary>
+    public string? AvailableUpdateVersion { get; set; }
 }

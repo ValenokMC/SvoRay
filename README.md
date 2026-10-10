@@ -55,9 +55,11 @@ subscription or profile and keep the option to use every upstream v2rayN setting
 - imports an HTTPS subscription or an individual `vless://`, `hysteria2://` and other links v2rayN supports
 - two connection modes: TUN for the whole system, or the Windows system proxy
 - a domain list that decides what the VPN carries: everything except the list, or the list only
-- **game mode**: games from Steam, Epic, EA, Battle.net, Riot, Ubisoft and GOG go direct with your normal ping while Discord and everything else stay on the VPN — one switch, even mid-connection
+- **game mode**: games from Steam, Epic, Battle.net, EA app, Rockstar, GOG, Ubisoft, Riot, Lesta, HoYoPlay, Xbox and Roblox, plus folders you add yourself, go direct with your normal ping while Discord and everything else stay on the VPN — one switch, even mid-connection
 - **rules from the server**: the routing profile your subscription sends in the Happ format (the one Happ and INCY use on the phone) applies on Windows too
-- traffic used and left on the subscription, when the provider reports it
+- several subscriptions side by side: add, replace or remove one from the server row; each server shows which subscription it comes from
+- traffic used and left on the selected server's subscription, when the provider reports it
+- updates itself from GitHub releases, checking the installer's SHA-256 first
 - picks the active Ethernet/Wi-Fi adapter and local IPv4 automatically
 - excludes the selected server's IP from TUN so traffic cannot loop
 - Cloudflare DNS: `1.1.1.1` and `https://1.1.1.1/dns-query`
@@ -94,15 +96,17 @@ A Start-menu shortcut is created. No desktop shortcut.
 4. The form is replaced by a profile selector, and the first usable profile is selected automatically.
 5. Pick a mode: **Proxy / Прокси** covers applications that honour the Windows system proxy, mostly browsers; **TUN** covers all of the computer's traffic and is the default. The **i** icon next to the switch explains the difference.
 6. Press the power button. Press it again to disconnect.
-7. **Check / Проверить** in the server row measures latency for the selected profile.
+7. **Check / Проверить** in the server row measures latency for the selected profile. Above the row, **↻** refreshes every subscription, **Add / Добавить** adds another subscription or server, **Replace / Заменить** swaps the selected server's source for a new link, and **…** removes a subscription or a single server.
 8. **Game mode / Игровой режим** sends games past the VPN while everything else stays on it. It matters in *TUN* mode; in *Proxy* mode games bypass the VPN anyway.
-9. **Routing / Маршрутизация** edits the domain list. Type `example.com`; subdomains are matched too, a whole list can be pasted at once, and the Russia preset fills in sites that commonly refuse a foreign address. DNS for a listed domain takes the same path as its traffic. **Rules from the server** applies the subscription's own routing profile; your list takes priority over it.
+9. **Routing / Маршрутизация** edits the domain list and your own game folders. Type `example.com`; subdomains are matched too, a whole list can be pasted at once, and the Russia preset fills in sites that commonly refuse a foreign address. DNS for a listed domain takes the same path as its traffic. **Rules from the server** applies the subscription's own routing profile; your list takes priority over it.
 10. **Support / Поддержка** (the question-mark icon) opens the provider link supplied by the subscription, or GitHub Issues when none is available.
 11. The settings icon opens the full v2rayN interface.
 
 ## Update
 
-Run the new installer over the current version. Settings, subscriptions and profiles are kept. The installer closes the running client and core before replacing files.
+The button at the bottom left checks SvoRay's GitHub releases once a day and on click. When a newer release is out it reads **Update to X.Y.Z**: SvoRay downloads that release's installer, checks it against the release's `SHA256SUMS.txt`, turns the VPN off, closes and installs the update, then starts again.
+
+You can also run the new installer over the current version yourself. Settings, subscriptions and profiles are kept. The installer closes the running client and core before replacing files.
 
 ## Uninstall
 
@@ -137,7 +141,7 @@ notes: [docs/RELEASE_NOTES_0.5.0_RU.md](docs/RELEASE_NOTES_0.5.0_RU.md) (Russian
 
 A pre-publication security audit has been completed — see [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for scope, findings, fixes and remaining risks. Notable fixes it produced: the downloaded subscription payload no longer reaches the log files, and profile links are kept out of the on-screen notice stream.
 
-Verified for 0.5.0: Release build and installer, 160/160 unit tests (server routing profile parsing and filtering, geo categories, Steam library discovery and exact path casing, rule order, generated Xray and sing-box configs, traffic header, RU/EN resources, the one-off switch of upgraded installations to TUN). The new screens were run against a production subscription: import, update, the traffic line, the server-rules marker, the game-mode switch and the routing window.
+Verified for 0.5.0: Release build and installer, 208/208 unit tests (server routing profile parsing and filtering, geo categories, every game-launcher format, junctions and too-broad folders, rule order, generated Xray and sing-box configs, traffic header, GitHub release parsing and SHA-256 checks, subscription labels and duplicates, RU/EN resources, the one-off switch of upgraded installations to TUN). The update was checked against the real GitHub release: download and SHA-256 match. The new screens were run against a production subscription: import, update, the traffic line, the server-rules marker, the game-mode switch and the routing window.
 
 Not verified in a live 0.5.0 session: connecting with the new build and the connecting/on/error colours, game mode inside an actual game, smoothness on a monitor above 60 Hz, and upgrading over 0.4.0 with this installer.
 

@@ -269,6 +269,143 @@
         </Setter>
     </Style>
 
+    <!--
+        A small "i" that explains the control it sits on. A Label, not a button: screen readers
+        find it and read the hint (HelpText), and a click on it does nothing - it lies over a
+        segment and must not switch the mode under it. Hover and keyboard focus show the hint.
+    -->
+    <Style x:Key="SvoRay.HelpMark" TargetType="{x:Type Label}">
+        <Setter Property="Width" Value="26" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{x:Static common:SvoRayPalette.TextSecondary}" />
+        <Setter Property="Focusable" Value="True" />
+        <Setter Property="IsTabStop" Value="True" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="ToolTipService.InitialShowDelay" Value="150" />
+        <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+        <Setter Property="ToolTipService.ShowsToolTipOnKeyboardFocus" Value="True" />
+        <Setter Property="ToolTipService.Placement" Value="Bottom" />
+        <Setter Property="ToolTipService.VerticalOffset" Value="6" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Label}">
+                    <Border x:Name="Frame" Background="{TemplateBinding Background}" CornerRadius="8">
+                        <materialDesign:PackIcon
+                            Width="14"
+                            Height="14"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Foreground="{TemplateBinding Foreground}"
+                            Kind="InformationOutline" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{x:Static common:SvoRayPalette.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="Background" Value="{x:Static common:SvoRayPalette.SurfaceHover}" />
+                            <Setter Property="Foreground" Value="{x:Static common:SvoRayPalette.Text}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        Menus in the theme's colours: the "..." menu of the server row and the tray menu. An item
+        shows its Icon, when it has one, left of the header.
+    -->
+    <Style x:Key="SvoRay.MenuItem" TargetType="{x:Type MenuItem}">
+        <Setter Property="Foreground" Value="{x:Static common:SvoRayPalette.Text}" />
+        <Setter Property="FontFamily" Value="{StaticResource SvoRay.Font}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type MenuItem}">
+                    <Border
+                        x:Name="Row"
+                        Padding="12,8"
+                        Background="Transparent"
+                        CornerRadius="8">
+                        <DockPanel>
+                            <ContentPresenter
+                                x:Name="IconHost"
+                                Width="18"
+                                Margin="0,0,10,0"
+                                VerticalAlignment="Center"
+                                ContentSource="Icon"
+                                DockPanel.Dock="Left" />
+                            <ContentPresenter
+                                VerticalAlignment="Center"
+                                ContentSource="Header"
+                                RecognizesAccessKey="False" />
+                        </DockPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Icon" Value="{x:Null}">
+                            <Setter TargetName="IconHost" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Row" Property="Background" Value="{x:Static common:SvoRayPalette.SurfaceHover}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!--  A line of text in a menu that is not a command, such as the connection state  -->
+    <Style
+        x:Key="SvoRay.MenuCaption"
+        BasedOn="{StaticResource SvoRay.MenuItem}"
+        TargetType="{x:Type MenuItem}">
+        <Setter Property="Foreground" Value="{x:Static common:SvoRayPalette.TextSecondary}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Focusable" Value="False" />
+    </Style>
+    <Style x:Key="SvoRay.MenuSeparator" TargetType="{x:Type Separator}">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Separator}">
+                    <Border
+                        Height="1"
+                        Margin="8,4"
+                        Background="{x:Static common:SvoRayPalette.Border}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="SvoRay.ContextMenu" TargetType="{x:Type ContextMenu}">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="HasDropShadow" Value="False" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource SvoRay.MenuItem}" />
+        <Setter Property="MinWidth" Value="220" />
+        <Setter Property="MaxWidth" Value="320" />
+        <Setter Property="FontFamily" Value="{StaticResource SvoRay.Font}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ContextMenu}">
+                    <Border
+                        Padding="4"
+                        Background="{x:Static common:SvoRayPalette.Surface}"
+                        BorderBrush="{x:Static common:SvoRayPalette.BorderStrong}"
+                        BorderThickness="1"
+                        CornerRadius="10">
+                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!--  Buttons  -->
     <Style x:Key="SvoRay.PrimaryButton" TargetType="{x:Type Button}">
         <Setter Property="Height" Value="46" />

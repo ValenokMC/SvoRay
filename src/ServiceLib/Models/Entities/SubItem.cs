@@ -47,4 +47,10 @@ public class SubItem
     /// See <see cref="SvoRaySubscriptionUsage"/>.
     /// </summary>
     public string? UsageInfo { get; set; }
+
+    /// <summary>
+    /// The provider's name from the <c>profile-title</c> header; null when it sends none.
+    /// See <see cref="SvoRaySubscriptionLabel"/>.
+    /// </summary>
+    public string? ProfileTitle { get; set; }
 }
