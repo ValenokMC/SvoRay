@@ -362,4 +362,10 @@ public class SvoRayItem
     /// the next check; null when the running build was the latest.
     /// </summary>
     public string? AvailableUpdateVersion { get; set; }
+
+    /// <summary>
+    /// The adapter whose IPv4 forwarding SvoRay turned off for TUN and has to turn back on;
+    /// null when it changed nothing. See <see cref="SvoRayForwarding"/>.
+    /// </summary>
+    public int? SuspendedForwardingInterface { get; set; }
 }

@@ -73,6 +73,8 @@ internal static class SvoRayService
             {
                 config.CoreBasicItem.BindInterface = network.Value.InterfaceName;
                 config.CoreBasicItem.SendThrough = network.Value.LocalAddress;
+                // Before the core starts: with forwarding on, its direct traffic would be lost.
+                await SvoRayForwarding.SuspendAsync(config, network.Value.InterfaceName);
             }
 
             config.TunModeItem.AutoRoute = true;

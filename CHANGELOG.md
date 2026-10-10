@@ -53,11 +53,14 @@ Full notes: [docs/RELEASE_NOTES_0.5.0_RU.md](docs/RELEASE_NOTES_0.5.0_RU.md) (Ru
 
 ### Fixed
 
-- **UDP port exhaustion in TUN mode.** Xray was seen holding ~16,000 UDP sockets — nearly every
-  dynamic port — most likely a loop: with the physical adapter briefly gone, the core's own
-  unbound sockets came back through its TUN and "process self → direct" opened another one each
-  time. The core's own traffic arriving through its TUN is now dropped, which ends such a loop at
-  once and never matches while the binding works.
+- **Nothing that goes direct worked in TUN mode** — Steam, local sites, games in game mode, the
+  core's own DNS — wherever IPv4 forwarding was on for the physical adapter (software that shares
+  the connection with a virtual network turns it on, e.g. the Codex sandbox's `vgate0`). Windows
+  then ignores the interface binding the core relies on to send direct traffic past its own TUN.
+  SvoRay now turns forwarding off on that adapter while TUN is up (active store only, re-checked
+  every 20 s, recorded so a crash is undone at the next start) and back on afterwards. The same
+  cause made the core hold ~16,000 UDP sockets, nearly every dynamic port, for up to ten minutes.
+  As a safeguard, the core's own traffic coming back through its TUN is also dropped.
 - Picking a server of another subscription mid-connection kept the previous subscription's rules
   and the game folders found at connect until the next reconnect.
 

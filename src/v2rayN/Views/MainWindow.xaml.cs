@@ -47,6 +47,9 @@ public partial class MainWindow
 
     private bool _appUpdateBusy;
 
+    /// <summary>Re-checks forwarding on the physical adapter while TUN is connected.</summary>
+    private DispatcherTimer? _forwardingTimer;
+
     private DispatcherTimer? _simpleStatusTimer;
 
     /// <summary>Profile the running check belongs to; null when no check is in flight.</summary>
@@ -298,6 +301,8 @@ public partial class MainWindow
         InitSimpleMode();
         ShowAppUpdateState();
         Loaded += async (_, _) => await CheckAppUpdateOnStartupAsync();
+        // Undo a change a crash left behind; a TUN that reconnects applies it again.
+        _ = SvoRayForwarding.RestoreAsync(_config);
     }
 
     /// <summary>
@@ -968,6 +973,34 @@ public partial class MainWindow
         }
     }
 
+    /// <summary>
+    /// TUN needs IPv4 forwarding off on the physical adapter, or its direct traffic is lost (see
+    /// <see cref="SvoRayForwarding"/>). It is turned off while TUN is up, checked again every 20 s
+    /// in case the software that turned it on does so again, and turned back on afterwards.
+    /// </summary>
+    private void UpdateForwardingGuard(ESvoRayConnectionState state)
+    {
+        var tunUp = state == ESvoRayConnectionState.On
+            && _config.SvoRayItem.Mode == ESvoRayMode.Tun
+            && _config.TunModeItem.EnableTun;
+        if (tunUp)
+        {
+            if (_forwardingTimer is null)
+            {
+                _forwardingTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+                _forwardingTimer.Tick += async (_, _) =>
+                    await SvoRayForwarding.SuspendAsync(_config, _config.CoreBasicItem.BindInterface);
+            }
+            _forwardingTimer.Start();
+            _ = SvoRayForwarding.SuspendAsync(_config, _config.CoreBasicItem.BindInterface);
+        }
+        else if (state is ESvoRayConnectionState.Off or ESvoRayConnectionState.Error)
+        {
+            _forwardingTimer?.Stop();
+            _ = SvoRayForwarding.RestoreAsync(_config);
+        }
+    }
+
     #region SvoRay update
 
     private static Version CurrentVersion =>
@@ -1350,6 +1383,7 @@ public partial class MainWindow
     private void UpdateSimpleConnectionState(ESvoRayConnectionState state)
     {
         _lastConnectionState = state;
+        UpdateForwardingGuard(state);
         togSvoRayConnect.IsChecked = state is ESvoRayConnectionState.Connecting or ESvoRayConnectionState.On;
         togSvoRayConnect.IsEnabled = state != ESvoRayConnectionState.Connecting;
         // The template tells "connecting" and "error" apart from plain on/off through Tag.
