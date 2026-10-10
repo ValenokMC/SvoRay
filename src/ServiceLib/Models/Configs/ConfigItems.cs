@@ -72,7 +72,9 @@ public class GUIItem
     public bool KeepOlderDedupl { get; set; }
     public int AutoUpdateInterval { get; set; }
     public int TrayMenuServersLimit { get; set; } = 20;
-    public bool EnableHWA { get; set; } = false;
+    // SvoRay draws on the GPU by default: software rendering is what made its window stutter.
+    // WPF still falls back to software by itself where no GPU is usable (remote desktop, VMs).
+    public bool EnableHWA { get; set; } = true;
     public bool EnableLog { get; set; } = true;
     public string? RootCertProvider { get; set; }
 }
@@ -332,4 +334,11 @@ public class SvoRayItem
     /// Discord, the browser and the rest stay on the VPN. Off until the user switches it on.
     /// </summary>
     public bool GameMode { get; set; }
+
+    /// <summary>
+    /// Set once hardware rendering has been switched on for a config written by an earlier
+    /// build, which stored v2rayN's software-only default. Later choices in the advanced
+    /// settings are left alone.
+    /// </summary>
+    public bool HardwareRenderingMigrated { get; set; }
 }

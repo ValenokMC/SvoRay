@@ -161,6 +161,10 @@ public static class SubscriptionHandler
                 download.GetHeaderValue(SvoRayServerRouting.EnableHeaderName));
             changed |= !string.Equals(item.RoutingProfile, routing, StringComparison.Ordinal);
             item.RoutingProfile = routing;
+
+            var usage = SvoRaySubscriptionUsage.Parse(download.GetHeaderValue(SvoRaySubscriptionUsage.HeaderName))?.Serialize();
+            changed |= !string.Equals(item.UsageInfo, usage, StringComparison.Ordinal);
+            item.UsageInfo = usage;
         }
 
         if (changed)

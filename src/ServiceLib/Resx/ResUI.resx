@@ -2206,9 +2206,36 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
     <value>Use the rules from the server</value>
   </data>
   <data name="SvoRayUseServerRoutingTip" xml:space="preserve">
-    <value>Apply the routing your subscription sends - the same rules Happ and INCY use on the phone: local sites and game stores direct, ads blocked, the rest via VPN. Your own list above still takes priority.</value>
+    <value>Apply the routing your subscription sends — the same rules Happ and INCY use on the phone: local sites and game stores direct, ads blocked, the rest via VPN. Your own list below takes priority.</value>
   </data>
   <data name="SvoRayServerRulesSuffix" xml:space="preserve">
-    <value> + server rules</value>
+    <value> + server</value>
+  </data>
+  <data name="SvoRayModeAllTraffic" xml:space="preserve">
+    <value>All traffic</value>
+  </data>
+  <data name="SvoRayModeBrowsers" xml:space="preserve">
+    <value>Browsers</value>
+  </data>
+  <data name="SvoRayServer" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="SvoRayUsage" xml:space="preserve">
+    <value>Traffic: {0} of {1}</value>
+  </data>
+  <data name="SvoRayUsageNoLimit" xml:space="preserve">
+    <value>Traffic: {0}</value>
+  </data>
+  <data name="SvoRayGamesBypassSuffix" xml:space="preserve">
+    <value> · games without VPN</value>
+  </data>
+  <data name="SvoRayByteUnits" xml:space="preserve">
+    <value>B,KB,MB,GB,TB</value>
+  </data>
+  <data name="SvoRayRoutingFromServer" xml:space="preserve">
+    <value>Server rules</value>
+  </data>
+  <data name="SvoRayRoutingServerPlus" xml:space="preserve">
+    <value>Server + {0} {1}</value>
   </data>
 </root>

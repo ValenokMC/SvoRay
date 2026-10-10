@@ -205,6 +205,11 @@ public static class ConfigHandler
 
         config.SvoRayItem ??= new();
         config.SvoRayItem.RuleDomains ??= [];
+        if (!config.SvoRayItem.HardwareRenderingMigrated)
+        {
+            config.GuiItem.EnableHWA = true;
+            config.SvoRayItem.HardwareRenderingMigrated = true;
+        }
 
         if (config.SystemProxyItem.SystemProxyExceptions.IsNullOrEmpty())
         {

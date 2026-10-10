@@ -41,4 +41,10 @@ public class SubItem
     /// null when the server sends none. See <see cref="SvoRayServerRouting"/>.
     /// </summary>
     public string? RoutingProfile { get; set; }
+
+    /// <summary>
+    /// Last <c>Subscription-Userinfo</c> the server sent, normalised; null when it sends none.
+    /// See <see cref="SvoRaySubscriptionUsage"/>.
+    /// </summary>
+    public string? UsageInfo { get; set; }
 }

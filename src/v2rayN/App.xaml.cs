@@ -41,6 +41,8 @@ public partial class App
             return;
         }
 
+        SvoRayDisplay.UseMonitorFrameRate();
+
         AppManager.Instance.WindowDialog = new WindowDialog();
 
         AppManager.Instance.InitComponents();

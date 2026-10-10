@@ -3,6 +3,44 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## 0.5.0 — 10 October 2026
+
+Full notes: [docs/RELEASE_NOTES_0.5.0_RU.md](docs/RELEASE_NOTES_0.5.0_RU.md) (Russian).
+
+### Added
+
+- **Game mode.** One switch on the main screen sends everything started from game folders past
+  the tunnel while Discord, the browser and the rest stay on it. Steam libraries are found through
+  the registry and `libraryfolders.vdf` on any drive, Epic games through the launcher's manifests,
+  plus the usual EA, Battle.net, Riot, Ubisoft and GOG folders and the launchers' and anti-cheat
+  processes. It covers UDP game traffic too and can be switched mid-connection.
+- **Rules from the server.** The routing profile a subscription sends in the Happ format — the
+  same one Happ and INCY apply on the phone — now applies on Windows: block, proxy and direct
+  groups in the server's order, after the user's own list. Its geo files are downloaded next to
+  the stock ones and reached through `ext:`; a category a file lacks is left out instead of
+  stopping Xray from starting. A switch in the routing window turns it off.
+- **Traffic left on the subscription** in the footer, from `Subscription-Userinfo`, highlighted
+  once 90 % of a quota is used.
+
+### Changed
+
+- **A new look.** Graphite surfaces with one mint accent, a single connect button with distinct
+  connecting and error states, a server row with the delay inside it, settings-style rows for
+  game mode and routing, and clearer mode names ("All traffic" / "Browsers"). New application
+  and tray icons: a ring, with tray states that differ by shape — off, connecting, on, game mode
+  and error. The routing window and advanced mode's accent follow the same palette.
+- **Smooth rendering.** SvoRay draws on the GPU by default (v2rayN's software-only default made
+  the window stutter), existing installations are switched once, animations run at the
+  monitor's refresh rate instead of WPF's 60 fps cap, and the large blurs and shadows are gone.
+
+### Fixed
+
+- A failure while the main window initialises is now logged with its cause. Before, it vanished
+  and left the server list empty; it also left the certificate policy without its config, so
+  every subscription download fell back to a path that drops response headers. The certificate
+  policy now reads the app config on its own, and exception logs keep the full inner-exception
+  chain.
+
 ## 0.4.0 — 3 August 2026
 
 Full notes: [docs/RELEASE_NOTES_0.4.0_RU.md](docs/RELEASE_NOTES_0.4.0_RU.md) (Russian).

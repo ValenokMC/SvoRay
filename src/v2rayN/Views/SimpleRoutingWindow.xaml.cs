@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
-using System.Windows.Media;
 using v2rayN.Manager;
 
 namespace v2rayN.Views;
@@ -65,7 +64,7 @@ public partial class SimpleRoutingWindow : Window
         };
         btnCancel.Click += (_, _) => DialogResult = false;
 
-        WindowsUtils.SetDarkBorder(this, AppManager.Instance.Config.UiItem.CurrentTheme);
+        SourceInitialized += (_, _) => SvoRayService.ApplyWindowChrome(this);
     }
 
     public ESvoRayRoutingMode ResultMode { get; private set; }
@@ -179,9 +178,7 @@ public partial class SimpleRoutingWindow : Window
     private void ShowStatus(string message, bool isError)
     {
         txtStatus.Text = message;
-        txtStatus.Foreground = new SolidColorBrush(isError
-            ? Color.FromRgb(0xF0, 0xA9, 0xA9)
-            : Color.FromRgb(0x9F, 0xD9, 0xCE));
+        txtStatus.Foreground = isError ? SvoRayPalette.Danger : SvoRayPalette.Accent;
         txtStatus.Visibility = Visibility.Visible;
     }
 

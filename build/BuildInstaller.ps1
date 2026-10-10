@@ -1,8 +1,10 @@
 ﻿param(
     [string]$CoreSource = "$env:LOCALAPPDATA\Programs\v2rayN\v2rayN-windows-64",
-    [string]$Version = '0.4.0',
+    [string]$Version = '0.5.0',
     [string]$Runtime = 'win-x64',
-    [switch]$SkipPublish
+    [switch]$SkipPublish,
+    # Inno Setup compiler when it lives outside the standard folders, e.g. D:\soft\Inno Setup 6\ISCC.exe
+    [string]$Iscc = ''
 )
 
 # Produces the single downloadable SvoRay-<version>-setup.exe from a clean
@@ -31,10 +33,11 @@ foreach ($forbidden in @('guiConfigs', 'guiLogs', 'guiTemps', 'guiBackups', 'bin
 }
 
 $iscc = @(
+    $Iscc,
     "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
     "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
-) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
 
 if (-not $iscc) {
     throw 'Inno Setup 6 was not found. Install it with: winget install --id JRSoftware.InnoSetup'

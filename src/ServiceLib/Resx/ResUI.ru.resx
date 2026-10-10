@@ -2188,9 +2188,36 @@
     <value>Правила с сервера</value>
   </data>
   <data name="SvoRayUseServerRoutingTip" xml:space="preserve">
-    <value>Применять маршрутизацию, которую присылает подписка, - те же правила, что у Happ и INCY на телефоне: местные сайты и игровые магазины напрямую, реклама блокируется, остальное через VPN. Ваш список выше важнее.</value>
+    <value>Применять маршрутизацию, которую присылает подписка, — те же правила, что у Happ и INCY на телефоне: местные сайты и игровые магазины напрямую, реклама блокируется, остальное через VPN. Ваш список ниже важнее этих правил.</value>
   </data>
   <data name="SvoRayServerRulesSuffix" xml:space="preserve">
-    <value> + правила сервера</value>
+    <value> + сервер</value>
+  </data>
+  <data name="SvoRayModeAllTraffic" xml:space="preserve">
+    <value>Весь трафик</value>
+  </data>
+  <data name="SvoRayModeBrowsers" xml:space="preserve">
+    <value>Браузеры</value>
+  </data>
+  <data name="SvoRayServer" xml:space="preserve">
+    <value>Сервер</value>
+  </data>
+  <data name="SvoRayUsage" xml:space="preserve">
+    <value>Трафик: {0} из {1}</value>
+  </data>
+  <data name="SvoRayUsageNoLimit" xml:space="preserve">
+    <value>Трафик: {0}</value>
+  </data>
+  <data name="SvoRayGamesBypassSuffix" xml:space="preserve">
+    <value> · игры без VPN</value>
+  </data>
+  <data name="SvoRayByteUnits" xml:space="preserve">
+    <value>Б,КБ,МБ,ГБ,ТБ</value>
+  </data>
+  <data name="SvoRayRoutingFromServer" xml:space="preserve">
+    <value>Правила с сервера</value>
+  </data>
+  <data name="SvoRayRoutingServerPlus" xml:space="preserve">
+    <value>Сервер + {0} {1}</value>
   </data>
 </root>

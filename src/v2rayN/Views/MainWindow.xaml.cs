@@ -92,7 +92,7 @@ public partial class MainWindow
         menuTrayToggle.Click += MenuTrayToggle_Click;
         menuShowWindow.Click += (_, _) => ShowHideWindow(true);
         menuTrayExit.Click += MenuTrayExit_Click;
-        SourceInitialized += (_, _) => SvoRayService.ApplyGlassBackdrop(this);
+        SourceInitialized += (_, _) => SvoRayService.ApplyWindowChrome(this);
 
         pbTheme.Content ??= new ThemeSettingView();
 
@@ -325,6 +325,10 @@ public partial class MainWindow
                 await ViewModel.Reload();
             }
             ShowSimpleStatus(enable ? ResUI.SvoRayGameModeOn : ResUI.SvoRayGameModeOff, false);
+            // A reload that ends in the same state raises no state change, so the tray icon
+            // and the subtitle would keep showing the previous mode.
+            ApplyTrayState(_trayState);
+            UpdateSimpleConnectionState(_lastConnectionState);
         }
         catch (Exception ex)
         {
@@ -353,7 +357,7 @@ public partial class MainWindow
         {
             await ConfigHandler.SaveConfig(_config);
             txtLanguageRestartNotice.Text = ResUI.SvoRayLanguageRestartNotice;
-            txtLanguageRestartNotice.Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xC8, 0x6A));
+            txtLanguageRestartNotice.Foreground = SvoRayPalette.Warning;
             txtLanguageRestartNotice.Visibility = Visibility.Visible;
         }
         catch (Exception ex)
@@ -365,7 +369,7 @@ public partial class MainWindow
             rdoLanguageEn.IsChecked = rdoLanguageRu.IsChecked != true;
             _suppressLanguageEvents = false;
             txtLanguageRestartNotice.Text = ResUI.SvoRayLanguageSaveFailed;
-            txtLanguageRestartNotice.Foreground = new SolidColorBrush(Color.FromRgb(0xF0, 0xA9, 0xA9));
+            txtLanguageRestartNotice.Foreground = SvoRayPalette.Danger;
             txtLanguageRestartNotice.Visibility = Visibility.Visible;
         }
     }
@@ -477,9 +481,7 @@ public partial class MainWindow
     private void ShowSimpleStatus(string message, bool isError)
     {
         txtSimpleStatus.Text = message;
-        txtSimpleStatus.Foreground = new SolidColorBrush(isError
-            ? Color.FromRgb(0xF0, 0xA9, 0xA9)
-            : Color.FromRgb(0x9F, 0xD9, 0xCE));
+        txtSimpleStatus.Foreground = isError ? SvoRayPalette.Danger : SvoRayPalette.TextSecondary;
         txtSimpleStatus.Visibility = Visibility.Visible;
 
         _simpleStatusTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
@@ -752,14 +754,22 @@ public partial class MainWindow
             _ when count > 0 => string.Format(ResUI.SvoRayWithoutVpnCount, count, DomainsWord(count)),
             _ => ResUI.SvoRayAllTrafficViaVpn
         };
-        txtRoutingSummary.Text = _config.SvoRayItem.UseServerRouting && _hasServerRouting
-            ? summary + ResUI.SvoRayServerRulesSuffix
-            : summary;
+        // Short on purpose: the summary shares one row with the label and is trimmed past it.
+        var server = _config.SvoRayItem.UseServerRouting && _hasServerRouting;
+        txtRoutingSummary.Text = (server, _config.SvoRayItem.RoutingMode) switch
+        {
+            (true, ESvoRayRoutingMode.BypassListed) when count > 0
+                => string.Format(ResUI.SvoRayRoutingServerPlus, count, DomainsWord(count)),
+            (true, ESvoRayRoutingMode.BypassListed) => ResUI.SvoRayRoutingFromServer,
+            (true, _) => summary + ResUI.SvoRayServerRulesSuffix,
+            _ => summary
+        };
     }
 
     /// <summary>
-    /// Whether any subscription carries a routing profile. Read after start-up and after every
-    /// subscription refresh, since that is the only time a profile can appear or disappear.
+    /// What the subscriptions last reported: whether any carries a routing profile, and the
+    /// traffic used against its quota for the footer. Read after start-up and after every
+    /// subscription refresh, since that is the only time either can change.
     /// </summary>
     private async Task RefreshServerRoutingFlagAsync()
     {
@@ -768,6 +778,28 @@ public partial class MainWindow
             var subs = await AppManager.Instance.SubItems() ?? [];
             _hasServerRouting = subs.Any(s => SvoRayServerRouting.Parse(s.RoutingProfile) is not null);
             UpdateRoutingSummary();
+
+            // The selected server's subscription first: with several, that is the quota in use.
+            var node = await AppManager.Instance.GetProfileItem(_config.IndexId);
+            var usage = subs
+                .OrderByDescending(s => s.Id == node?.Subid)
+                .Select(s => SvoRaySubscriptionUsage.Parse(s.UsageInfo))
+                .FirstOrDefault(u => u is not null);
+            if (usage is null)
+            {
+                txtUsage.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var units = ResUI.SvoRayByteUnits;
+            txtUsage.Text = usage.Total > 0
+                ? string.Format(ResUI.SvoRayUsage, SvoRaySubscriptionUsage.FormatBytes(usage.Used, units),
+                    SvoRaySubscriptionUsage.FormatBytes(usage.Total, units))
+                : string.Format(ResUI.SvoRayUsageNoLimit, SvoRaySubscriptionUsage.FormatBytes(usage.Used, units));
+            txtUsage.Foreground = usage.Total > 0 && usage.Used >= usage.Total * 0.9
+                ? SvoRayPalette.Warning
+                : SvoRayPalette.TextMuted;
+            txtUsage.Visibility = Visibility.Visible;
         }
         catch (Exception ex)
         {
@@ -805,7 +837,7 @@ public partial class MainWindow
         menuTrayToggle.IsEnabled = state != ESvoRayConnectionState.Connecting;
 
         tbNotify.ToolTipText = WindowsManager.GetNotifyToolTip(state);
-        tbNotify.Icon = await WindowsManager.Instance.GetNotifyIcon(state);
+        tbNotify.Icon = await WindowsManager.Instance.GetNotifyIcon(state, _config.SvoRayItem.GameMode);
         Icon = WindowsManager.Instance.GetAppIcon(_config);
     }
 
@@ -873,9 +905,9 @@ public partial class MainWindow
         _pingIndexId = null;
         btnCheckPing.IsEnabled = false;
         icoCheckPing.Kind = PackIconKind.TimerSandEmpty;
-        icoCheckPing.Foreground = Brushes.White;
+        icoCheckPing.Foreground = SvoRayPalette.TextSecondary;
         txtCheckPing.Text = ResUI.SvoRayChecking;
-        txtCheckPing.Foreground = Brushes.White;
+        txtCheckPing.Foreground = SvoRayPalette.TextSecondary;
 
         try
         {
@@ -898,9 +930,8 @@ public partial class MainWindow
             icoCheckPing.Kind = PackIconKind.ShieldCheck;
             var delayText = string.Format(ResUI.SvoRayMilliseconds, delay);
             txtCheckPing.Text = delayText;
-            var green = new SolidColorBrush(Color.FromRgb(0x5F, 0xE3, 0xB4));
-            txtCheckPing.Foreground = green;
-            icoCheckPing.Foreground = green;
+            txtCheckPing.Foreground = SvoRayPalette.Accent;
+            icoCheckPing.Foreground = SvoRayPalette.Accent;
             ShowSimpleStatus(country.IsNullOrEmpty() || country == "unknown"
                 ? string.Format(ResUI.SvoRayVpnWorks, delayText)
                 : string.Format(ResUI.SvoRayVpnWorksCountry, country, delayText), false);
@@ -922,7 +953,7 @@ public partial class MainWindow
         btnCheckPing.IsEnabled = false;
         icoCheckPing.Kind = PackIconKind.TimerSandEmpty;
         txtCheckPing.Text = ResUI.SvoRayChecking;
-        txtCheckPing.Foreground = Brushes.White;
+        txtCheckPing.Foreground = SvoRayPalette.TextSecondary;
 
         // The run can end without ever reporting a delay - the core may fail to start at all.
         // Without this the button would stay disabled for the rest of the session.
@@ -965,14 +996,9 @@ public partial class MainWindow
 
         icoCheckPing.Kind = PackIconKind.SpeedometerMedium;
         txtCheckPing.Text = string.Format(ResUI.SvoRayMilliseconds, delay);
-        var color = delay switch
-        {
-            < 150 => Color.FromRgb(0x5F, 0xE3, 0xB4),
-            < 400 => Color.FromRgb(0xE8, 0xC8, 0x6A),
-            _ => Color.FromRgb(0xF0, 0xA9, 0xA9)
-        };
-        txtCheckPing.Foreground = new SolidColorBrush(color);
-        icoCheckPing.Foreground = new SolidColorBrush(color);
+        var brush = SvoRayPalette.ForDelay(delay);
+        txtCheckPing.Foreground = brush;
+        icoCheckPing.Foreground = brush;
     }
 
     private void OnPingTimeout(object? sender, EventArgs e)
@@ -985,11 +1011,10 @@ public partial class MainWindow
 
     private void ShowPingFailure(string text)
     {
-        var red = new SolidColorBrush(Color.FromRgb(0xF0, 0xA9, 0xA9));
         icoCheckPing.Kind = PackIconKind.CloseCircleOutline;
-        icoCheckPing.Foreground = red;
+        icoCheckPing.Foreground = SvoRayPalette.Danger;
         txtCheckPing.Text = text;
-        txtCheckPing.Foreground = red;
+        txtCheckPing.Foreground = SvoRayPalette.Danger;
         ShowSimpleStatus(ResUI.SvoRayProfileNoResponse, true);
     }
 
@@ -1004,9 +1029,9 @@ public partial class MainWindow
         btnCheckPing.IsEnabled = _lastConnectionState
             is ESvoRayConnectionState.Off or ESvoRayConnectionState.On;
         icoCheckPing.Kind = PackIconKind.SpeedometerMedium;
-        icoCheckPing.Foreground = Brushes.White;
+        icoCheckPing.Foreground = SvoRayPalette.TextSecondary;
         txtCheckPing.Text = ResUI.SvoRayCheck;
-        txtCheckPing.Foreground = Brushes.White;
+        txtCheckPing.Foreground = SvoRayPalette.TextSecondary;
     }
 
     private void UpdateSimpleConnectionState(ESvoRayConnectionState state)
@@ -1014,6 +1039,15 @@ public partial class MainWindow
         _lastConnectionState = state;
         togSvoRayConnect.IsChecked = state is ESvoRayConnectionState.Connecting or ESvoRayConnectionState.On;
         togSvoRayConnect.IsEnabled = state != ESvoRayConnectionState.Connecting;
+        // The template tells "connecting" and "error" apart from plain on/off through Tag.
+        togSvoRayConnect.Tag = state.ToString();
+        txtConnectionTitle.Foreground = state switch
+        {
+            ESvoRayConnectionState.On => SvoRayPalette.Accent,
+            ESvoRayConnectionState.Connecting => SvoRayPalette.Warning,
+            ESvoRayConnectionState.Error => SvoRayPalette.Danger,
+            _ => SvoRayPalette.Text
+        };
 
         // Switching modes mid-handshake would take down a connection that is not up yet.
         rdoModeProxy.IsEnabled = rdoModeTun.IsEnabled = state != ESvoRayConnectionState.Connecting;
@@ -1040,9 +1074,10 @@ public partial class MainWindow
 
             case ESvoRayConnectionState.On:
                 txtConnectionTitle.Text = ResUI.SvoRayVpnOn;
-                txtConnectionSubtitle.Text = _config.SvoRayItem.Mode == ESvoRayMode.Proxy
+                txtConnectionSubtitle.Text = (_config.SvoRayItem.Mode == ESvoRayMode.Proxy
                     ? ResUI.SvoRayProxyOnDescription
-                    : ResUI.SvoRayTunOnDescription;
+                    : ResUI.SvoRayTunOnDescription)
+                    + (_config.SvoRayItem.GameMode ? ResUI.SvoRayGamesBypassSuffix : string.Empty);
                 break;
 
             case ESvoRayConnectionState.Error:

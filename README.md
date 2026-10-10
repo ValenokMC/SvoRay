@@ -55,6 +55,9 @@ subscription or profile and keep the option to use every upstream v2rayN setting
 - imports an HTTPS subscription or an individual `vless://`, `hysteria2://` and other links v2rayN supports
 - two connection modes: TUN for the whole system, or the Windows system proxy
 - a domain list that decides what the VPN carries: everything except the list, or the list only
+- **game mode**: games from Steam, Epic, EA, Battle.net, Riot, Ubisoft and GOG go direct with your normal ping while Discord and everything else stay on the VPN — one switch, even mid-connection
+- **rules from the server**: the routing profile your subscription sends in the Happ format (the one Happ and INCY use on the phone) applies on Windows too
+- traffic used and left on the subscription, when the provider reports it
 - picks the active Ethernet/Wi-Fi adapter and local IPv4 automatically
 - excludes the selected server's IP from TUN so traffic cannot loop
 - Cloudflare DNS: `1.1.1.1` and `https://1.1.1.1/dns-query`
@@ -73,7 +76,7 @@ SvoRay routes your traffic through a server you supply. It does not provide anon
 2. Optionally verify the download against `SHA256SUMS.txt` published with the release:
 
    ```powershell
-   Get-FileHash .\SvoRay-0.4.0-setup.exe -Algorithm SHA256
+   Get-FileHash .\SvoRay-0.5.0-setup.exe -Algorithm SHA256
    ```
 
    The build is not signed with a commercial certificate, so comparing the hash is the only way to confirm you got the right file.
@@ -89,12 +92,13 @@ A Start-menu shortcut is created. No desktop shortcut.
    language, then restart SvoRay as the notice says.
 3. Paste your subscription link or a single profile into the field and press **Import / Импортировать**.
 4. The form is replaced by a profile selector, and the first usable profile is selected automatically.
-5. Pick a mode: **Proxy / Прокси** covers applications that honour the Windows system proxy, **TUN** covers the whole system.
+5. Pick a mode: **All traffic / Весь трафик** (TUN) covers the whole system, **Browsers / Браузеры** covers applications that honour the Windows system proxy.
 6. Press the power button. Press it again to disconnect.
-7. **Check / Проверить** measures latency for the selected profile.
-8. **Routing / Маршрутизация** edits the domain list. Type `example.com`; subdomains are matched too, a whole list can be pasted at once, and the Russia preset fills in sites that commonly refuse a foreign address. DNS for a listed domain takes the same path as its traffic.
-9. **Support / Поддержка** opens the provider link supplied by the subscription, or GitHub Issues when none is available.
-10. The settings icon opens the full v2rayN interface.
+7. **Check / Проверить** in the server row measures latency for the selected profile.
+8. **Game mode / Игровой режим** sends games past the VPN while everything else stays on it. It matters in *All traffic* mode; in *Browsers* mode games bypass the VPN anyway.
+9. **Routing / Маршрутизация** edits the domain list. Type `example.com`; subdomains are matched too, a whole list can be pasted at once, and the Russia preset fills in sites that commonly refuse a foreign address. DNS for a listed domain takes the same path as its traffic. **Rules from the server** applies the subscription's own routing profile; your list takes priority over it.
+10. **Support / Поддержка** (the question-mark icon) opens the provider link supplied by the subscription, or GitHub Issues when none is available.
+11. The settings icon opens the full v2rayN interface.
 
 ## Update
 
@@ -128,14 +132,14 @@ Core binaries (`xray.exe`, `sing-box.exe`, `wintun.dll`) are copied from a local
 
 ## Status
 
-Version 0.4.0. What changed in each version: [CHANGELOG.md](CHANGELOG.md). Detailed 0.4.0
-notes: [docs/RELEASE_NOTES_0.4.0_RU.md](docs/RELEASE_NOTES_0.4.0_RU.md) (Russian).
+Version 0.5.0. What changed in each version: [CHANGELOG.md](CHANGELOG.md). Detailed 0.5.0
+notes: [docs/RELEASE_NOTES_0.5.0_RU.md](docs/RELEASE_NOTES_0.5.0_RU.md) (Russian).
 
 A pre-publication security audit has been completed — see [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for scope, findings, fixes and remaining risks. Notable fixes it produced: the downloaded subscription payload no longer reaches the log files, and profile links are kept out of the on-screen notice stream.
 
-Verified for 0.4.0: Release build and installer, 115/115 unit tests, complete Russian/English resources, safe support-header parsing and SQLite schema update. The English simple screen and the RU/EN control were visually inspected. Earlier release testing covered clean install, install over a previous version, import and subscription update, latency check and tray behaviour.
+Verified for 0.5.0: Release build and installer, 158/158 unit tests (server routing profile parsing and filtering, geo categories, Steam library discovery and exact path casing, rule order, generated Xray and sing-box configs, traffic header, RU/EN resources). The new screens were run against a production subscription: import, update, the traffic line, the server-rules marker, the game-mode switch and the routing window.
 
-Not verified in a live 0.4.0 session: the full import/connect/check/routing flow on both languages, a provider-supplied `Support-Url`, clean install or upgrade with this installer, uninstall with both user-data answers, Windows scaling at 125 % and 150 %, and the 0.3.1 core shutdown on disconnect.
+Not verified in a live 0.5.0 session: connecting with the new build and the connecting/on/error colours, game mode inside an actual game, smoothness on a monitor above 60 Hz, and upgrading over 0.4.0 with this installer.
 
 Known open defect: a single unexplained `OutOfMemoryException` was observed once, raised while the thread pool was creating a worker thread. It has not been reproduced. If the client hangs or exits unexpectedly, please do not close the process — capture a dump first and open an issue.
 

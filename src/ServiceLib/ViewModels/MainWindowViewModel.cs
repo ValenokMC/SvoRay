@@ -310,7 +310,24 @@ public class MainWindowViewModel : MyReactiveObject
             .ObserveOn(RxSchedulers.MainThreadScheduler)
             .Subscribe(async blProxy => await UpdateSubscriptionProcess("", blProxy));
 
-        _ = Init();
+        _ = InitLoggedAsync();
+    }
+
+    /// <summary>
+    /// Init runs fire-and-forget, so a throw inside it used to vanish: the steps after the
+    /// failing one never ran, which left the server list empty and the certificate policy
+    /// uninitialised, with nothing in the log to say why.
+    /// </summary>
+    private async Task InitLoggedAsync()
+    {
+        try
+        {
+            await Init();
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("MainWindowViewModel.Init", ex);
+        }
     }
 
     private async Task Init()
