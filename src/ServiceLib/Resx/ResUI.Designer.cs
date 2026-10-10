@@ -5888,5 +5888,88 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("SvoRaySupportTip", resourceCulture);
             }
         }
+        public static string SvoRayRuleGamesDirect {
+            get {
+                return ResourceManager.GetString("SvoRayRuleGamesDirect", resourceCulture);
+            }
+        }
+
+        public static string SvoRayRuleServerBlock {
+            get {
+                return ResourceManager.GetString("SvoRayRuleServerBlock", resourceCulture);
+            }
+        }
+
+        public static string SvoRayRuleServerViaVpn {
+            get {
+                return ResourceManager.GetString("SvoRayRuleServerViaVpn", resourceCulture);
+            }
+        }
+
+        public static string SvoRayRuleServerDirect {
+            get {
+                return ResourceManager.GetString("SvoRayRuleServerDirect", resourceCulture);
+            }
+        }
+
+        public static string SvoRayGameMode {
+            get {
+                return ResourceManager.GetString("SvoRayGameMode", resourceCulture);
+            }
+        }
+
+        public static string SvoRayGameModeOnShort {
+            get {
+                return ResourceManager.GetString("SvoRayGameModeOnShort", resourceCulture);
+            }
+        }
+
+        public static string SvoRayGameModeOffShort {
+            get {
+                return ResourceManager.GetString("SvoRayGameModeOffShort", resourceCulture);
+            }
+        }
+
+        public static string SvoRayGameModeTip {
+            get {
+                return ResourceManager.GetString("SvoRayGameModeTip", resourceCulture);
+            }
+        }
+
+        public static string SvoRayGameModeOn {
+            get {
+                return ResourceManager.GetString("SvoRayGameModeOn", resourceCulture);
+            }
+        }
+
+        public static string SvoRayGameModeOff {
+            get {
+                return ResourceManager.GetString("SvoRayGameModeOff", resourceCulture);
+            }
+        }
+
+        public static string SvoRayGameModeFailed {
+            get {
+                return ResourceManager.GetString("SvoRayGameModeFailed", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUseServerRouting {
+            get {
+                return ResourceManager.GetString("SvoRayUseServerRouting", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUseServerRoutingTip {
+            get {
+                return ResourceManager.GetString("SvoRayUseServerRoutingTip", resourceCulture);
+            }
+        }
+
+        public static string SvoRayServerRulesSuffix {
+            get {
+                return ResourceManager.GetString("SvoRayServerRulesSuffix", resourceCulture);
+            }
+        }
     }
 }

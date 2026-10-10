@@ -44,6 +44,7 @@ public partial class MainWindow
     private DispatcherTimer? _pingTimeoutTimer;
 
     private ESvoRayConnectionState _lastConnectionState = ESvoRayConnectionState.Off;
+    private bool _hasServerRouting;
 
     /// <summary>Set while the mode radio buttons are being set from the config rather than by the user.</summary>
     private bool _suppressModeEvents;
@@ -82,6 +83,7 @@ public partial class MainWindow
         btnShowImport.Click += BtnShowImport_Click;
         btnCancelImport.Click += BtnCancelImport_Click;
         btnSimpleRouting.Click += BtnSimpleRouting_Click;
+        togGameMode.Click += TogGameMode_Click;
         togSvoRayConnect.Click += TogSvoRayConnect_Click;
         rdoModeProxy.Checked += async (_, _) => await ApplyModeAsync(ESvoRayMode.Proxy);
         rdoModeTun.Checked += async (_, _) => await ApplyModeAsync(ESvoRayMode.Tun);
@@ -293,6 +295,48 @@ public partial class MainWindow
         _suppressModeEvents = false;
 
         UpdateRoutingSummary();
+        UpdateGameModeView();
+        _ = RefreshServerRoutingFlagAsync();
+    }
+
+    private void UpdateGameModeView()
+    {
+        togGameMode.IsChecked = _config.SvoRayItem.GameMode;
+        txtGameModeState.Text = _config.SvoRayItem.GameMode ? ResUI.SvoRayGameModeOnShort : ResUI.SvoRayGameModeOffShort;
+    }
+
+    /// <summary>
+    /// Flips game mode and, on a live connection, rebuilds it at once: the core reads the
+    /// routing profile at startup only, and a toggle that waits for the next connect would look
+    /// like it does nothing.
+    /// </summary>
+    private async void TogGameMode_Click(object sender, RoutedEventArgs e)
+    {
+        var enable = togGameMode.IsChecked == true;
+        togGameMode.IsEnabled = false;
+        try
+        {
+            _config.SvoRayItem.GameMode = enable;
+            await SvoRayRoutingHandler.ApplyAsync(_config);
+            await ConfigHandler.SaveConfig(_config);
+            await ViewModel.StatusBarViewModel.RefreshRoutingsMenu();
+            if (_lastConnectionState is not ESvoRayConnectionState.Off)
+            {
+                await ViewModel.Reload();
+            }
+            ShowSimpleStatus(enable ? ResUI.SvoRayGameModeOn : ResUI.SvoRayGameModeOff, false);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay game mode", ex);
+            _config.SvoRayItem.GameMode = !enable;
+            ShowSimpleStatus(ResUI.SvoRayGameModeFailed, true);
+        }
+        finally
+        {
+            UpdateGameModeView();
+            togGameMode.IsEnabled = true;
+        }
     }
 
     private async Task ApplyLanguageAsync(string language)
@@ -483,6 +527,7 @@ public partial class MainWindow
             {
                 _importFormPinned = false;
                 UpdateSimpleImportState(true);
+                await RefreshServerRoutingFlagAsync();
             }
             else
             {
@@ -511,6 +556,7 @@ public partial class MainWindow
             // A failed download does not throw; the handler reports it through the result.
             var updated = await ViewModel.UpdateSubscriptionProcess(string.Empty, false);
             await ViewModel.RefreshSimpleUiAsync();
+            await RefreshServerRoutingFlagAsync();
 
             if (updated)
             {
@@ -657,7 +703,8 @@ public partial class MainWindow
 
     private async void BtnSimpleRouting_Click(object sender, RoutedEventArgs e)
     {
-        var window = new SimpleRoutingWindow(_config.SvoRayItem.RoutingMode, _config.SvoRayItem.RuleDomains)
+        var window = new SimpleRoutingWindow(_config.SvoRayItem.RoutingMode, _config.SvoRayItem.RuleDomains,
+            _config.SvoRayItem.UseServerRouting, _hasServerRouting)
         {
             Owner = this
         };
@@ -670,6 +717,7 @@ public partial class MainWindow
         {
             _config.SvoRayItem.RoutingMode = window.ResultMode;
             _config.SvoRayItem.RuleDomains = window.ResultDomains;
+            _config.SvoRayItem.UseServerRouting = window.ResultUseServerRouting;
             await SvoRayRoutingHandler.ApplyAsync(_config);
             await ConfigHandler.SaveConfig(_config);
             await ViewModel.StatusBarViewModel.RefreshRoutingsMenu();
@@ -697,13 +745,34 @@ public partial class MainWindow
     private void UpdateRoutingSummary()
     {
         var count = _config.SvoRayItem.RuleDomains.Count;
-        txtRoutingSummary.Text = _config.SvoRayItem.RoutingMode switch
+        var summary = _config.SvoRayItem.RoutingMode switch
         {
             ESvoRayRoutingMode.ProxyListed when count > 0 => string.Format(ResUI.SvoRayViaVpnCount, count, DomainsWord(count)),
             ESvoRayRoutingMode.ProxyListed => ResUI.SvoRayVpnNotUsed,
             _ when count > 0 => string.Format(ResUI.SvoRayWithoutVpnCount, count, DomainsWord(count)),
             _ => ResUI.SvoRayAllTrafficViaVpn
         };
+        txtRoutingSummary.Text = _config.SvoRayItem.UseServerRouting && _hasServerRouting
+            ? summary + ResUI.SvoRayServerRulesSuffix
+            : summary;
+    }
+
+    /// <summary>
+    /// Whether any subscription carries a routing profile. Read after start-up and after every
+    /// subscription refresh, since that is the only time a profile can appear or disappear.
+    /// </summary>
+    private async Task RefreshServerRoutingFlagAsync()
+    {
+        try
+        {
+            var subs = await AppManager.Instance.SubItems() ?? [];
+            _hasServerRouting = subs.Any(s => SvoRayServerRouting.Parse(s.RoutingProfile) is not null);
+            UpdateRoutingSummary();
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay server routing flag", ex);
+        }
     }
 
     private static string DomainsWord(int count)

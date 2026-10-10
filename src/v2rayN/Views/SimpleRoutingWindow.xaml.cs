@@ -14,9 +14,16 @@ public partial class SimpleRoutingWindow : Window
 {
     private readonly ObservableCollection<string> _domains = [];
 
-    public SimpleRoutingWindow(ESvoRayRoutingMode mode, IEnumerable<string> domains)
+    public SimpleRoutingWindow(ESvoRayRoutingMode mode, IEnumerable<string> domains,
+        bool useServerRouting, bool serverRoutingAvailable)
     {
         InitializeComponent();
+
+        // Left editable even before a profile arrives: the choice still applies to the one the
+        // next subscription update may bring.
+        chkServerRouting.IsChecked = useServerRouting;
+        chkServerRouting.Opacity = serverRoutingAvailable ? 1 : 0.6;
+        ResultUseServerRouting = useServerRouting;
 
         foreach (var domain in domains)
         {
@@ -53,6 +60,7 @@ public partial class SimpleRoutingWindow : Window
                 ? ESvoRayRoutingMode.ProxyListed
                 : ESvoRayRoutingMode.BypassListed;
             ResultDomains = [.. _domains];
+            ResultUseServerRouting = chkServerRouting.IsChecked == true;
             DialogResult = true;
         };
         btnCancel.Click += (_, _) => DialogResult = false;
@@ -63,6 +71,8 @@ public partial class SimpleRoutingWindow : Window
     public ESvoRayRoutingMode ResultMode { get; private set; }
 
     public List<string> ResultDomains { get; private set; } = [];
+
+    public bool ResultUseServerRouting { get; private set; }
 
     private bool AddDomain()
     {

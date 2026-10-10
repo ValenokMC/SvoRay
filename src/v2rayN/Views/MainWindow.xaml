@@ -1227,6 +1227,73 @@
                                                 TextTrimming="CharacterEllipsis" />
                                         </Grid>
                                     </Button>
+                                    <!--
+                                        Game mode: one click sends games past the tunnel while Discord and
+                                        the rest stay on it. A toggle rather than a setting in the routing
+                                        window, because it is switched per session, often mid-connection.
+                                    -->
+                                    <ToggleButton
+                                        x:Name="togGameMode"
+                                        Height="42"
+                                        Margin="0,8,0,0"
+                                        Padding="12,0"
+                                        HorizontalContentAlignment="Stretch"
+                                        AutomationProperties.Name="{x:Static resx:ResUI.SvoRayGameMode}"
+                                        Foreground="White"
+                                        ToolTip="{x:Static resx:ResUI.SvoRayGameModeTip}">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border
+                                                    x:Name="Frame"
+                                                    Padding="{TemplateBinding Padding}"
+                                                    Background="#12FFFFFF"
+                                                    BorderBrush="#28FFFFFF"
+                                                    BorderThickness="1"
+                                                    CornerRadius="4">
+                                                    <ContentPresenter VerticalAlignment="Center" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Frame" Property="Background" Value="#22FFFFFF" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter TargetName="Frame" Property="Background" Value="#3343E4B5" />
+                                                        <Setter TargetName="Frame" Property="BorderBrush" Value="#8059F2CA" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Opacity" Value="0.5" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <materialDesign:PackIcon
+                                                Width="17"
+                                                Height="17"
+                                                Margin="0,0,8,0"
+                                                VerticalAlignment="Center"
+                                                Foreground="White"
+                                                Kind="GamepadVariantOutline" />
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                FontSize="12.5"
+                                                Text="{x:Static resx:ResUI.SvoRayGameMode}" />
+                                            <TextBlock
+                                                x:Name="txtGameModeState"
+                                                Grid.Column="2"
+                                                Margin="10,0,0,0"
+                                                VerticalAlignment="Center"
+                                                FontSize="11.5"
+                                                Foreground="#9FB8C6D8"
+                                                Text="{x:Static resx:ResUI.SvoRayGameModeOffShort}" />
+                                        </Grid>
+                                    </ToggleButton>
                                     <!--  Transient status line: simple mode never shows the shared v2rayN notices.  -->
                                     <TextBlock
                                         x:Name="txtSimpleStatus"

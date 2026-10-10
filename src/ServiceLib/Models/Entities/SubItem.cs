@@ -35,4 +35,10 @@ public class SubItem
     public string? Memo { get; set; }
 
     public string? SupportUrl { get; set; }
+
+    /// <summary>
+    /// Routing profile from the server's <c>routing</c> header, validated and stored as JSON;
+    /// null when the server sends none. See <see cref="SvoRayServerRouting"/>.
+    /// </summary>
+    public string? RoutingProfile { get; set; }
 }

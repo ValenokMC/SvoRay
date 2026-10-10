@@ -121,6 +121,13 @@
                         TextWrapping="Wrap" />
                 </StackPanel>
             </RadioButton>
+            <!--  The profile the subscription sends; dimmed while the server has sent none.  -->
+            <CheckBox
+                x:Name="chkServerRouting"
+                Margin="2,10,0,0"
+                Content="{x:Static resx:ResUI.SvoRayUseServerRouting}"
+                Foreground="White"
+                ToolTip="{x:Static resx:ResUI.SvoRayUseServerRoutingTip}" />
         </StackPanel>
 
         <StackPanel Grid.Row="1" Margin="0,0,0,10">

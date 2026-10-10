@@ -320,4 +320,16 @@ public class SvoRayItem
 
     /// <summary>Id of the routing profile simple mode generates, so it is reused instead of duplicated.</summary>
     public string? RoutingId { get; set; }
+
+    /// <summary>
+    /// Apply the routing profile the subscription sends (the same one Happ and INCY get), so a PC
+    /// keeps Russian sites and game stores direct like the phone does.
+    /// </summary>
+    public bool UseServerRouting { get; set; } = true;
+
+    /// <summary>
+    /// Game mode: everything started from a game library or launcher folder goes direct, while
+    /// Discord, the browser and the rest stay on the VPN. Off until the user switches it on.
+    /// </summary>
+    public bool GameMode { get; set; }
 }

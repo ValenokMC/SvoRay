@@ -213,7 +213,9 @@ public static class SvoRayRoutingHandler
             ?? new RoutingItem { Remarks = RoutingRemarks, Sort = items.Count + 1 };
         item.Remarks = RoutingRemarks;
 
-        var rules = BuildRules(config.SvoRayItem);
+        var inputs = await CollectInputsAsync(config);
+        var rules = BuildRules(config.SvoRayItem, inputs);
+        item.DomainStrategy = inputs.ServerProfile?.DomainStrategy ?? item.DomainStrategy;
         if (await ConfigHandler.AddBatchRoutingRules(item, JsonUtils.Serialize(rules, false)) != 0)
         {
             return;
@@ -223,7 +225,156 @@ public static class SvoRayRoutingHandler
         await ConfigHandler.SetDefaultRouting(config, item);
     }
 
+    /// <summary>
+    /// What the rules depend on beyond the user's own settings: the profile the subscription of
+    /// the selected server sends, the categories its geo files really contain, and where games
+    /// are installed on this PC. Gathered at connect time, so a new library or an updated
+    /// profile takes effect on the next connect without anything else to do.
+    /// </summary>
+    public static async Task<SvoRayRoutingInputs> CollectInputsAsync(Config config)
+    {
+        var settings = config.SvoRayItem;
+        SvoRayServerRoutingProfile? profile = null;
+        IReadOnlySet<string>? siteTags = null;
+        IReadOnlySet<string>? ipTags = null;
+
+        if (settings.UseServerRouting)
+        {
+            profile = await FindServerProfileAsync(config);
+            if (profile is not null)
+            {
+                await SvoRayServerRouting.EnsureGeoFilesAsync(profile);
+                siteTags = ReadTags(profile.GeositeUrl is null ? "geosite.dat" : SvoRayServerRouting.GeoSiteFileName);
+                ipTags = ReadTags(profile.GeoipUrl is null ? "geoip.dat" : SvoRayServerRouting.GeoIpFileName);
+            }
+        }
+
+        return new SvoRayRoutingInputs
+        {
+            ServerProfile = profile,
+            GeoSiteTags = siteTags,
+            GeoIpTags = ipTags,
+            GameFolders = settings.GameMode ? SvoRayGames.FindGameFolders() : [],
+        };
+
+        static IReadOnlySet<string>? ReadTags(string fileName)
+        {
+            var tags = SvoRayServerRouting.ReadGeoTags(Utils.GetBinPath(fileName));
+            return tags.Count > 0 ? tags : null;
+        }
+    }
+
+    /// <summary>
+    /// The profile of the subscription the selected server came from; failing that, the first
+    /// subscription that has one - simple mode usually holds a single subscription anyway.
+    /// </summary>
+    private static async Task<SvoRayServerRoutingProfile?> FindServerProfileAsync(Config config)
+    {
+        var node = await AppManager.Instance.GetProfileItem(config.IndexId);
+        var sub = node?.Subid.IsNotEmpty() == true ? await AppManager.Instance.GetSubItem(node.Subid) : null;
+        var profile = SvoRayServerRouting.Parse(sub?.RoutingProfile);
+        if (profile is not null)
+        {
+            return profile;
+        }
+
+        var subs = await AppManager.Instance.SubItems() ?? [];
+        return subs
+            .Select(s => SvoRayServerRouting.Parse(s.RoutingProfile))
+            .FirstOrDefault(p => p is not null);
+    }
+
     public static List<RulesItem> BuildRules(SvoRayItem settings)
+    {
+        return BuildRules(settings, new SvoRayRoutingInputs());
+    }
+
+    /// <summary>
+    /// Builds the simple screen's profile, top to bottom:
+    /// <list type="number">
+    /// <item>game mode - processes from game folders and launchers go direct, before anything
+    /// else can send them into the tunnel or block their QUIC;</item>
+    /// <item>the user's own list, which outranks the server's;</item>
+    /// <item>the server's block, proxy and direct groups in the order it asked for;</item>
+    /// <item>private networks direct, QUIC blocked on the tunnel, everything else by mode.</item>
+    /// </list>
+    /// </summary>
+    public static List<RulesItem> BuildRules(SvoRayItem settings, SvoRayRoutingInputs inputs)
+    {
+        var rules = new List<RulesItem>();
+
+        if (settings.GameMode)
+        {
+            rules.Add(new RulesItem
+            {
+                Remarks = ResUI.SvoRayRuleGamesDirect,
+                OutboundTag = Global.DirectTag,
+                Process = [.. inputs.GameFolders, .. SvoRayGames.ProcessNames]
+            });
+        }
+
+        rules.AddRange(BuildListRules(settings));
+
+        if (settings.UseServerRouting && inputs.ServerProfile is not null)
+        {
+            rules.AddRange(BuildServerRules(inputs.ServerProfile, inputs, settings.RoutingMode));
+        }
+
+        rules.AddRange(BuildTailRules(settings));
+        return rules;
+    }
+
+    private static List<RulesItem> BuildServerRules(SvoRayServerRoutingProfile profile, SvoRayRoutingInputs inputs,
+        ESvoRayRoutingMode mode)
+    {
+        var siteFile = profile.GeositeUrl is null ? null : SvoRayServerRouting.GeoSiteFileName;
+        var ipFile = profile.GeoipUrl is null ? null : SvoRayServerRouting.GeoIpFileName;
+        var dropped = new List<string>();
+        List<string> Sites(IEnumerable<string> list) =>
+            SvoRayServerRouting.RewriteGeo(list, Global.GeoSitePrefix, siteFile, inputs.GeoSiteTags, dropped);
+        List<string> Ips(IEnumerable<string> list) =>
+            SvoRayServerRouting.RewriteGeo(list, Global.GeoIPPrefix, ipFile, inputs.GeoIpTags, dropped);
+
+        var rules = new List<RulesItem>();
+        foreach (var group in profile.RouteOrder.Split('-'))
+        {
+            var (tag, remarks, sites, ips) = group switch
+            {
+                "block" => (Global.BlockTag, ResUI.SvoRayRuleServerBlock, Sites(profile.BlockSites), Ips(profile.BlockIp)),
+                "proxy" => (Global.ProxyTag, ResUI.SvoRayRuleServerViaVpn, Sites(profile.ProxySites), Ips(profile.ProxyIp)),
+                _ => (Global.DirectTag, ResUI.SvoRayRuleServerDirect, Sites(profile.DirectSites), Ips(profile.DirectIp)),
+            };
+            if (sites.Count + ips.Count == 0)
+            {
+                continue;
+            }
+
+            // Same reason as for the user's list: QUIC to the tunnel is refused so the browser
+            // falls back to TCP. Only in bypass mode, where the final rule blocks it as well.
+            if (tag == Global.ProxyTag && mode == ESvoRayRoutingMode.BypassListed)
+            {
+                rules.Add(new RulesItem
+                {
+                    Remarks = ResUI.SvoRayRuleQuicViaVpn,
+                    OutboundTag = Global.BlockTag,
+                    Port = "443",
+                    Network = "udp",
+                    Domain = sites,
+                    Ip = ips
+                });
+            }
+
+            rules.Add(new RulesItem { Remarks = remarks, OutboundTag = tag, Domain = sites, Ip = ips });
+        }
+
+        if (dropped.Count > 0)
+        {
+            Logging.SaveLog($"SvoRay server routing: left out {string.Join(", ", dropped.Distinct())}");
+        }
+        return rules;
+    }
+
+    private static List<RulesItem> BuildListRules(SvoRayItem settings)
     {
         var domains = (settings.RuleDomains ?? [])
             .Select(NormalizeDomain)
@@ -234,7 +385,6 @@ public static class SvoRayRoutingHandler
 
         var onlyListed = settings.RoutingMode == ESvoRayRoutingMode.ProxyListed;
         var listedTag = onlyListed ? Global.ProxyTag : Global.DirectTag;
-        var finalTag = onlyListed ? Global.DirectTag : Global.ProxyTag;
 
         var rules = new List<RulesItem>();
 
@@ -262,6 +412,15 @@ public static class SvoRayRoutingHandler
                 Domain = domains
             });
         }
+
+        return rules;
+    }
+
+    private static List<RulesItem> BuildTailRules(SvoRayItem settings)
+    {
+        var onlyListed = settings.RoutingMode == ESvoRayRoutingMode.ProxyListed;
+        var finalTag = onlyListed ? Global.DirectTag : Global.ProxyTag;
+        var rules = new List<RulesItem>();
 
         rules.Add(new RulesItem
         {
@@ -357,4 +516,24 @@ public static class SvoRayRoutingHandler
             ? text
             : string.Empty;
     }
+}
+
+/// <summary>
+/// Everything <see cref="SvoRayRoutingHandler.BuildRules(SvoRayItem, SvoRayRoutingInputs)"/>
+/// needs beyond the user's settings, gathered once per connect so the rule building itself
+/// stays a pure function the tests can drive.
+/// </summary>
+public sealed class SvoRayRoutingInputs
+{
+    /// <summary>Profile from the subscription, or null when it sends none or it is switched off.</summary>
+    public SvoRayServerRoutingProfile? ServerProfile { get; init; }
+
+    /// <summary>Categories in the geo file the profile's site lists use; null when unavailable.</summary>
+    public IReadOnlySet<string>? GeoSiteTags { get; init; }
+
+    /// <summary>Categories in the geo file the profile's address lists use; null when unavailable.</summary>
+    public IReadOnlySet<string>? GeoIpTags { get; init; }
+
+    /// <summary>Game library and launcher folders, as Xray folder entries ending in a slash.</summary>
+    public IReadOnlyList<string> GameFolders { get; init; } = [];
 }

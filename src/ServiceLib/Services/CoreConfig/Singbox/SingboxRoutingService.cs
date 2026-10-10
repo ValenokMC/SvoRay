@@ -429,12 +429,22 @@ public partial class CoreConfigSingboxService
                 ruleProcName.process_name ??= [];
                 var ruleProcPath = JsonUtils.DeepCopy(rule3);
                 ruleProcPath.process_path ??= [];
+                var ruleProcFolder = JsonUtils.DeepCopy(rule3);
+                ruleProcFolder.process_path_regex ??= [];
                 foreach (var process in item.Process)
                 {
                     // sing-box doesn't support this, fall back to process name match
                     if (process is "self/" or "xray/")
                     {
                         ruleProcName.process_name.Add(Utils.GetExeName("sing-box"));
+                        continue;
+                    }
+
+                    // A trailing slash is Xray's folder prefix. sing-box would take it as one exact
+                    // file path and never match, so it becomes a "starts with" regex instead.
+                    if (process.EndsWith('/') || process.EndsWith('\\'))
+                    {
+                        ruleProcFolder.process_path_regex.Add(FolderPrefixRegex(process));
                         continue;
                     }
 
@@ -464,6 +474,12 @@ public partial class CoreConfigSingboxService
                 if (ruleProcPath.process_path.Count > 0)
                 {
                     rules.Add(ruleProcPath);
+                    hasDomainIp = true;
+                }
+
+                if (ruleProcFolder.process_path_regex.Count > 0)
+                {
+                    rules.Add(ruleProcFolder);
                     hasDomainIp = true;
                 }
             }
@@ -522,6 +538,26 @@ public partial class CoreConfigSingboxService
             rule.domain_keyword?.Add(domain);
         }
         return true;
+    }
+
+    /// <summary>
+    /// "Process lives under this folder" for sing-box: a case-insensitive prefix regex over the
+    /// full image path. Only regex metacharacters are escaped - .NET's Regex.Escape also escapes
+    /// spaces, and Go's regexp rejects "\ ", which "Program Files" would hit at once.
+    /// </summary>
+    public static string FolderPrefixRegex(string folder)
+    {
+        var path = Utils.IsWindows() ? folder.Replace('/', '\\') : folder.Replace('\\', '/');
+        var escaped = new StringBuilder("(?i)^");
+        foreach (var c in path)
+        {
+            if (@"\.+*?()|[]{}^$".Contains(c))
+            {
+                escaped.Append('\\');
+            }
+            escaped.Append(c);
+        }
+        return escaped.ToString();
     }
 
     private static bool ParseV2Address(string address, Rule4Sbox rule)
