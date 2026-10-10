@@ -1,4 +1,4 @@
-<!--
+﻿<!--
     SvoRay design system: graphite surfaces, one mint accent, no effects.
 
     Performance rules every template here follows, because the previous look stuttered:
@@ -240,7 +240,7 @@
         <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="HasDropShadow" Value="False" />
         <Setter Property="FontFamily" Value="{StaticResource SvoRay.Font}" />
-        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="FontSize" Value="12" />
         <Setter Property="Foreground" Value="{x:Static common:SvoRayPalette.Text}" />
         <Setter Property="Background" Value="{x:Static common:SvoRayPalette.Surface}" />
         <Setter Property="BorderBrush" Value="{x:Static common:SvoRayPalette.BorderStrong}" />

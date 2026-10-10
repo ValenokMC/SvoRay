@@ -1849,7 +1849,7 @@
     <value>Расширенный режим и настройки</value>
   </data>
   <data name="SvoRayAdvancedModeTip" xml:space="preserve">
-    <value>Расширенный режим и настройки v2rayN</value>
+    <value>Расширенный режим: все настройки v2rayN</value>
   </data>
   <data name="SvoRayAllDomainsAlreadyListed" xml:space="preserve">
     <value>Все эти домены уже в списке.</value>
@@ -1864,13 +1864,13 @@
     <value>Проверить</value>
   </data>
   <data name="SvoRayCheckLiveTip" xml:space="preserve">
-    <value>Проверить, что трафик действительно идёт через VPN</value>
+    <value>Проверить, что трафик проходит через VPN, и определить страну выхода</value>
   </data>
   <data name="SvoRayCheckProfileTip" xml:space="preserve">
-    <value>Измерить задержку выбранного профиля через сам прокси</value>
+    <value>Измерить задержку до выбранного сервера</value>
   </data>
   <data name="SvoRayCheckUnavailableTip" xml:space="preserve">
-    <value>Доступно, когда VPN включён или выключен</value>
+    <value>Проверка доступна только при включённом или выключенном VPN</value>
   </data>
   <data name="SvoRayChecking" xml:space="preserve">
     <value>Проверяем…</value>
@@ -1900,7 +1900,7 @@
     <value>домена</value>
   </data>
   <data name="SvoRayDomainListHint" xml:space="preserve">
-    <value>example.com — можно вставить сразу список</value>
+    <value>example.com — можно вставить несколько доменов сразу</value>
   </data>
   <data name="SvoRayDomainMany" xml:space="preserve">
     <value>доменов</value>
@@ -1939,7 +1939,7 @@
     <value>Язык сохранён. Перезапустите SvoRay, чтобы применить его.</value>
   </data>
   <data name="SvoRayLanguageTip" xml:space="preserve">
-    <value>Выберите язык интерфейса. Чтобы применить изменение, перезапустите SvoRay.</value>
+    <value>Язык интерфейса. Изменение вступит в силу после перезапуска SvoRay.</value>
   </data>
   <data name="SvoRayMilliseconds" xml:space="preserve">
     <value>{0} мс</value>
@@ -1957,7 +1957,7 @@
     <value>Личный VPN</value>
   </data>
   <data name="SvoRayPoweredByV2rayN" xml:space="preserve">
-    <value>Работает на открытом движке v2rayN</value>
+    <value>Основано на открытом проекте v2rayN</value>
   </data>
   <data name="SvoRayPresetAlreadyListed" xml:space="preserve">
     <value>Набор уже в списке.</value>
@@ -1978,7 +1978,7 @@
     <value>Режим системного прокси</value>
   </data>
   <data name="SvoRayProxyOnDescription" xml:space="preserve">
-    <value>Через прокси идут программы, которые учитывают системные настройки</value>
+    <value>Через VPN работают приложения, использующие системный прокси</value>
   </data>
   <data name="SvoRayRemoveFromList" xml:space="preserve">
     <value>Удалить из списка</value>
@@ -1987,7 +1987,7 @@
     <value>Заменить</value>
   </data>
   <data name="SvoRayReplaceTip" xml:space="preserve">
-    <value>Заменить текущую подписку или сервер другой ссылкой</value>
+    <value>Заменить подписку выбранного сервера новой ссылкой</value>
   </data>
   <data name="SvoRayRouting" xml:space="preserve">
     <value>Маршрутизация</value>
@@ -1996,7 +1996,7 @@
     <value>Всё через VPN, кроме списка</value>
   </data>
   <data name="SvoRayRoutingBypassListedDescription" xml:space="preserve">
-    <value>Домены из списка идут напрямую — например банк или локальные сервисы.</value>
+    <value>Домены из списка открываются напрямую, например банки или локальные сервисы.</value>
   </data>
   <data name="SvoRayRoutingHowToApply" xml:space="preserve">
     <value>КАК ПРИМЕНЯТЬ СПИСОК</value>
@@ -2008,7 +2008,7 @@
     <value>Через VPN только список</value>
   </data>
   <data name="SvoRayRoutingProxyListedDescription" xml:space="preserve">
-    <value>Остальной трафик идёт напрямую. Пустой список означает, что VPN не используется вовсе.</value>
+    <value>Через VPN открываются только домены из списка, остальной трафик идёт напрямую. При пустом списке VPN не используется.</value>
   </data>
   <data name="SvoRayRoutingSaveFailed" xml:space="preserve">
     <value>Не удалось сохранить маршрутизацию. Откройте расширенные настройки.</value>
@@ -2017,7 +2017,7 @@
     <value>Маршрутизация сохранена.</value>
   </data>
   <data name="SvoRayRoutingTip" xml:space="preserve">
-    <value>Домены, для которых VPN включается или отключается отдельно</value>
+    <value>Правила маршрутизации: какие сайты открываются через VPN, а какие — напрямую</value>
   </data>
   <data name="SvoRayRuleListedViaVpn" xml:space="preserve">
     <value>SvoRay: только эти домены через VPN</value>
@@ -2047,7 +2047,7 @@
     <value>Набор для РФ</value>
   </data>
   <data name="SvoRayRussiaPresetTip" xml:space="preserve">
-    <value>Госуслуги, банки, Яндекс, VK, маркетплейсы и их CDN — то, что обычно не работает с зарубежного адреса</value>
+    <value>Добавить госуслуги, банки, Яндекс, VK, маркетплейсы и их CDN — сервисы, которые часто ограничивают доступ с зарубежных адресов</value>
   </data>
   <data name="SvoRaySave" xml:space="preserve">
     <value>Сохранить</value>
@@ -2098,7 +2098,7 @@
     <value>Режим TUN</value>
   </data>
   <data name="SvoRayTunOnDescription" xml:space="preserve">
-    <value>Через VPN идёт весь трафик системы</value>
+    <value>Весь трафик компьютера направляется через VPN</value>
   </data>
   <data name="SvoRayUpdate" xml:space="preserve">
     <value>Обновить</value>
@@ -2137,7 +2137,7 @@
     <value>Поддержка</value>
   </data>
   <data name="SvoRaySupportTip" xml:space="preserve">
-    <value>Открыть поддержку провайдера подписки или обращения SvoRay</value>
+    <value>Связаться с поддержкой провайдера подписки или сообщить о проблеме в SvoRay</value>
   </data>
   <data name="SvoRayRuleGamesDirect" xml:space="preserve">
     <value>SvoRay: игры без VPN</value>
@@ -2161,7 +2161,7 @@
     <value>выкл</value>
   </data>
   <data name="SvoRayGameModeTip" xml:space="preserve">
-    <value>Игры из Steam, Epic, EA, Battle.net, Riot, Ubisoft и GOG идут без VPN, с пингом вашего обычного интернета. Discord, браузер и всё остальное остаются в VPN. Важно в режиме TUN: в режиме прокси игры и так идут мимо VPN.</value>
+    <value>Игры и игровые лаунчеры (Steam, Epic, Battle.net, EA, Riot, Ubisoft, GOG и другие) подключаются напрямую, без задержки VPN. Остальной трафик, включая Discord и браузер, по-прежнему идёт через VPN. Действует в режиме TUN.</value>
   </data>
   <data name="SvoRayGameModeOn" xml:space="preserve">
     <value>Игровой режим включён: игры идут без VPN</value>
@@ -2176,7 +2176,7 @@
     <value>Правила с сервера</value>
   </data>
   <data name="SvoRayUseServerRoutingTip" xml:space="preserve">
-    <value>Применять маршрутизацию, которую присылает подписка, — те же правила, что у Happ и INCY на телефоне: местные сайты и игровые магазины напрямую, реклама блокируется, остальное через VPN. Ваш список ниже важнее этих правил.</value>
+    <value>Применять правила маршрутизации, которые передаёт подписка (те же, что в Happ и INCY): российские сайты и игровые сервисы — напрямую, реклама блокируется, остальной трафик — через VPN. Ваш список доменов имеет приоритет.</value>
   </data>
   <data name="SvoRayServerRulesSuffix" xml:space="preserve">
     <value> + сервер</value>
@@ -2191,7 +2191,7 @@
     <value>Трафик: {0}</value>
   </data>
   <data name="SvoRayGamesBypassSuffix" xml:space="preserve">
-    <value> · игры без VPN</value>
+    <value> · игры напрямую</value>
   </data>
   <data name="SvoRayByteUnits" xml:space="preserve">
     <value>Б,КБ,МБ,ГБ,ТБ</value>
@@ -2203,10 +2203,10 @@
     <value>Сервер + {0} {1}</value>
   </data>
   <data name="SvoRayProxyModeHint" xml:space="preserve">
-    <value>Через VPN — браузеры и программы с системным прокси Windows. Игры и Discord идут мимо VPN. Права администратора не нужны.</value>
+    <value>VPN используется приложениями с системным прокси, в основном браузерами. Игры и Discord подключаются напрямую. Права администратора не требуются.</value>
   </data>
   <data name="SvoRayTunModeHint" xml:space="preserve">
-    <value>Весь трафик компьютера через VPN, включая игры и Discord; работает игровой режим. Нужны права администратора (виртуальный адаптер).</value>
+    <value>Весь трафик компьютера, включая игры и Discord, идёт через виртуальный адаптер VPN. Доступен игровой режим. Требуются права администратора.</value>
   </data>
   <data name="SvoRayAboutProxyMode" xml:space="preserve">
     <value>О режиме Прокси</value>
@@ -2215,7 +2215,7 @@
     <value>О режиме TUN</value>
   </data>
   <data name="SvoRayAddTip" xml:space="preserve">
-    <value>Добавить ещё одну подписку или сервер; текущие останутся</value>
+    <value>Добавить подписку или сервер. Существующие подключения сохранятся.</value>
   </data>
   <data name="SvoRayReplaceConnection" xml:space="preserve">
     <value>Заменить подключение</value>
@@ -2224,7 +2224,7 @@
     <value>Обновить подписки</value>
   </data>
   <data name="SvoRayMore" xml:space="preserve">
-    <value>Ещё</value>
+    <value>Управление подписками</value>
   </data>
   <data name="SvoRayRemoveSubscription" xml:space="preserve">
     <value>Удалить подписку «{0}»</value>
@@ -2260,7 +2260,7 @@
     <value>Скачивание… {0}%</value>
   </data>
   <data name="SvoRayUpdateTip" xml:space="preserve">
-    <value>Обновления SvoRay с GitHub</value>
+    <value>Проверить обновления SvoRay на GitHub</value>
   </data>
   <data name="SvoRayUpdateCheckFailed" xml:space="preserve">
     <value>Не удалось связаться с GitHub.</value>
@@ -2281,7 +2281,7 @@
     <value>Установить SvoRay {0}? Сейчас установлена версия {1}.</value>
   </data>
   <data name="SvoRayUpdateDetails" xml:space="preserve">
-    <value>SvoRay скачает установщик с GitHub и сверит его контрольную сумму. Затем VPN отключится, SvoRay закроется, а после установки запустится снова.</value>
+    <value>SvoRay загрузит установщик с GitHub и проверит его контрольную сумму SHA-256. На время установки VPN будет отключён; после обновления приложение запустится повторно.</value>
   </data>
   <data name="SvoRayWhatsNew" xml:space="preserve">
     <value>Что нового в {0}</value>
@@ -2296,7 +2296,7 @@
     <value>СВОИ ПАПКИ ИГР</value>
   </data>
   <data name="SvoRayCustomGameFoldersTip" xml:space="preserve">
-    <value>При включённом игровом режиме всё, что запускается из этих папок, идёт мимо VPN. Для игр, которые SvoRay не нашёл сам.</value>
+    <value>При включённом игровом режиме приложения из этих папок подключаются напрямую. Укажите папки игр, которые не были найдены автоматически.</value>
   </data>
   <data name="SvoRayAddGameFolder" xml:space="preserve">
     <value>Добавить папку игры</value>
