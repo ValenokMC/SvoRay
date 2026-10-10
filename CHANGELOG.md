@@ -3,6 +3,14 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## 0.5.1 — 11 October 2026
+
+Full notes: [docs/RELEASE_NOTES_0.5.1_RU.md](docs/RELEASE_NOTES_0.5.1_RU.md) (Russian).
+
+The same program as 0.5.0 under a new version number, released so that 0.5.0 has something to
+update to: it checks SvoRay's own update path end to end — the footer button, the confirmation,
+the download, the SHA-256 check, the silent install and the restart.
+
 ## 0.5.0 — 10 October 2026
 
 Full notes: [docs/RELEASE_NOTES_0.5.0_RU.md](docs/RELEASE_NOTES_0.5.0_RU.md) (Russian).
