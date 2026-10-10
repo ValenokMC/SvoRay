@@ -203,13 +203,7 @@ public static class ConfigHandler
         }
         config.GlobalHotkeys ??= [];
 
-        config.SvoRayItem ??= new();
-        config.SvoRayItem.RuleDomains ??= [];
-        if (!config.SvoRayItem.HardwareRenderingMigrated)
-        {
-            config.GuiItem.EnableHWA = true;
-            config.SvoRayItem.HardwareRenderingMigrated = true;
-        }
+        MigrateSvoRayItem(config);
 
         if (config.SystemProxyItem.SystemProxyExceptions.IsNullOrEmpty())
         {
@@ -217,6 +211,26 @@ public static class ConfigHandler
         }
 
         return config;
+    }
+
+    /// <summary>
+    /// One-off SvoRay upgrades of a loaded config. Each runs once and leaves a flag behind, so
+    /// what the user changes afterwards is not reset on the next start.
+    /// </summary>
+    public static void MigrateSvoRayItem(Config config)
+    {
+        config.SvoRayItem ??= new();
+        config.SvoRayItem.RuleDomains ??= [];
+        if (!config.SvoRayItem.HardwareRenderingMigrated)
+        {
+            config.GuiItem.EnableHWA = true;
+            config.SvoRayItem.HardwareRenderingMigrated = true;
+        }
+        if (!config.SvoRayItem.TunDefaultMigrated)
+        {
+            config.SvoRayItem.Mode = ESvoRayMode.Tun;
+            config.SvoRayItem.TunDefaultMigrated = true;
+        }
     }
 
     /// <summary>

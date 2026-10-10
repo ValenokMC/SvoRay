@@ -5971,17 +5971,6 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("SvoRayServerRulesSuffix", resourceCulture);
             }
         }
-        public static string SvoRayModeAllTraffic {
-            get {
-                return ResourceManager.GetString("SvoRayModeAllTraffic", resourceCulture);
-            }
-        }
-
-        public static string SvoRayModeBrowsers {
-            get {
-                return ResourceManager.GetString("SvoRayModeBrowsers", resourceCulture);
-            }
-        }
 
         public static string SvoRayServer {
             get {
@@ -6020,6 +6009,18 @@ namespace ServiceLib.Resx {
         public static string SvoRayRoutingServerPlus {
             get {
                 return ResourceManager.GetString("SvoRayRoutingServerPlus", resourceCulture);
+            }
+        }
+
+        public static string SvoRayModeHelp {
+            get {
+                return ResourceManager.GetString("SvoRayModeHelp", resourceCulture);
+            }
+        }
+
+        public static string SvoRayModeHint {
+            get {
+                return ResourceManager.GetString("SvoRayModeHint", resourceCulture);
             }
         }
     }

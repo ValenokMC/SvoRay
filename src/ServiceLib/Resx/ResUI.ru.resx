@@ -2193,12 +2193,6 @@
   <data name="SvoRayServerRulesSuffix" xml:space="preserve">
     <value> + сервер</value>
   </data>
-  <data name="SvoRayModeAllTraffic" xml:space="preserve">
-    <value>Весь трафик</value>
-  </data>
-  <data name="SvoRayModeBrowsers" xml:space="preserve">
-    <value>Браузеры</value>
-  </data>
   <data name="SvoRayServer" xml:space="preserve">
     <value>Сервер</value>
   </data>
@@ -2219,5 +2213,12 @@
   </data>
   <data name="SvoRayRoutingServerPlus" xml:space="preserve">
     <value>Сервер + {0} {1}</value>
+  </data>
+  <data name="SvoRayModeHelp" xml:space="preserve">
+    <value>О режимах</value>
+  </data>
+  <data name="SvoRayModeHint" xml:space="preserve">
+    <value>Прокси — через VPN идут программы, которые используют системный прокси Windows, в основном браузеры. Игры и большинство программ идут напрямую. Прав администратора не нужно.
+TUN — виртуальный сетевой адаптер: через VPN идёт весь трафик компьютера. Нужен запуск от администратора. Игровой режим работает в TUN.</value>
   </data>
 </root>

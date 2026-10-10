@@ -472,6 +472,10 @@
                 Background="{x:Static common:SvoRayPalette.Background}"
                 TextElement.FontFamily="{StaticResource SvoRay.Font}"
                 TextElement.Foreground="{x:Static common:SvoRayPalette.Text}">
+                <Grid.Resources>
+                    <!--  Every hint on this screen uses the theme card, not the advanced UI's tooltip  -->
+                    <Style BasedOn="{StaticResource SvoRay.ToolTip}" TargetType="{x:Type ToolTip}" />
+                </Grid.Resources>
                 <Grid Margin="18,12,18,10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -568,24 +572,64 @@
                                 Text="{x:Static resx:ResUI.SvoRaySelectProfileAndConnect}"
                                 TextAlignment="Center" />
 
-                            <Border Margin="0,20,0,0" Style="{StaticResource SvoRay.SegmentHost}">
-                                <UniformGrid Rows="1">
-                                    <RadioButton
-                                        x:Name="rdoModeTun"
-                                        AutomationProperties.Name="{x:Static resx:ResUI.SvoRayTunMode}"
-                                        Content="{x:Static resx:ResUI.SvoRayModeAllTraffic}"
-                                        GroupName="SvoRayMode"
-                                        Style="{StaticResource SvoRaySegmentButton}"
-                                        ToolTip="{x:Static resx:ResUI.SvoRayTunModeTip}" />
-                                    <RadioButton
-                                        x:Name="rdoModeProxy"
-                                        AutomationProperties.Name="{x:Static resx:ResUI.SvoRayProxyMode}"
-                                        Content="{x:Static resx:ResUI.SvoRayModeBrowsers}"
-                                        GroupName="SvoRayMode"
-                                        Style="{StaticResource SvoRaySegmentButton}"
-                                        ToolTip="{x:Static resx:ResUI.SvoRaySystemProxyTip}" />
-                                </UniformGrid>
-                            </Border>
+                            <!--  Proxy on the left, TUN on the right, as in 0.4.0; the "i" explains both  -->
+                            <Grid Margin="0,20,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Style="{StaticResource SvoRay.SegmentHost}">
+                                    <UniformGrid Rows="1">
+                                        <RadioButton
+                                            x:Name="rdoModeProxy"
+                                            AutomationProperties.Name="{x:Static resx:ResUI.SvoRayProxyMode}"
+                                            Content="{x:Static resx:ResUI.SvoRayProxy}"
+                                            GroupName="SvoRayMode"
+                                            Style="{StaticResource SvoRaySegmentButton}"
+                                            ToolTip="{x:Static resx:ResUI.SvoRaySystemProxyTip}" />
+                                        <RadioButton
+                                            x:Name="rdoModeTun"
+                                            AutomationProperties.Name="{x:Static resx:ResUI.SvoRayTunMode}"
+                                            Content="TUN"
+                                            GroupName="SvoRayMode"
+                                            Style="{StaticResource SvoRaySegmentButton}"
+                                            ToolTip="{x:Static resx:ResUI.SvoRayTunModeTip}" />
+                                    </UniformGrid>
+                                </Border>
+                                <!--
+                                    A Label rather than a Border so screen readers find it and read the hint;
+                                    the transparent background makes the whole 36 px square show it, not just the glyph.
+                                -->
+                                <Label
+                                    x:Name="iconModeHelp"
+                                    Grid.Column="1"
+                                    Width="36"
+                                    Height="36"
+                                    Margin="6,0,-6,0"
+                                    Padding="0"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    AutomationProperties.HelpText="{x:Static resx:ResUI.SvoRayModeHint}"
+                                    AutomationProperties.Name="{x:Static resx:ResUI.SvoRayModeHelp}"
+                                    Background="Transparent"
+                                    Focusable="True"
+                                    FocusVisualStyle="{x:Null}"
+                                    Style="{x:Null}"
+                                    ToolTipService.InitialShowDelay="150"
+                                    ToolTipService.Placement="Left"
+                                    ToolTipService.ShowDuration="60000">
+                                    <Label.ToolTip>
+                                        <ToolTip>
+                                            <TextBlock Text="{x:Static resx:ResUI.SvoRayModeHint}" TextWrapping="Wrap" />
+                                        </ToolTip>
+                                    </Label.ToolTip>
+                                    <materialDesign:PackIcon
+                                        Width="19"
+                                        Height="19"
+                                        Foreground="{x:Static common:SvoRayPalette.TextSecondary}"
+                                        Kind="InformationOutline" />
+                                </Label>
+                            </Grid>
 
                             <!--  ImportState: shown while no profile exists, or on explicit "add or replace"  -->
                             <StackPanel x:Name="ImportStatePanel" Margin="0,20,0,0">

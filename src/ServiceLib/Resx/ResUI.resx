@@ -2211,12 +2211,6 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="SvoRayServerRulesSuffix" xml:space="preserve">
     <value> + server</value>
   </data>
-  <data name="SvoRayModeAllTraffic" xml:space="preserve">
-    <value>All traffic</value>
-  </data>
-  <data name="SvoRayModeBrowsers" xml:space="preserve">
-    <value>Browsers</value>
-  </data>
   <data name="SvoRayServer" xml:space="preserve">
     <value>Server</value>
   </data>
@@ -2237,5 +2231,12 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   </data>
   <data name="SvoRayRoutingServerPlus" xml:space="preserve">
     <value>Server + {0} {1}</value>
+  </data>
+  <data name="SvoRayModeHelp" xml:space="preserve">
+    <value>About the modes</value>
+  </data>
+  <data name="SvoRayModeHint" xml:space="preserve">
+    <value>Proxy — programs that use the Windows system proxy go through the VPN, mostly browsers. Games and most other programs go direct. No administrator rights needed.
+TUN — a virtual network adapter: all of the computer's traffic goes through the VPN. Requires running as administrator. Game mode works in TUN.</value>
   </data>
 </root>

@@ -341,4 +341,10 @@ public class SvoRayItem
     /// settings are left alone.
     /// </summary>
     public bool HardwareRenderingMigrated { get; set; }
+
+    /// <summary>
+    /// Set once a config written by an earlier build has been switched to TUN, the 0.5.0 default.
+    /// After that the user's choice of mode is kept as is.
+    /// </summary>
+    public bool TunDefaultMigrated { get; set; }
 }

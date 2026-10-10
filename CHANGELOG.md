@@ -26,9 +26,11 @@ Full notes: [docs/RELEASE_NOTES_0.5.0_RU.md](docs/RELEASE_NOTES_0.5.0_RU.md) (Ru
 
 - **A new look.** Graphite surfaces with one mint accent, a single connect button with distinct
   connecting and error states, a server row with the delay inside it, settings-style rows for
-  game mode and routing, and clearer mode names ("All traffic" / "Browsers"). New application
-  and tray icons: a ring, with tray states that differ by shape — off, connecting, on, game mode
-  and error. The routing window and advanced mode's accent follow the same palette.
+  game mode and routing, and a hint next to the Proxy / TUN switch that explains what each mode
+  sends through the VPN. New application and tray icons: a ring, with tray states that differ by
+  shape — off, connecting, on, game mode and error. The routing window and advanced mode's accent follow the same palette.
+- **TUN is the default mode.** New installations start in TUN, and installations upgraded from
+  0.4.x are switched to it once; a mode chosen after that is kept.
 - **Smooth rendering.** SvoRay draws on the GPU by default (v2rayN's software-only default made
   the window stutter), existing installations are switched once, animations run at the
   monitor's refresh rate instead of WPF's 60 fps cap, and the large blurs and shadows are gone.

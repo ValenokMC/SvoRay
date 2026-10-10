@@ -92,10 +92,10 @@ A Start-menu shortcut is created. No desktop shortcut.
    language, then restart SvoRay as the notice says.
 3. Paste your subscription link or a single profile into the field and press **Import / Импортировать**.
 4. The form is replaced by a profile selector, and the first usable profile is selected automatically.
-5. Pick a mode: **All traffic / Весь трафик** (TUN) covers the whole system, **Browsers / Браузеры** covers applications that honour the Windows system proxy.
+5. Pick a mode: **Proxy / Прокси** covers applications that honour the Windows system proxy, mostly browsers; **TUN** covers all of the computer's traffic and is the default. The **i** icon next to the switch explains the difference.
 6. Press the power button. Press it again to disconnect.
 7. **Check / Проверить** in the server row measures latency for the selected profile.
-8. **Game mode / Игровой режим** sends games past the VPN while everything else stays on it. It matters in *All traffic* mode; in *Browsers* mode games bypass the VPN anyway.
+8. **Game mode / Игровой режим** sends games past the VPN while everything else stays on it. It matters in *TUN* mode; in *Proxy* mode games bypass the VPN anyway.
 9. **Routing / Маршрутизация** edits the domain list. Type `example.com`; subdomains are matched too, a whole list can be pasted at once, and the Russia preset fills in sites that commonly refuse a foreign address. DNS for a listed domain takes the same path as its traffic. **Rules from the server** applies the subscription's own routing profile; your list takes priority over it.
 10. **Support / Поддержка** (the question-mark icon) opens the provider link supplied by the subscription, or GitHub Issues when none is available.
 11. The settings icon opens the full v2rayN interface.
@@ -137,7 +137,7 @@ notes: [docs/RELEASE_NOTES_0.5.0_RU.md](docs/RELEASE_NOTES_0.5.0_RU.md) (Russian
 
 A pre-publication security audit has been completed — see [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for scope, findings, fixes and remaining risks. Notable fixes it produced: the downloaded subscription payload no longer reaches the log files, and profile links are kept out of the on-screen notice stream.
 
-Verified for 0.5.0: Release build and installer, 158/158 unit tests (server routing profile parsing and filtering, geo categories, Steam library discovery and exact path casing, rule order, generated Xray and sing-box configs, traffic header, RU/EN resources). The new screens were run against a production subscription: import, update, the traffic line, the server-rules marker, the game-mode switch and the routing window.
+Verified for 0.5.0: Release build and installer, 160/160 unit tests (server routing profile parsing and filtering, geo categories, Steam library discovery and exact path casing, rule order, generated Xray and sing-box configs, traffic header, RU/EN resources, the one-off switch of upgraded installations to TUN). The new screens were run against a production subscription: import, update, the traffic line, the server-rules marker, the game-mode switch and the routing window.
 
 Not verified in a live 0.5.0 session: connecting with the new build and the connecting/on/error colours, game mode inside an actual game, smoothness on a monitor above 60 Hz, and upgrading over 0.4.0 with this installer.
 
