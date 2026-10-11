@@ -20,7 +20,7 @@
 
 **English** · [Русский](README_RU.md) · [Changelog](CHANGELOG.md) · [Releases](https://github.com/ValenokMC/SvoRay/releases) · [Support](SUPPORT.md)
 
-[**Download SvoRay for Windows →**](https://github.com/ValenokMC/SvoRay/releases/latest)<br>
+[**Download SvoRay for Windows →**](https://github.com/ValenokMC/SvoRay/releases/latest/download/SvoRay-setup.exe)<br>
 Windows 10/11 x64 · installer and portable ZIP · no account required
 
 </div>
@@ -55,6 +55,11 @@ subscription or profile and keep the option to use every upstream v2rayN setting
 - imports an HTTPS subscription or an individual `vless://`, `hysteria2://` and other links v2rayN supports
 - two connection modes: TUN for the whole system, or the Windows system proxy
 - a domain list that decides what the VPN carries: everything except the list, or the list only
+- **game mode**: games from Steam, Epic, Battle.net, EA app, Rockstar, GOG, Ubisoft, Riot, Lesta, HoYoPlay, Xbox and Roblox, plus folders you add yourself, go direct with your normal ping while Discord and everything else stay on the VPN — one switch, even mid-connection
+- **rules from the server**: the routing profile your subscription sends in the Happ format (the one Happ and INCY use on the phone) applies on Windows too
+- several subscriptions side by side: add, replace or remove one from the server row; each server shows which subscription it comes from
+- traffic used and left on the selected server's subscription, when the provider reports it
+- updates itself from GitHub releases, checking the installer's SHA-256 first
 - picks the active Ethernet/Wi-Fi adapter and local IPv4 automatically
 - excludes the selected server's IP from TUN so traffic cannot loop
 - Cloudflare DNS: `1.1.1.1` and `https://1.1.1.1/dns-query`
@@ -69,11 +74,11 @@ SvoRay routes your traffic through a server you supply. It does not provide anon
 
 ## Install
 
-1. Download `SvoRay-<version>-setup.exe` from [Releases](../../releases).
+1. Download the installer: <https://github.com/ValenokMC/SvoRay/releases/latest/download/SvoRay-setup.exe> always gives the latest version (the same file as `SvoRay-<version>-setup.exe` in [Releases](../../releases)).
 2. Optionally verify the download against `SHA256SUMS.txt` published with the release:
 
    ```powershell
-   Get-FileHash .\SvoRay-0.4.0-setup.exe -Algorithm SHA256
+   Get-FileHash .\SvoRay-setup.exe -Algorithm SHA256
    ```
 
    The build is not signed with a commercial certificate, so comparing the hash is the only way to confirm you got the right file.
@@ -89,16 +94,19 @@ A Start-menu shortcut is created. No desktop shortcut.
    language, then restart SvoRay as the notice says.
 3. Paste your subscription link or a single profile into the field and press **Import / Импортировать**.
 4. The form is replaced by a profile selector, and the first usable profile is selected automatically.
-5. Pick a mode: **Proxy / Прокси** covers applications that honour the Windows system proxy, **TUN** covers the whole system.
+5. Pick a mode: **Proxy / Прокси** covers applications that honour the Windows system proxy, mostly browsers; **TUN** covers all of the computer's traffic and is the default. The **i** icon next to the switch explains the difference.
 6. Press the power button. Press it again to disconnect.
-7. **Check / Проверить** measures latency for the selected profile.
-8. **Routing / Маршрутизация** edits the domain list. Type `example.com`; subdomains are matched too, a whole list can be pasted at once, and the Russia preset fills in sites that commonly refuse a foreign address. DNS for a listed domain takes the same path as its traffic.
-9. **Support / Поддержка** opens the provider link supplied by the subscription, or GitHub Issues when none is available.
-10. The settings icon opens the full v2rayN interface.
+7. **Check / Проверить** in the server row measures latency for the selected profile. Above the row, **↻** refreshes every subscription, **Add / Добавить** adds another subscription or server, **Replace / Заменить** swaps the selected server's source for a new link, and **…** removes a subscription or a single server.
+8. **Game mode / Игровой режим** sends games past the VPN while everything else stays on it. It matters in *TUN* mode; in *Proxy* mode games bypass the VPN anyway.
+9. **Routing / Маршрутизация** edits the domain list and your own game folders. Type `example.com`; subdomains are matched too, a whole list can be pasted at once, and the Russia preset fills in sites that commonly refuse a foreign address. DNS for a listed domain takes the same path as its traffic. **Rules from the server** applies the subscription's own routing profile; your list takes priority over it.
+10. **Support / Поддержка** (the question-mark icon) opens the provider link supplied by the subscription, or GitHub Issues when none is available.
+11. The settings icon opens the full v2rayN interface.
 
 ## Update
 
-Run the new installer over the current version. Settings, subscriptions and profiles are kept. The installer closes the running client and core before replacing files.
+The button at the bottom left checks SvoRay's GitHub releases once a day and on click. When a newer release is out it reads **Update to X.Y.Z**: SvoRay downloads that release's installer, checks it against the release's `SHA256SUMS.txt`, turns the VPN off, closes and installs the update, then starts again.
+
+You can also run the new installer over the current version yourself. Settings, subscriptions and profiles are kept. The installer closes the running client and core before replacing files.
 
 ## Uninstall
 
@@ -128,14 +136,14 @@ Core binaries (`xray.exe`, `sing-box.exe`, `wintun.dll`) are copied from a local
 
 ## Status
 
-Version 0.4.0. What changed in each version: [CHANGELOG.md](CHANGELOG.md). Detailed 0.4.0
-notes: [docs/RELEASE_NOTES_0.4.0_RU.md](docs/RELEASE_NOTES_0.4.0_RU.md) (Russian).
+Version 0.5.0. What changed in each version: [CHANGELOG.md](CHANGELOG.md). Detailed 0.5.0
+notes: [docs/RELEASE_NOTES_0.5.0_RU.md](docs/RELEASE_NOTES_0.5.0_RU.md) (Russian).
 
 A pre-publication security audit has been completed — see [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for scope, findings, fixes and remaining risks. Notable fixes it produced: the downloaded subscription payload no longer reaches the log files, and profile links are kept out of the on-screen notice stream.
 
-Verified for 0.4.0: Release build and installer, 115/115 unit tests, complete Russian/English resources, safe support-header parsing and SQLite schema update. The English simple screen and the RU/EN control were visually inspected. Earlier release testing covered clean install, install over a previous version, import and subscription update, latency check and tray behaviour.
+Verified for 0.5.0: Release build and installer, 213/213 unit tests (server routing profile parsing and filtering, geo categories, every game-launcher format, junctions and too-broad folders, rule order, generated Xray and sing-box configs, traffic header, GitHub release parsing and SHA-256 checks, subscription labels and duplicates, RU/EN resources, the one-off switch of upgraded installations to TUN). The update was checked against the real GitHub release: download and SHA-256 match. The new screens were run against a production subscription: import, update, the traffic line, the server-rules marker, the game-mode switch and the routing window.
 
-Not verified in a live 0.4.0 session: the full import/connect/check/routing flow on both languages, a provider-supplied `Support-Url`, clean install or upgrade with this installer, uninstall with both user-data answers, Windows scaling at 125 % and 150 %, and the 0.3.1 core shutdown on disconnect.
+Not verified in a live 0.5.0 session: connecting with the new build and the connecting/on/error colours, game mode inside an actual game, smoothness on a monitor above 60 Hz, and upgrading over 0.4.0 with this installer.
 
 Known open defect: a single unexplained `OutOfMemoryException` was observed once, raised while the thread pool was creating a worker thread. It has not been reproduced. If the client hangs or exits unexpectedly, please do not close the process — capture a dump first and open an issue.
 

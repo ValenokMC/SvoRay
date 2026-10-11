@@ -3,6 +3,99 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## 0.5.2 — 11 October 2026
+
+Full notes: [docs/RELEASE_NOTES_0.5.2_RU.md](docs/RELEASE_NOTES_0.5.2_RU.md) (Russian).
+
+### Security
+
+- **Only local paths from launcher records and the registry are touched.** SvoRay runs elevated,
+  and some launcher records sit in folders any user can write to. A planted `\\host\share` path
+  would have made it open a network share and hand that host the user's NTLM credentials. Game
+  discovery, final-path resolution and the server-routing geo files now accept only fully
+  qualified paths on a local drive. Found by CodeQL.
+
+### Added
+
+- **A permanent download link**: every release also carries `SvoRay-setup.exe`, so
+  <https://github.com/ValenokMC/SvoRay/releases/latest/download/SvoRay-setup.exe> always downloads
+  the latest installer.
+
+## 0.5.1 — 11 October 2026
+
+Full notes: [docs/RELEASE_NOTES_0.5.1_RU.md](docs/RELEASE_NOTES_0.5.1_RU.md) (Russian).
+
+The same program as 0.5.0 under a new version number, released so that 0.5.0 has something to
+update to: it checks SvoRay's own update path end to end — the footer button, the confirmation,
+the download, the SHA-256 check, the silent install and the restart.
+
+## 0.5.0 — 10 October 2026
+
+Full notes: [docs/RELEASE_NOTES_0.5.0_RU.md](docs/RELEASE_NOTES_0.5.0_RU.md) (Russian).
+
+### Added
+
+- **Game mode.** One switch on the main screen sends everything started from game folders past
+  the tunnel while Discord, the browser and the rest stay on it. Steam libraries are found through
+  the registry and `libraryfolders.vdf` on any drive; Epic, Battle.net (uninstall entries and
+  `product.db`), EA app, Rockstar, GOG, Ubisoft, Riot on any drive, Lesta / Wargaming Game Center,
+  HoYoPlay, Xbox game roots (`.GamingRoot`), Roblox, Easy Anti-Cheat and BattlEye are found from
+  each launcher's own records, and folders can be added by hand in the routing window. Folders are
+  matched by their final path, so junctions work, and anything as wide as a drive root or Program
+  Files is refused from every source. It covers UDP game traffic too and can be switched
+  mid-connection.
+- **Rules from the server.** The routing profile a subscription sends in the Happ format — the
+  same one Happ and INCY apply on the phone — now applies on Windows: block, proxy and direct
+  groups in the server's order, after the user's own list. Its geo files are downloaded next to
+  the stock ones and reached through `ext:`; a category a file lacks is left out instead of
+  stopping Xray from starting. A switch in the routing window turns it off.
+- **Several subscriptions.** The server row gains ↻ (refresh every subscription), Add (another
+  subscription or a single server), Replace (swap the selected server's source) and … (remove a
+  subscription or a single server, with a themed confirmation). The selector lists the servers of
+  every subscription and names the subscription when there is more than one, from the
+  `profile-title` header or the link's host. The same link added twice creates no duplicate, and
+  servers added on their own no longer belong to whichever subscription was current.
+- **Traffic left on the subscription** under the server row, from the selected server's
+  `Subscription-Userinfo`, highlighted once 90 % of a quota is used.
+- **SvoRay updates itself** from its GitHub releases: a daily check and one on demand, stable
+  releases only, versions compared as numbers. The installer and `SHA256SUMS.txt` are taken only
+  from that release's assets and the installer runs only when its SHA-256 matches; the system proxy
+  is cleared and the core stopped first, the installer runs `/SILENT` and starts the new version.
+  v2rayN's own self-update, which would have installed v2rayN, is disabled.
+
+### Changed
+
+- **A new look.** Graphite surfaces with one mint accent, a single connect button with distinct
+  connecting and error states, a server row with the delay inside it, settings-style rows for
+  game mode and routing, and a full-width Proxy | TUN switch whose halves each carry an "i" that
+  explains that mode on hover or keyboard focus; confirmations and the tray menu use the same
+  dark style instead of Windows' light dialogs. New application and tray icons: a ring, with tray states that differ by
+  shape — off, connecting, on, game mode and error. The routing window and advanced mode's accent follow the same palette.
+- **TUN is the default mode.** New installations start in TUN, and installations upgraded from
+  0.4.x are switched to it once; a mode chosen after that is kept.
+- **Smooth rendering.** SvoRay draws on the GPU by default (v2rayN's software-only default made
+  the window stutter), existing installations are switched once, animations run at the
+  monitor's refresh rate instead of WPF's 60 fps cap, and the large blurs and shadows are gone.
+
+### Fixed
+
+- **Nothing that goes direct worked in TUN mode** — Steam, local sites, games in game mode, the
+  core's own DNS — wherever IPv4 forwarding was on for the physical adapter (software that shares
+  the connection with a virtual network turns it on, e.g. the Codex sandbox's `vgate0`). Windows
+  then ignores the interface binding the core relies on to send direct traffic past its own TUN.
+  SvoRay now turns forwarding off on that adapter while TUN is up (active store only, re-checked
+  every 20 s, recorded so a crash is undone at the next start) and back on afterwards. The same
+  cause made the core hold ~16,000 UDP sockets, nearly every dynamic port, for up to ten minutes.
+  As a safeguard, the core's own traffic coming back through its TUN is also dropped.
+- Picking a server of another subscription mid-connection kept the previous subscription's rules
+  and the game folders found at connect until the next reconnect.
+
+- A failure while the main window initialises is now logged with its cause. Before, it vanished
+  and left the server list empty; it also left the certificate policy without its config, so
+  every subscription download fell back to a path that drops response headers. The certificate
+  policy now reads the app config on its own, and exception logs keep the full inner-exception
+  chain.
+
 ## 0.4.0 — 3 August 2026
 
 Full notes: [docs/RELEASE_NOTES_0.4.0_RU.md](docs/RELEASE_NOTES_0.4.0_RU.md) (Russian).

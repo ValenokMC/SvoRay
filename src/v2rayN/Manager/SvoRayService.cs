@@ -8,7 +8,9 @@ internal static class SvoRayService
 {
     private const int DwmwaUseImmersiveDarkMode = 20;
     private const int DwmwaWindowCornerPreference = 33;
-    private const int DwmwaSystemBackdropType = 38;
+    private const int DwmwaBorderColor = 34;
+    private const int DwmwaCaptionColor = 35;
+    private const int DwmwaTextColor = 36;
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int valueSize);
@@ -16,7 +18,12 @@ internal static class SvoRayService
     [DllImport("iphlpapi.dll", CharSet = CharSet.Auto)]
     private static extern int GetBestInterface(uint destinationAddress, out uint bestInterfaceIndex);
 
-    public static void ApplyGlassBackdrop(Window window)
+    /// <summary>
+    /// Dark, rounded window chrome whose title bar takes the app's own background, so the frame
+    /// and the content read as one surface. All of it is drawn by the desktop compositor, which
+    /// costs the app nothing per frame - unlike the blurred glows the previous look used.
+    /// </summary>
+    public static void ApplyWindowChrome(Window window)
     {
         try
         {
@@ -28,16 +35,23 @@ internal static class SvoRayService
 
             var enabled = 1;
             var rounded = 2;
-            var mica = 2;
+            var caption = ToColorRef(SvoRayPalette.BackgroundColor);
+            var border = ToColorRef(SvoRayPalette.SurfaceColor);
+            var text = ToColorRef(System.Windows.Media.Color.FromRgb(0xC9, 0xCD, 0xD6));
             _ = DwmSetWindowAttribute(handle, DwmwaUseImmersiveDarkMode, ref enabled, sizeof(int));
             _ = DwmSetWindowAttribute(handle, DwmwaWindowCornerPreference, ref rounded, sizeof(int));
-            _ = DwmSetWindowAttribute(handle, DwmwaSystemBackdropType, ref mica, sizeof(int));
+            // Ignored before Windows 11; the dark title bar above is the fallback there.
+            _ = DwmSetWindowAttribute(handle, DwmwaCaptionColor, ref caption, sizeof(int));
+            _ = DwmSetWindowAttribute(handle, DwmwaBorderColor, ref border, sizeof(int));
+            _ = DwmSetWindowAttribute(handle, DwmwaTextColor, ref text, sizeof(int));
         }
         catch
         {
-            // The gradient background remains the fallback on older Windows builds.
+            // Older Windows: the default frame stays, the content is unaffected.
         }
     }
+
+    private static int ToColorRef(System.Windows.Media.Color color) => color.R | (color.G << 8) | (color.B << 16);
 
     /// <summary>
     /// Writes everything the selected simple mode needs into the config. The caller then flips
@@ -59,6 +73,8 @@ internal static class SvoRayService
             {
                 config.CoreBasicItem.BindInterface = network.Value.InterfaceName;
                 config.CoreBasicItem.SendThrough = network.Value.LocalAddress;
+                // Before the core starts: with forwarding on, its direct traffic would be lost.
+                await SvoRayForwarding.SuspendAsync(config, network.Value.InterfaceName);
             }
 
             config.TunModeItem.AutoRoute = true;

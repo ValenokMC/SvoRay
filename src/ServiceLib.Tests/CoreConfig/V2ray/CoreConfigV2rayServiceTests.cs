@@ -592,4 +592,25 @@ public class CoreConfigV2rayServiceTests
         tunInbound!.settings.autoSystemRoutingTable.Should().Contain("10.0.0.0/32");
         tunInbound!.settings.autoSystemRoutingTable.Should().Contain("10.0.0.2/31");
     }
+
+    [Fact]
+    public void GenerateClientConfigContent_Tun_ShouldDropTheCoresOwnTrafficComingBackThroughTheTun()
+    {
+        var config = CoreConfigTestFactory.CreateConfigWithTunRouteExcludeAddress(ECoreType.Xray);
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateVmessNode(ECoreType.Xray, "n-main", "main");
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.Xray);
+
+        var result = new CoreConfigV2rayService(context).GenerateClientConfigContent();
+
+        result.Success.Should().BeTrue();
+        var rules = JsonUtils.Deserialize<V2rayConfig>(result.Data!.ToString())!.routing.rules;
+        var loopGuard = rules.FindIndex(r => r.outboundTag == Global.BlockTag
+            && r.inboundTag?.SequenceEqual(["tun"]) == true
+            && r.process?.SequenceEqual(["self/"]) == true);
+        loopGuard.Should().BeGreaterThanOrEqualTo(0);
+        // Before every rule that would send the core's own traffic anywhere else.
+        rules.FindIndex(r => r.process?.Contains("self/") == true && r.outboundTag != Global.BlockTag)
+            .Should().BeGreaterThan(loopGuard);
+    }
 }

@@ -25,6 +25,14 @@ public class CertPemManager
     public static CertPemManager Instance => _instance.Value;
 
     /// <summary>
+    /// The app config, taken from AppManager when Init has not run - it is called late in the
+    /// main view model's start-up, and anything that failed before it left the config null.
+    /// Every HttpClient download then threw, and the download service fell back to a path that
+    /// drops response headers: Support-Url, the routing profile and the traffic line were lost.
+    /// </summary>
+    private Config Config => _config ??= AppManager.Instance.Config;
+
+    /// <summary>
     ///     Get certificate in PEM format from a server with CA pinning validation
     /// </summary>
     public async Task<(string?, string?)> GetCertPemAsync(string target, string serverName,
@@ -299,7 +307,7 @@ public class CertPemManager
 
     private X509Certificate2Collection BuildTrustedCertificateCollection()
     {
-        if (_config.GuiItem.RootCertProvider == Global.ChromeRootProvider)
+        if (Config.GuiItem.RootCertProvider == Global.ChromeRootProvider)
         {
             return _chromeRootCerts.Value;
         }
@@ -308,7 +316,7 @@ public class CertPemManager
 
     private bool IsSystemRootCertProvider()
     {
-        return _config.GuiItem.RootCertProvider != Global.ChromeRootProvider && _config.GuiItem.RootCertProvider != Global.MozillaRootProvider;
+        return Config.GuiItem.RootCertProvider != Global.ChromeRootProvider && Config.GuiItem.RootCertProvider != Global.MozillaRootProvider;
     }
 
     public X509ChainPolicy? BuildCertificateChainPolicy()

@@ -1,9 +1,12 @@
 ﻿using System.Net;
 using System.Reactive.Disposables;
 using System.Windows.Controls;
+using System.Windows.Automation;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using MaterialDesignThemes.Wpf;
+using ServiceLib.Handler.SysProxy;
 using ServiceLib.Services;
 using v2rayN.Base;
 using v2rayN.Manager;
@@ -36,6 +39,17 @@ public partial class MainWindow
     /// </summary>
     private bool _importFormPinned;
 
+    /// <summary>Whether the open import form replaces the current source or adds another one.</summary>
+    private bool _importReplaces;
+
+    /// <summary>The newer release the last check found; null until a check has found one.</summary>
+    private SvoRayRelease? _availableRelease;
+
+    private bool _appUpdateBusy;
+
+    /// <summary>Re-checks forwarding on the physical adapter while TUN is connected.</summary>
+    private DispatcherTimer? _forwardingTimer;
+
     private DispatcherTimer? _simpleStatusTimer;
 
     /// <summary>Profile the running check belongs to; null when no check is in flight.</summary>
@@ -44,6 +58,7 @@ public partial class MainWindow
     private DispatcherTimer? _pingTimeoutTimer;
 
     private ESvoRayConnectionState _lastConnectionState = ESvoRayConnectionState.Off;
+    private bool _hasServerRouting;
 
     /// <summary>Set while the mode radio buttons are being set from the config rather than by the user.</summary>
     private bool _suppressModeEvents;
@@ -75,13 +90,24 @@ public partial class MainWindow
         btnAdvancedMode.Click += (_, _) => ShowAdvancedMode();
         btnSimpleMode.Click += (_, _) => ShowSimpleMode();
         btnImportSubscriptionSimple.Click += BtnImportSubscriptionSimple_Click;
-        btnUpdateSimple.Click += BtnUpdateSimple_Click;
+        btnUpdateSubscriptions.Click += BtnUpdateSubscriptions_Click;
+        btnAddSource.Click += BtnAddSource_Click;
+        btnSourceMenu.Click += BtnSourceMenu_Click;
+        btnAppUpdate.Click += BtnAppUpdate_Click;
+        iconProxyHelp.ToolTipOpening += (_, _) => FitModeHint(iconProxyHelp);
+        iconTunHelp.ToolTipOpening += (_, _) => FitModeHint(iconTunHelp);
         btnCheckPing.Click += BtnCheckPing_Click;
         btnSupport.Click += BtnSupport_Click;
-        cmbSimpleServers.SelectionChanged += (_, _) => ResetPingResult();
+        cmbSimpleServers.SelectionChanged += (_, _) =>
+        {
+            ResetPingResult();
+            // The quota and the server rules belong to the selected server's subscription.
+            _ = RefreshServerRoutingFlagAsync();
+        };
         btnShowImport.Click += BtnShowImport_Click;
         btnCancelImport.Click += BtnCancelImport_Click;
         btnSimpleRouting.Click += BtnSimpleRouting_Click;
+        togGameMode.Click += TogGameMode_Click;
         togSvoRayConnect.Click += TogSvoRayConnect_Click;
         rdoModeProxy.Checked += async (_, _) => await ApplyModeAsync(ESvoRayMode.Proxy);
         rdoModeTun.Checked += async (_, _) => await ApplyModeAsync(ESvoRayMode.Tun);
@@ -90,7 +116,7 @@ public partial class MainWindow
         menuTrayToggle.Click += MenuTrayToggle_Click;
         menuShowWindow.Click += (_, _) => ShowHideWindow(true);
         menuTrayExit.Click += MenuTrayExit_Click;
-        SourceInitialized += (_, _) => SvoRayService.ApplyGlassBackdrop(this);
+        SourceInitialized += (_, _) => SvoRayService.ApplyWindowChrome(this);
 
         pbTheme.Content ??= new ThemeSettingView();
 
@@ -154,7 +180,7 @@ public partial class MainWindow
             // The simple selector uses the uncapped list so large subscriptions stay usable.
             this.OneWayBind(ViewModel, vm => vm.StatusBarViewModel.SimpleServers, v => v.cmbSimpleServers.ItemsSource).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.StatusBarViewModel.SelectedServer, v => v.cmbSimpleServers.SelectedItem).DisposeWith(disposables);
-            this.OneWayBind(ViewModel, vm => vm.StatusBarViewModel.HasSubscriptions, v => v.btnUpdateSimple.Visibility).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.StatusBarViewModel.HasSubscriptions, v => v.btnUpdateSubscriptions.Visibility).DisposeWith(disposables);
             this.WhenAnyValue(v => v.ViewModel.StatusBarViewModel.ConnectionState)
                 .ObserveOn(RxSchedulers.MainThreadScheduler)
                 .Subscribe(UpdateSimpleConnectionState)
@@ -273,6 +299,10 @@ public partial class MainWindow
         WindowsManager.Instance.RegisterGlobalHotkey(_config, OnHotkeyHandler, null);
 
         InitSimpleMode();
+        ShowAppUpdateState();
+        Loaded += async (_, _) => await CheckAppUpdateOnStartupAsync();
+        // Undo a change a crash left behind; a TUN that reconnects applies it again.
+        _ = SvoRayForwarding.RestoreAsync(_config);
     }
 
     /// <summary>
@@ -293,6 +323,52 @@ public partial class MainWindow
         _suppressModeEvents = false;
 
         UpdateRoutingSummary();
+        UpdateGameModeView();
+        _ = RefreshServerRoutingFlagAsync();
+    }
+
+    private void UpdateGameModeView()
+    {
+        togGameMode.IsChecked = _config.SvoRayItem.GameMode;
+        txtGameModeState.Text = _config.SvoRayItem.GameMode ? ResUI.SvoRayGameModeOnShort : ResUI.SvoRayGameModeOffShort;
+    }
+
+    /// <summary>
+    /// Flips game mode and, on a live connection, rebuilds it at once: the core reads the
+    /// routing profile at startup only, and a toggle that waits for the next connect would look
+    /// like it does nothing.
+    /// </summary>
+    private async void TogGameMode_Click(object sender, RoutedEventArgs e)
+    {
+        var enable = togGameMode.IsChecked == true;
+        togGameMode.IsEnabled = false;
+        try
+        {
+            _config.SvoRayItem.GameMode = enable;
+            await SvoRayRoutingHandler.ApplyAsync(_config);
+            await ConfigHandler.SaveConfig(_config);
+            await ViewModel.StatusBarViewModel.RefreshRoutingsMenu();
+            if (_lastConnectionState is not ESvoRayConnectionState.Off)
+            {
+                await ViewModel.Reload();
+            }
+            ShowSimpleStatus(enable ? ResUI.SvoRayGameModeOn : ResUI.SvoRayGameModeOff, false);
+            // A reload that ends in the same state raises no state change, so the tray icon
+            // and the subtitle would keep showing the previous mode.
+            ApplyTrayState(_trayState);
+            UpdateSimpleConnectionState(_lastConnectionState);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay game mode", ex);
+            _config.SvoRayItem.GameMode = !enable;
+            ShowSimpleStatus(ResUI.SvoRayGameModeFailed, true);
+        }
+        finally
+        {
+            UpdateGameModeView();
+            togGameMode.IsEnabled = true;
+        }
     }
 
     private async Task ApplyLanguageAsync(string language)
@@ -309,7 +385,7 @@ public partial class MainWindow
         {
             await ConfigHandler.SaveConfig(_config);
             txtLanguageRestartNotice.Text = ResUI.SvoRayLanguageRestartNotice;
-            txtLanguageRestartNotice.Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xC8, 0x6A));
+            txtLanguageRestartNotice.Foreground = SvoRayPalette.Warning;
             txtLanguageRestartNotice.Visibility = Visibility.Visible;
         }
         catch (Exception ex)
@@ -321,7 +397,7 @@ public partial class MainWindow
             rdoLanguageEn.IsChecked = rdoLanguageRu.IsChecked != true;
             _suppressLanguageEvents = false;
             txtLanguageRestartNotice.Text = ResUI.SvoRayLanguageSaveFailed;
-            txtLanguageRestartNotice.Foreground = new SolidColorBrush(Color.FromRgb(0xF0, 0xA9, 0xA9));
+            txtLanguageRestartNotice.Foreground = SvoRayPalette.Danger;
             txtLanguageRestartNotice.Visibility = Visibility.Visible;
         }
     }
@@ -433,9 +509,7 @@ public partial class MainWindow
     private void ShowSimpleStatus(string message, bool isError)
     {
         txtSimpleStatus.Text = message;
-        txtSimpleStatus.Foreground = new SolidColorBrush(isError
-            ? Color.FromRgb(0xF0, 0xA9, 0xA9)
-            : Color.FromRgb(0x9F, 0xD9, 0xCE));
+        txtSimpleStatus.Foreground = isError ? SvoRayPalette.Danger : SvoRayPalette.TextSecondary;
         txtSimpleStatus.Visibility = Visibility.Visible;
 
         _simpleStatusTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
@@ -453,6 +527,22 @@ public partial class MainWindow
 
     private void BtnShowImport_Click(object sender, RoutedEventArgs e)
     {
+        OpenImportForm(replace: true);
+    }
+
+    private void BtnAddSource_Click(object sender, RoutedEventArgs e)
+    {
+        OpenImportForm(replace: false);
+    }
+
+    /// <summary>
+    /// One form for both: "Add" keeps every source and puts the new one next to them, "Replace"
+    /// removes the source of the selected server once the new link has imported.
+    /// </summary>
+    private void OpenImportForm(bool replace)
+    {
+        _importReplaces = replace;
+        txtImportTitle.Text = replace ? ResUI.SvoRayReplaceConnection : ResUI.SvoRayAddConnection;
         _importFormPinned = true;
         UpdateSimpleImportState(ViewModel?.StatusBarViewModel.HasProfiles == true);
         txtSubscriptionUrl.Focus();
@@ -478,11 +568,15 @@ public partial class MainWindow
         txtImportStatus.Visibility = Visibility.Collapsed;
         try
         {
-            var success = await ViewModel.ImportSubscriptionAndRefreshAsync(value);
+            var replace = _importReplaces && ViewModel.StatusBarViewModel.HasProfiles;
+            var success = await ViewModel.ImportSubscriptionAndRefreshAsync(value, replace);
             if (success)
             {
                 _importFormPinned = false;
+                _importReplaces = false;
+                txtImportTitle.Text = ResUI.SvoRayAddConnection;
                 UpdateSimpleImportState(true);
+                await RefreshServerRoutingFlagAsync();
             }
             else
             {
@@ -502,26 +596,22 @@ public partial class MainWindow
         }
     }
 
-    private async void BtnUpdateSimple_Click(object sender, RoutedEventArgs e)
+    /// <summary>Refreshes every subscription; the arrow turns while the downloads run.</summary>
+    private async void BtnUpdateSubscriptions_Click(object sender, RoutedEventArgs e)
     {
-        btnUpdateSimple.IsEnabled = false;
-        txtUpdateSubscription.Text = ResUI.SvoRayUpdating;
+        btnUpdateSubscriptions.IsEnabled = false;
+        rotUpdateSubscriptions.BeginAnimation(RotateTransform.AngleProperty, new DoubleAnimation(0, 360, TimeSpan.FromSeconds(0.9))
+        {
+            RepeatBehavior = RepeatBehavior.Forever
+        });
         try
         {
             // A failed download does not throw; the handler reports it through the result.
             var updated = await ViewModel.UpdateSubscriptionProcess(string.Empty, false);
+            await SvoRayRoutingHandler.RefreshIfActiveAsync(_config);
             await ViewModel.RefreshSimpleUiAsync();
-
-            if (updated)
-            {
-                txtUpdateSubscription.Text = ResUI.SvoRayUpdated;
-                ShowSimpleStatus(ResUI.SvoRayServerListUpdated, false);
-            }
-            else
-            {
-                ShowSimpleStatus(ResUI.SvoRaySubscriptionDownloadFailed, true);
-            }
-            await Task.Delay(2000);
+            await RefreshServerRoutingFlagAsync();
+            ShowSimpleStatus(updated ? ResUI.SvoRayServerListUpdated : ResUI.SvoRaySubscriptionDownloadFailed, !updated);
         }
         catch (Exception ex)
         {
@@ -530,9 +620,90 @@ public partial class MainWindow
         }
         finally
         {
-            txtUpdateSubscription.Text = ResUI.SvoRayUpdate;
-            btnUpdateSimple.IsEnabled = true;
+            rotUpdateSubscriptions.BeginAnimation(RotateTransform.AngleProperty, null);
+            btnUpdateSubscriptions.IsEnabled = true;
         }
+    }
+
+    /// <summary>
+    /// The "..." menu: remove a subscription with its servers, or the selected server when it
+    /// was added on its own. Built when opened, so it always lists what is there now.
+    /// </summary>
+    private async void BtnSourceMenu_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var menu = new ContextMenu
+            {
+                Style = (Style)FindResource("SvoRay.ContextMenu"),
+                PlacementTarget = btnSourceMenu,
+                // Right edges aligned: the button sits at the window's right edge, and a menu
+                // opening from its left corner would hang out of the window.
+                Placement = PlacementMode.Custom,
+                CustomPopupPlacementCallback = (popupSize, targetSize, _) =>
+                    [new CustomPopupPlacement(new Point(targetSize.Width - popupSize.Width, targetSize.Height + 4), PopupPrimaryAxis.Horizontal)],
+            };
+
+            var profiles = await AppManager.Instance.ProfileItems("") ?? [];
+            foreach (var sub in await AppManager.Instance.SubItems() ?? [])
+            {
+                var count = profiles.Count(t => t.Subid == sub.Id);
+                if (count == 0 && sub.Url.IsNullOrEmpty())
+                {
+                    continue;
+                }
+                var label = SvoRaySubscriptionLabel.For(sub);
+                AddMenuItem(menu, string.Format(ResUI.SvoRayRemoveSubscription, label),
+                    string.Format(ResUI.SvoRayRemoveSubscriptionConfirm, label, count), sub.Id, null);
+            }
+
+            var selected = profiles.FirstOrDefault(t => t.IndexId == _config.IndexId);
+            if (selected is not null && (selected.Subid.IsNullOrEmpty() || await AppManager.Instance.GetSubItem(selected.Subid) is null))
+            {
+                var name = selected.GetSummary();
+                name = selected.Remarks.IsNotEmpty() ? selected.Remarks : name;
+                AddMenuItem(menu, string.Format(ResUI.SvoRayRemoveServer, name),
+                    string.Format(ResUI.SvoRayRemoveServerConfirm, name), null, selected.IndexId);
+            }
+
+            if (menu.Items.Count > 0)
+            {
+                menu.IsOpen = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay source menu", ex);
+        }
+    }
+
+    private void AddMenuItem(ContextMenu menu, string header, string question, string? subId, string? indexId)
+    {
+        var item = new MenuItem { Header = header };
+        item.Click += async (_, _) =>
+        {
+            if (!SvoRayConfirmWindow.Ask(this, question, ResUI.SvoRayRemove))
+            {
+                return;
+            }
+            try
+            {
+                var wasConnected = _lastConnectionState is not ESvoRayConnectionState.Off;
+                await ViewModel.RemoveSourceAsync(subId, indexId);
+                if (wasConnected && !ViewModel.StatusBarViewModel.HasProfiles)
+                {
+                    await ToggleConnectionAsync(false);
+                }
+                await RefreshServerRoutingFlagAsync();
+                ShowSimpleStatus(ResUI.SvoRayRemoved, false);
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog("SvoRay remove source", ex);
+                ShowSimpleStatus(ResUI.SvoRayRemoveFailed, true);
+            }
+        };
+        menu.Items.Add(item);
     }
 
     private async void BtnSupport_Click(object sender, RoutedEventArgs e)
@@ -657,7 +828,8 @@ public partial class MainWindow
 
     private async void BtnSimpleRouting_Click(object sender, RoutedEventArgs e)
     {
-        var window = new SimpleRoutingWindow(_config.SvoRayItem.RoutingMode, _config.SvoRayItem.RuleDomains)
+        var window = new SimpleRoutingWindow(_config.SvoRayItem.RoutingMode, _config.SvoRayItem.RuleDomains,
+            _config.SvoRayItem.UseServerRouting, _hasServerRouting, _config.SvoRayItem.CustomGameFolders)
         {
             Owner = this
         };
@@ -670,6 +842,8 @@ public partial class MainWindow
         {
             _config.SvoRayItem.RoutingMode = window.ResultMode;
             _config.SvoRayItem.RuleDomains = window.ResultDomains;
+            _config.SvoRayItem.UseServerRouting = window.ResultUseServerRouting;
+            _config.SvoRayItem.CustomGameFolders = window.ResultGameFolders;
             await SvoRayRoutingHandler.ApplyAsync(_config);
             await ConfigHandler.SaveConfig(_config);
             await ViewModel.StatusBarViewModel.RefreshRoutingsMenu();
@@ -697,13 +871,77 @@ public partial class MainWindow
     private void UpdateRoutingSummary()
     {
         var count = _config.SvoRayItem.RuleDomains.Count;
-        txtRoutingSummary.Text = _config.SvoRayItem.RoutingMode switch
+        var summary = _config.SvoRayItem.RoutingMode switch
         {
             ESvoRayRoutingMode.ProxyListed when count > 0 => string.Format(ResUI.SvoRayViaVpnCount, count, DomainsWord(count)),
             ESvoRayRoutingMode.ProxyListed => ResUI.SvoRayVpnNotUsed,
             _ when count > 0 => string.Format(ResUI.SvoRayWithoutVpnCount, count, DomainsWord(count)),
             _ => ResUI.SvoRayAllTrafficViaVpn
         };
+        // Short on purpose: the summary shares one row with the label and is trimmed past it.
+        var server = _config.SvoRayItem.UseServerRouting && _hasServerRouting;
+        txtRoutingSummary.Text = (server, _config.SvoRayItem.RoutingMode) switch
+        {
+            (true, ESvoRayRoutingMode.BypassListed) when count > 0
+                => string.Format(ResUI.SvoRayRoutingServerPlus, count, DomainsWord(count)),
+            (true, ESvoRayRoutingMode.BypassListed) => ResUI.SvoRayRoutingFromServer,
+            (true, _) => summary + ResUI.SvoRayServerRulesSuffix,
+            _ => summary
+        };
+    }
+
+    /// <summary>
+    /// What the selected server's subscription last reported: whether it carries a routing
+    /// profile, and the traffic used against its quota. Another subscription's rules or quota
+    /// say nothing about this server, and a server added on its own has neither.
+    /// </summary>
+    private async Task RefreshServerRoutingFlagAsync()
+    {
+        try
+        {
+            // The selector itself, not the view model: SelectionChanged runs before the binding
+            // has passed the new choice on, and the previous server's quota would stay on screen.
+            // While the list is being rebuilt nothing is selected; the config already names the server.
+            var indexId = SelectedServerId();
+            var node = await AppManager.Instance.GetProfileItem(indexId);
+            var sub = node?.Subid.IsNotEmpty() == true ? await AppManager.Instance.GetSubItem(node.Subid) : null;
+            if (SelectedServerId() != indexId)
+            {
+                // Picked again meanwhile (the list refills after an import or a removal): that
+                // choice has its own refresh, which must not be overwritten by this older one.
+                return;
+            }
+
+            _hasServerRouting = SvoRayServerRouting.Parse(sub?.RoutingProfile) is not null;
+            UpdateRoutingSummary();
+
+            var usage = SvoRaySubscriptionUsage.Parse(sub?.UsageInfo);
+            if (usage is null)
+            {
+                txtUsage.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var units = ResUI.SvoRayByteUnits;
+            txtUsage.Text = usage.Total > 0
+                ? string.Format(ResUI.SvoRayUsage, SvoRaySubscriptionUsage.FormatBytes(usage.Used, units),
+                    SvoRaySubscriptionUsage.FormatBytes(usage.Total, units))
+                : string.Format(ResUI.SvoRayUsageNoLimit, SvoRaySubscriptionUsage.FormatBytes(usage.Used, units));
+            txtUsage.Foreground = usage.Total > 0 && usage.Used >= usage.Total * 0.9
+                ? SvoRayPalette.Warning
+                : SvoRayPalette.TextMuted;
+            txtUsage.Visibility = Visibility.Visible;
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay server routing flag", ex);
+        }
+    }
+
+    private string SelectedServerId()
+    {
+        var id = (cmbSimpleServers.SelectedItem as ComboItem)?.ID;
+        return id.IsNotEmpty() ? id! : _config.IndexId;
     }
 
     private static string DomainsWord(int count)
@@ -723,6 +961,215 @@ public partial class MainWindow
     }
 
     /// <summary>
+    /// Lays the hint card exactly under the mode switch and as wide as it, so it never leaves the
+    /// window, whichever of the two marks it belongs to.
+    /// </summary>
+    private void FitModeHint(FrameworkElement mark)
+    {
+        if (mark.ToolTip is ToolTip tip && segMode.ActualWidth > 0)
+        {
+            tip.MaxWidth = segMode.ActualWidth;
+            tip.Width = segMode.ActualWidth;
+        }
+    }
+
+    /// <summary>
+    /// TUN needs IPv4 forwarding off on the physical adapter, or its direct traffic is lost (see
+    /// <see cref="SvoRayForwarding"/>). It is turned off while TUN is up, checked again every 20 s
+    /// in case the software that turned it on does so again, and turned back on afterwards.
+    /// </summary>
+    private void UpdateForwardingGuard(ESvoRayConnectionState state)
+    {
+        var tunUp = state == ESvoRayConnectionState.On
+            && _config.SvoRayItem.Mode == ESvoRayMode.Tun
+            && _config.TunModeItem.EnableTun;
+        if (tunUp)
+        {
+            if (_forwardingTimer is null)
+            {
+                _forwardingTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+                _forwardingTimer.Tick += async (_, _) =>
+                    await SvoRayForwarding.SuspendAsync(_config, _config.CoreBasicItem.BindInterface);
+            }
+            _forwardingTimer.Start();
+            _ = SvoRayForwarding.SuspendAsync(_config, _config.CoreBasicItem.BindInterface);
+        }
+        else if (state is ESvoRayConnectionState.Off or ESvoRayConnectionState.Error)
+        {
+            _forwardingTimer?.Stop();
+            _ = SvoRayForwarding.RestoreAsync(_config);
+        }
+    }
+
+    #region SvoRay update
+
+    private static Version CurrentVersion =>
+        SvoRayAppUpdate.Normalize(typeof(MainWindow).Assembly.GetName().Version ?? new Version(0, 0, 0));
+
+    /// <summary>
+    /// Once a day at most, a few seconds after start so it never competes with connecting.
+    /// Failures stay in the log: an unreachable GitHub is no reason to bother anyone.
+    /// </summary>
+    private async Task CheckAppUpdateOnStartupAsync()
+    {
+        var last = DateTimeOffset.FromUnixTimeSeconds(Math.Max(0, _config.SvoRayItem.LastUpdateCheck));
+        if (DateTimeOffset.UtcNow - last < SvoRayAppUpdate.CheckInterval)
+        {
+            return;
+        }
+
+        await Task.Delay(TimeSpan.FromSeconds(8));
+        await CheckAppUpdateAsync(manual: false);
+    }
+
+    /// <summary>Asks GitHub for the latest release and updates the footer button.</summary>
+    private async Task<bool> CheckAppUpdateAsync(bool manual)
+    {
+        if (_appUpdateBusy)
+        {
+            return false;
+        }
+
+        _appUpdateBusy = true;
+        if (manual)
+        {
+            txtAppUpdate.Text = ResUI.SvoRayCheckingUpdates;
+        }
+        try
+        {
+            var check = await Task.Run(() => new SvoRayUpdateService().CheckAsync(CurrentVersion));
+            if (check is null)
+            {
+                if (manual)
+                {
+                    ShowSimpleStatus(ResUI.SvoRayUpdateCheckFailed, true);
+                }
+                return false;
+            }
+
+            _availableRelease = check.Status == ESvoRayUpdateStatus.Available ? check.Release : null;
+            _config.SvoRayItem.LastUpdateCheck = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            _config.SvoRayItem.AvailableUpdateVersion = _availableRelease?.Version.ToString(3);
+            await ConfigHandler.SaveConfig(_config);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog($"SvoRay update check failed: {ex.GetType().Name}");
+            return false;
+        }
+        finally
+        {
+            _appUpdateBusy = false;
+            ShowAppUpdateState();
+        }
+    }
+
+    /// <summary>
+    /// The footer button: "Update to X.Y.Z" with a mint dot when a newer release is known,
+    /// "Up to date" after a check that found none, "Check for updates" before any check.
+    /// </summary>
+    private void ShowAppUpdateState()
+    {
+        var known = _availableRelease?.Version
+            ?? SvoRayAppUpdate.ParseVersion(_config.SvoRayItem.AvailableUpdateVersion);
+        var newer = known is not null && known > CurrentVersion;
+
+        dotAppUpdate.Visibility = newer ? Visibility.Visible : Visibility.Collapsed;
+        icoAppUpdate.Visibility = newer ? Visibility.Collapsed : Visibility.Visible;
+        txtAppUpdate.Foreground = newer ? SvoRayPalette.Accent : SvoRayPalette.TextSecondary;
+        txtAppUpdate.Text = newer
+            ? string.Format(ResUI.SvoRayUpdateTo, known!.ToString(3))
+            : _config.SvoRayItem.LastUpdateCheck > 0 ? ResUI.SvoRayLatestVersion : ResUI.SvoRayCheckForUpdates;
+        AutomationProperties.SetName(btnAppUpdate, txtAppUpdate.Text);
+    }
+
+    private async void BtnAppUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        if (_appUpdateBusy)
+        {
+            return;
+        }
+
+        // A version remembered from an earlier start has no download links yet: look again.
+        if (_availableRelease is null && !await CheckAppUpdateAsync(manual: true))
+        {
+            return;
+        }
+        if (_availableRelease is not { } release)
+        {
+            return;
+        }
+
+        var dialog = new SvoRayUpdateWindow(release, CurrentVersion) { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        await InstallAppUpdateAsync(release);
+    }
+
+    /// <summary>
+    /// Downloads and checks the installer, then hands over to it. The system proxy is cleared and
+    /// the core stopped before the installer starts: the installer ends a running SvoRay by force,
+    /// which would otherwise leave the proxy pointing at a core that is gone.
+    /// </summary>
+    private async Task InstallAppUpdateAsync(SvoRayRelease release)
+    {
+        _appUpdateBusy = true;
+        btnAppUpdate.IsEnabled = false;
+        var progress = new Progress<double>(value =>
+            txtAppUpdate.Text = string.Format(ResUI.SvoRayDownloadingUpdate, (int)Math.Round(value * 100)));
+        txtAppUpdate.Text = string.Format(ResUI.SvoRayDownloadingUpdate, 0);
+
+        SvoRayVerifiedInstaller? installer = null;
+        try
+        {
+            installer = await Task.Run(() => new SvoRayUpdateService().DownloadAsync(release, progress));
+
+            await SysProxyHandler.UpdateSysProxy(_config, true);
+            await CoreManager.Instance.CoreStop();
+            await ConfigHandler.SaveConfig(_config);
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = installer.Path,
+                Arguments = SvoRayAppUpdate.InstallerArguments,
+                UseShellExecute = false,
+            });
+            installer.Dispose();
+            installer = null;
+
+            tbNotify.Dispose();
+            await AppManager.Instance.AppExitAsync(true);
+        }
+        catch (SvoRayUpdateException ex)
+        {
+            Logging.SaveLog($"SvoRay update: {ex.Failure}");
+            ShowSimpleStatus(ex.Failure == ESvoRayUpdateFailure.HashMismatch
+                ? ResUI.SvoRayUpdateHashMismatch
+                : ResUI.SvoRayUpdateDownloadFailed, true);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog($"SvoRay update install failed: {ex.GetType().Name}");
+            ShowSimpleStatus(ResUI.SvoRayUpdateLaunchFailed, true);
+            // The core was stopped for the installer that did not start: bring the connection back.
+            await ViewModel.Reload();
+        }
+        finally
+        {
+            installer?.Dispose();
+            _appUpdateBusy = false;
+            btnAppUpdate.IsEnabled = true;
+            ShowAppUpdateState();
+        }
+    }
+
+    #endregion SvoRay update
+
+    /// <summary>
     /// Keeps the tray icon, its tooltip and its menu in step with the connection state.
     /// </summary>
     private async void ApplyTrayState(ESvoRayConnectionState state)
@@ -736,7 +1183,7 @@ public partial class MainWindow
         menuTrayToggle.IsEnabled = state != ESvoRayConnectionState.Connecting;
 
         tbNotify.ToolTipText = WindowsManager.GetNotifyToolTip(state);
-        tbNotify.Icon = await WindowsManager.Instance.GetNotifyIcon(state);
+        tbNotify.Icon = await WindowsManager.Instance.GetNotifyIcon(state, _config.SvoRayItem.GameMode);
         Icon = WindowsManager.Instance.GetAppIcon(_config);
     }
 
@@ -804,9 +1251,9 @@ public partial class MainWindow
         _pingIndexId = null;
         btnCheckPing.IsEnabled = false;
         icoCheckPing.Kind = PackIconKind.TimerSandEmpty;
-        icoCheckPing.Foreground = Brushes.White;
+        icoCheckPing.Foreground = SvoRayPalette.TextSecondary;
         txtCheckPing.Text = ResUI.SvoRayChecking;
-        txtCheckPing.Foreground = Brushes.White;
+        txtCheckPing.Foreground = SvoRayPalette.TextSecondary;
 
         try
         {
@@ -829,9 +1276,8 @@ public partial class MainWindow
             icoCheckPing.Kind = PackIconKind.ShieldCheck;
             var delayText = string.Format(ResUI.SvoRayMilliseconds, delay);
             txtCheckPing.Text = delayText;
-            var green = new SolidColorBrush(Color.FromRgb(0x5F, 0xE3, 0xB4));
-            txtCheckPing.Foreground = green;
-            icoCheckPing.Foreground = green;
+            txtCheckPing.Foreground = SvoRayPalette.Accent;
+            icoCheckPing.Foreground = SvoRayPalette.Accent;
             ShowSimpleStatus(country.IsNullOrEmpty() || country == "unknown"
                 ? string.Format(ResUI.SvoRayVpnWorks, delayText)
                 : string.Format(ResUI.SvoRayVpnWorksCountry, country, delayText), false);
@@ -853,7 +1299,7 @@ public partial class MainWindow
         btnCheckPing.IsEnabled = false;
         icoCheckPing.Kind = PackIconKind.TimerSandEmpty;
         txtCheckPing.Text = ResUI.SvoRayChecking;
-        txtCheckPing.Foreground = Brushes.White;
+        txtCheckPing.Foreground = SvoRayPalette.TextSecondary;
 
         // The run can end without ever reporting a delay - the core may fail to start at all.
         // Without this the button would stay disabled for the rest of the session.
@@ -896,14 +1342,9 @@ public partial class MainWindow
 
         icoCheckPing.Kind = PackIconKind.SpeedometerMedium;
         txtCheckPing.Text = string.Format(ResUI.SvoRayMilliseconds, delay);
-        var color = delay switch
-        {
-            < 150 => Color.FromRgb(0x5F, 0xE3, 0xB4),
-            < 400 => Color.FromRgb(0xE8, 0xC8, 0x6A),
-            _ => Color.FromRgb(0xF0, 0xA9, 0xA9)
-        };
-        txtCheckPing.Foreground = new SolidColorBrush(color);
-        icoCheckPing.Foreground = new SolidColorBrush(color);
+        var brush = SvoRayPalette.ForDelay(delay);
+        txtCheckPing.Foreground = brush;
+        icoCheckPing.Foreground = brush;
     }
 
     private void OnPingTimeout(object? sender, EventArgs e)
@@ -916,11 +1357,10 @@ public partial class MainWindow
 
     private void ShowPingFailure(string text)
     {
-        var red = new SolidColorBrush(Color.FromRgb(0xF0, 0xA9, 0xA9));
         icoCheckPing.Kind = PackIconKind.CloseCircleOutline;
-        icoCheckPing.Foreground = red;
+        icoCheckPing.Foreground = SvoRayPalette.Danger;
         txtCheckPing.Text = text;
-        txtCheckPing.Foreground = red;
+        txtCheckPing.Foreground = SvoRayPalette.Danger;
         ShowSimpleStatus(ResUI.SvoRayProfileNoResponse, true);
     }
 
@@ -935,16 +1375,26 @@ public partial class MainWindow
         btnCheckPing.IsEnabled = _lastConnectionState
             is ESvoRayConnectionState.Off or ESvoRayConnectionState.On;
         icoCheckPing.Kind = PackIconKind.SpeedometerMedium;
-        icoCheckPing.Foreground = Brushes.White;
+        icoCheckPing.Foreground = SvoRayPalette.TextSecondary;
         txtCheckPing.Text = ResUI.SvoRayCheck;
-        txtCheckPing.Foreground = Brushes.White;
+        txtCheckPing.Foreground = SvoRayPalette.TextSecondary;
     }
 
     private void UpdateSimpleConnectionState(ESvoRayConnectionState state)
     {
         _lastConnectionState = state;
+        UpdateForwardingGuard(state);
         togSvoRayConnect.IsChecked = state is ESvoRayConnectionState.Connecting or ESvoRayConnectionState.On;
         togSvoRayConnect.IsEnabled = state != ESvoRayConnectionState.Connecting;
+        // The template tells "connecting" and "error" apart from plain on/off through Tag.
+        togSvoRayConnect.Tag = state.ToString();
+        txtConnectionTitle.Foreground = state switch
+        {
+            ESvoRayConnectionState.On => SvoRayPalette.Accent,
+            ESvoRayConnectionState.Connecting => SvoRayPalette.Warning,
+            ESvoRayConnectionState.Error => SvoRayPalette.Danger,
+            _ => SvoRayPalette.Text
+        };
 
         // Switching modes mid-handshake would take down a connection that is not up yet.
         rdoModeProxy.IsEnabled = rdoModeTun.IsEnabled = state != ESvoRayConnectionState.Connecting;
@@ -971,9 +1421,10 @@ public partial class MainWindow
 
             case ESvoRayConnectionState.On:
                 txtConnectionTitle.Text = ResUI.SvoRayVpnOn;
-                txtConnectionSubtitle.Text = _config.SvoRayItem.Mode == ESvoRayMode.Proxy
+                txtConnectionSubtitle.Text = (_config.SvoRayItem.Mode == ESvoRayMode.Proxy
                     ? ResUI.SvoRayProxyOnDescription
-                    : ResUI.SvoRayTunOnDescription;
+                    : ResUI.SvoRayTunOnDescription)
+                    + (_config.SvoRayItem.GameMode ? ResUI.SvoRayGamesBypassSuffix : string.Empty);
                 break;
 
             case ESvoRayConnectionState.Error:

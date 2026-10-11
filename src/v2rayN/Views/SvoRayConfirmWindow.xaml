@@ -1,0 +1,75 @@
+<Window
+    x:Class="v2rayN.Views.SvoRayConfirmWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:common="clr-namespace:v2rayN.Common"
+    xmlns:resx="clr-namespace:ServiceLib.Resx;assembly=ServiceLib"
+    Title="SvoRay"
+    Width="360"
+    Background="{x:Static common:SvoRayPalette.Background}"
+    ResizeMode="NoResize"
+    ShowInTaskbar="False"
+    SizeToContent="Height"
+    TextElement.FontFamily="{StaticResource SvoRay.Font}"
+    TextElement.Foreground="{x:Static common:SvoRayPalette.Text}"
+    WindowStartupLocation="CenterOwner">
+    <!--  A yes/no question in the theme's colours, instead of Windows' light message box  -->
+    <StackPanel Margin="22,18,22,18">
+        <TextBlock
+            x:Name="txtQuestion"
+            FontSize="14"
+            Style="{StaticResource SvoRay.Body}"
+            TextWrapping="Wrap" />
+        <Grid Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button
+                x:Name="btnNo"
+                Height="40"
+                Content="{x:Static resx:ResUI.TbCancel}"
+                FontSize="13"
+                IsCancel="True"
+                Style="{StaticResource SvoRay.GhostButton}" />
+            <!--  A destructive answer is red, so it is never mistaken for "continue"  -->
+            <Button
+                x:Name="btnYes"
+                Grid.Column="2"
+                Height="40"
+                Cursor="Hand"
+                FocusVisualStyle="{x:Null}">
+                <Button.Template>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border
+                            x:Name="Fill"
+                            Background="{x:Static common:SvoRayPalette.DangerSurface}"
+                            BorderBrush="{x:Static common:SvoRayPalette.Danger}"
+                            BorderThickness="1"
+                            CornerRadius="12">
+                            <TextBlock
+                                x:Name="Label"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontSize="13"
+                                FontWeight="SemiBold"
+                                Foreground="{x:Static common:SvoRayPalette.Danger}"
+                                Text="{TemplateBinding Content}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Fill" Property="Background" Value="{x:Static common:SvoRayPalette.Danger}" />
+                                <Setter TargetName="Label" Property="Foreground" Value="{x:Static common:SvoRayPalette.Text}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Fill" Property="Background" Value="{x:Static common:SvoRayPalette.Danger}" />
+                                <Setter TargetName="Label" Property="Foreground" Value="{x:Static common:SvoRayPalette.Text}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </Grid>
+    </StackPanel>
+</Window>

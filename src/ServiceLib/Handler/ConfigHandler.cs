@@ -203,8 +203,7 @@ public static class ConfigHandler
         }
         config.GlobalHotkeys ??= [];
 
-        config.SvoRayItem ??= new();
-        config.SvoRayItem.RuleDomains ??= [];
+        MigrateSvoRayItem(config);
 
         if (config.SystemProxyItem.SystemProxyExceptions.IsNullOrEmpty())
         {
@@ -212,6 +211,27 @@ public static class ConfigHandler
         }
 
         return config;
+    }
+
+    /// <summary>
+    /// One-off SvoRay upgrades of a loaded config. Each runs once and leaves a flag behind, so
+    /// what the user changes afterwards is not reset on the next start.
+    /// </summary>
+    public static void MigrateSvoRayItem(Config config)
+    {
+        config.SvoRayItem ??= new();
+        config.SvoRayItem.RuleDomains ??= [];
+        config.SvoRayItem.CustomGameFolders ??= [];
+        if (!config.SvoRayItem.HardwareRenderingMigrated)
+        {
+            config.GuiItem.EnableHWA = true;
+            config.SvoRayItem.HardwareRenderingMigrated = true;
+        }
+        if (!config.SvoRayItem.TunDefaultMigrated)
+        {
+            config.SvoRayItem.Mode = ESvoRayMode.Tun;
+            config.SvoRayItem.TunDefaultMigrated = true;
+        }
     }
 
     /// <summary>
@@ -1979,6 +1999,53 @@ public static class ConfigHandler
         }
 
         return counter;
+    }
+
+    /// <summary>
+    /// Imports server links the user pasted on the simple screen as servers of their own, not
+    /// tied to whichever subscription happens to be current: a subscription update replaces
+    /// all of that subscription's servers and would take them along. A link that is already
+    /// there is not added a second time; the existing server is picked instead.
+    /// </summary>
+    /// <param name="ignoreSubid">Servers of this subscription do not count as "already there"
+    /// (the subscription is about to be replaced).</param>
+    /// <param name="ignoreIndexId">Likewise for a single server about to be replaced.</param>
+    /// <returns>The server to select, or null when nothing could be imported.</returns>
+    public static async Task<string?> AddStandaloneServers(Config config, string strData, string? ignoreSubid, string? ignoreIndexId)
+    {
+        var before = await AppManager.Instance.ProfileItems("") ?? [];
+        if (await AddBatchServers(config, strData, "", false) <= 0)
+        {
+            return null;
+        }
+
+        var beforeIds = before.Select(t => t.IndexId).ToHashSet();
+        var added = (await AppManager.Instance.ProfileItems("") ?? []).Where(t => !beforeIds.Contains(t.IndexId)).ToList();
+        var known = before.Where(t => (ignoreSubid.IsNullOrEmpty() || t.Subid != ignoreSubid) && t.IndexId != ignoreIndexId);
+        var duplicates = FindDuplicates(known, added);
+        if (duplicates.Count > 0)
+        {
+            await RemoveServers(config, duplicates.Select(t => t.Added).ToList());
+        }
+
+        var kept = added.FirstOrDefault(t => duplicates.All(d => d.Added.IndexId != t.IndexId));
+        return kept?.IndexId ?? duplicates.FirstOrDefault().Existing?.IndexId;
+    }
+
+    /// <summary>Each newly added server that matches one already present, with that match.</summary>
+    public static List<(ProfileItem Added, ProfileItem Existing)> FindDuplicates(IEnumerable<ProfileItem> existing, IEnumerable<ProfileItem> added)
+    {
+        var known = existing.ToList();
+        var result = new List<(ProfileItem, ProfileItem)>();
+        foreach (var item in added)
+        {
+            var match = known.FirstOrDefault(t => CompareProfileItem(t, item, false));
+            if (match is not null)
+            {
+                result.Add((item, match));
+            }
+        }
+        return result;
     }
 
     #endregion Batch add servers

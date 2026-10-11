@@ -2,65 +2,73 @@
     x:Class="v2rayN.Views.SimpleRoutingWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:common="clr-namespace:v2rayN.Common"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:resx="clr-namespace:ServiceLib.Resx;assembly=ServiceLib"
     Title="{x:Static resx:ResUI.SvoRayRouting}"
-    Width="520"
-    Height="620"
-    Background="#141A2E"
+    Width="500"
+    Height="860"
+    MinWidth="380"
+    MinHeight="600"
+    Background="{x:Static common:SvoRayPalette.Background}"
     ResizeMode="CanResize"
     ShowInTaskbar="False"
+    TextElement.FontFamily="{StaticResource SvoRay.Font}"
+    TextElement.Foreground="{x:Static common:SvoRayPalette.Text}"
     WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">
     <Window.Resources>
+        <!--  One of the two ways the list applies: a selectable card with a radio dot  -->
         <Style x:Key="RouteModeCard" TargetType="{x:Type RadioButton}">
             <Setter Property="Margin" Value="0,0,0,8" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{x:Static common:SvoRayPalette.Text}" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type RadioButton}">
                         <Border
-                            x:Name="CardGlass"
+                            x:Name="Card"
                             Padding="14,11"
-                            Background="#14FFFFFF"
-                            BorderBrush="#28FFFFFF"
+                            Background="{x:Static common:SvoRayPalette.Surface}"
+                            BorderBrush="{x:Static common:SvoRayPalette.Border}"
                             BorderThickness="1"
-                            CornerRadius="14">
+                            CornerRadius="12">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="22" />
+                                    <ColumnDefinition Width="26" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <Ellipse
+                                    x:Name="Ring"
                                     Width="16"
                                     Height="16"
+                                    Margin="0,2,0,0"
                                     HorizontalAlignment="Left"
                                     VerticalAlignment="Top"
-                                    Margin="0,2,0,0"
-                                    Stroke="#7FBBD2E4"
-                                    StrokeThickness="1.4" />
+                                    Stroke="{x:Static common:SvoRayPalette.BorderStrong}"
+                                    StrokeThickness="1.5" />
                                 <Ellipse
                                     x:Name="Dot"
-                                    Width="9"
-                                    Height="9"
-                                    Margin="3.5,5.5,0,0"
+                                    Width="8"
+                                    Height="8"
+                                    Margin="4,6,0,0"
                                     HorizontalAlignment="Left"
                                     VerticalAlignment="Top"
-                                    Fill="#5EEFD2"
+                                    Fill="{x:Static common:SvoRayPalette.Accent}"
                                     Visibility="Collapsed" />
                                 <ContentPresenter Grid.Column="1" VerticalAlignment="Center" />
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="CardGlass" Property="Background" Value="#1EFFFFFF" />
+                                <Setter TargetName="Card" Property="Background" Value="{x:Static common:SvoRayPalette.SurfaceHover}" />
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="CardGlass" Property="Background" Value="#2143DDBB" />
-                                <Setter TargetName="CardGlass" Property="BorderBrush" Value="#6B72F5D7" />
+                                <Setter TargetName="Card" Property="BorderBrush" Value="{x:Static common:SvoRayPalette.AccentBorder}" />
+                                <Setter TargetName="Ring" Property="Stroke" Value="{x:Static common:SvoRayPalette.Accent}" />
                                 <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -70,8 +78,10 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="24,20,24,20">
+    <Grid Margin="22,18,22,18">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -79,70 +89,143 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+        <!--  The profile the subscription sends; dimmed while the server has sent none.  -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,18">
+            <ToggleButton
+                x:Name="chkServerRouting"
+                AutomationProperties.Name="{x:Static resx:ResUI.SvoRayUseServerRouting}"
+                Style="{StaticResource SvoRay.SwitchRow}">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="CloudSyncOutline" Style="{StaticResource SvoRay.RowIcon}" />
+                    <TextBlock Style="{StaticResource SvoRay.Body}" Text="{x:Static resx:ResUI.SvoRayUseServerRouting}" />
+                </StackPanel>
+            </ToggleButton>
             <TextBlock
-                FontSize="12"
-                Foreground="#94B8C6D8"
-                Text="{x:Static resx:ResUI.SvoRayRoutingHowToApply}" />
+                Margin="4,8,4,0"
+                Style="{StaticResource SvoRay.Caption}"
+                Text="{x:Static resx:ResUI.SvoRayUseServerRoutingTip}" />
+        </StackPanel>
+
+        <!--
+            Folders the user adds for games no launcher reports. Sits here because, like the
+            domain list, it decides what leaves the VPN; game mode itself is switched on the
+            main screen.
+        -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,18">
+            <TextBlock Style="{StaticResource SvoRay.Label}" Text="{x:Static resx:ResUI.SvoRayCustomGameFolders}" />
+            <ItemsControl x:Name="lstGameFolders">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border
+                            Margin="0,0,0,6"
+                            Padding="12,2,2,2"
+                            Background="{x:Static common:SvoRayPalette.Surface}"
+                            BorderBrush="{x:Static common:SvoRayPalette.Border}"
+                            BorderThickness="1"
+                            CornerRadius="10">
+                            <DockPanel LastChildFill="True">
+                                <Button
+                                    Width="30"
+                                    Height="30"
+                                    AutomationProperties.Name="{x:Static resx:ResUI.SvoRayRemoveFromList}"
+                                    Click="BtnRemoveGameFolder_Click"
+                                    DockPanel.Dock="Right"
+                                    Style="{StaticResource SvoRay.IconButton}"
+                                    Tag="{Binding}"
+                                    ToolTip="{x:Static resx:ResUI.SvoRayRemoveFromList}">
+                                    <materialDesign:PackIcon
+                                        Width="15"
+                                        Height="15"
+                                        Kind="Close" />
+                                </Button>
+                                <materialDesign:PackIcon
+                                    Width="16"
+                                    Height="16"
+                                    Margin="0,0,10,0"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Foreground="{x:Static common:SvoRayPalette.TextSecondary}"
+                                    Kind="FolderOutline" />
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontSize="12.5"
+                                    Text="{Binding}"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTip="{Binding}" />
+                            </DockPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button
+                x:Name="btnAddGameFolder"
+                Height="42"
+                Padding="14,0"
+                Style="{StaticResource SvoRay.Row}">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="FolderPlusOutline" Style="{StaticResource SvoRay.RowIcon}" />
+                    <TextBlock Style="{StaticResource SvoRay.Body}" Text="{x:Static resx:ResUI.SvoRayAddGameFolder}" />
+                </StackPanel>
+            </Button>
+            <TextBlock
+                Margin="4,8,4,0"
+                Style="{StaticResource SvoRay.Caption}"
+                Text="{x:Static resx:ResUI.SvoRayCustomGameFoldersTip}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+            <TextBlock Style="{StaticResource SvoRay.Label}" Text="{x:Static resx:ResUI.SvoRayRoutingHowToApply}" />
             <RadioButton
                 x:Name="rdoBypassListed"
-                Margin="0,9,0,8"
                 GroupName="RouteMode"
                 Style="{StaticResource RouteModeCard}">
                 <StackPanel>
                     <TextBlock
-                        FontSize="14"
+                        FontSize="13.5"
                         FontWeight="SemiBold"
-                        Foreground="White"
                         Text="{x:Static resx:ResUI.SvoRayRoutingBypassListed}" />
                     <TextBlock
                         Margin="0,3,0,0"
-                        FontSize="12"
-                        Foreground="#A7C3D0E0"
-                        Text="{x:Static resx:ResUI.SvoRayRoutingBypassListedDescription}"
-                        TextWrapping="Wrap" />
+                        Style="{StaticResource SvoRay.Caption}"
+                        Text="{x:Static resx:ResUI.SvoRayRoutingBypassListedDescription}" />
                 </StackPanel>
             </RadioButton>
             <RadioButton
                 x:Name="rdoProxyListed"
+                Margin="0"
                 GroupName="RouteMode"
                 Style="{StaticResource RouteModeCard}">
                 <StackPanel>
                     <TextBlock
-                        FontSize="14"
+                        FontSize="13.5"
                         FontWeight="SemiBold"
-                        Foreground="White"
                         Text="{x:Static resx:ResUI.SvoRayRoutingProxyListed}" />
                     <TextBlock
                         Margin="0,3,0,0"
-                        FontSize="12"
-                        Foreground="#A7C3D0E0"
-                        Text="{x:Static resx:ResUI.SvoRayRoutingProxyListedDescription}"
-                        TextWrapping="Wrap" />
+                        Style="{StaticResource SvoRay.Caption}"
+                        Text="{x:Static resx:ResUI.SvoRayRoutingProxyListedDescription}" />
                 </StackPanel>
             </RadioButton>
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Margin="0,0,0,10">
+        <StackPanel Grid.Row="3" Margin="0,8,0,10">
             <!--
                 Multi-line on purpose: a list is usually pasted, not typed. Enter still adds, so
                 typing one domain works as before; Shift+Enter breaks the line.
             -->
             <TextBox
                 x:Name="txtDomain"
-                MinHeight="70"
+                Height="Auto"
+                MinHeight="64"
                 MaxHeight="110"
-                Padding="13,9"
-                materialDesign:HintAssist.Hint="{x:Static resx:ResUI.SvoRayDomainListHint}"
+                Padding="13,10"
                 AcceptsReturn="True"
-                Background="#1CFFFFFF"
-                BorderBrush="#3CFFFFFF"
-                BorderThickness="1"
-                CaretBrush="White"
-                Foreground="White"
+                Style="{StaticResource SvoRay.TextField}"
+                Tag="{x:Static resx:ResUI.SvoRayDomainListHint}"
                 TextWrapping="Wrap"
+                VerticalContentAlignment="Top"
                 VerticalScrollBarVisibility="Auto" />
-            <Grid Margin="0,10,0,0">
+            <Grid Margin="0,8,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -150,76 +233,69 @@
                 <Button
                     x:Name="btnAddDomain"
                     Height="42"
-                    BorderThickness="0"
                     Content="{x:Static resx:ResUI.SvoRayAdd}"
-                    Foreground="White">
-                    <Button.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                            <GradientStop Offset="0" Color="#6C6EF7" />
-                            <GradientStop Offset="1" Color="#35CDB8" />
-                        </LinearGradientBrush>
-                    </Button.Background>
-                </Button>
+                    Style="{StaticResource SvoRay.PrimaryButton}" />
                 <Button
                     x:Name="btnRussiaPreset"
                     Grid.Column="1"
                     Height="42"
-                    Margin="10,0,0,0"
+                    Margin="8,0,0,0"
                     Padding="14,0"
-                    Background="#18FFFFFF"
-                    BorderBrush="#35FFFFFF"
-                    BorderThickness="1"
-                    Foreground="White"
+                    Style="{StaticResource SvoRay.Row}"
                     ToolTip="{x:Static resx:ResUI.SvoRayRussiaPresetTip}">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon
-                            Width="17"
-                            Height="17"
                             Margin="0,0,8,0"
-                            VerticalAlignment="Center"
-                            Foreground="White"
-                            Kind="PlaylistPlus" />
-                        <TextBlock
-                            VerticalAlignment="Center"
-                            FontSize="12.5"
-                            Text="{x:Static resx:ResUI.SvoRayRussiaPreset}" />
+                            Kind="PlaylistPlus"
+                            Style="{StaticResource SvoRay.RowIcon}" />
+                        <TextBlock Style="{StaticResource SvoRay.Body}" Text="{x:Static resx:ResUI.SvoRayRussiaPreset}" />
                     </StackPanel>
                 </Button>
             </Grid>
         </StackPanel>
 
         <Border
-            Grid.Row="2"
-            Background="#12FFFFFF"
-            BorderBrush="#26FFFFFF"
+            Grid.Row="4"
+            Background="{x:Static common:SvoRayPalette.Surface}"
+            BorderBrush="{x:Static common:SvoRayPalette.Border}"
             BorderThickness="1"
-            CornerRadius="14">
+            CornerRadius="12">
             <Grid>
                 <TextBlock
                     x:Name="txtEmptyList"
                     Margin="18"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    FontSize="12.5"
-                    Foreground="#8FB0BFD2"
+                    Style="{StaticResource SvoRay.Caption}"
                     Text="{x:Static resx:ResUI.SvoRayEmptyDomainList}"
-                    TextAlignment="Center"
-                    TextWrapping="Wrap" />
+                    TextAlignment="Center" />
+                <!--  A plain list with hairline separators: dense rows, not a stack of cards  -->
                 <ListBox
                     x:Name="lstDomains"
-                    Margin="6"
+                    Margin="4"
+                    HorizontalContentAlignment="Stretch"
                     Background="Transparent"
                     BorderThickness="0"
-                    HorizontalContentAlignment="Stretch"
-                    ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                    VirtualizingPanel.IsVirtualizing="True">
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="{x:Type ListBoxItem}">
                             <Setter Property="Padding" Value="0" />
-                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="{x:Type ListBoxItem}">
-                                        <ContentPresenter />
+                                        <Border
+                                            x:Name="Row"
+                                            Background="Transparent"
+                                            CornerRadius="8">
+                                            <ContentPresenter />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Row" Property="Background" Value="{x:Static common:SvoRayPalette.SurfaceHover}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </Setter.Value>
                             </Setter>
@@ -227,40 +303,28 @@
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border
-                                Margin="2,3"
-                                Padding="13,9"
-                                Background="#18FFFFFF"
-                                BorderBrush="#26FFFFFF"
-                                BorderThickness="1"
-                                CornerRadius="11">
-                                <DockPanel LastChildFill="False">
-                                    <TextBlock
-                                        VerticalAlignment="Center"
-                                        DockPanel.Dock="Left"
-                                        Foreground="White"
-                                        Text="{Binding}"
-                                        TextTrimming="CharacterEllipsis"
-                                        ToolTip="{Binding}" />
-                                    <Button
-                                        Width="28"
-                                        Height="28"
-                                        Padding="0"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        Click="BtnRemoveDomain_Click"
-                                        DockPanel.Dock="Right"
-                                        Foreground="#E8A9A9"
-                                        Style="{StaticResource MaterialDesignFlatButton}"
-                                        Tag="{Binding}"
-                                        ToolTip="{x:Static resx:ResUI.SvoRayRemoveFromList}">
-                                        <materialDesign:PackIcon
-                                            Width="17"
-                                            Height="17"
-                                            Kind="Close" />
-                                    </Button>
-                                </DockPanel>
-                            </Border>
+                            <DockPanel Margin="10,2,2,2" LastChildFill="False">
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    FontSize="13"
+                                    Text="{Binding}"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTip="{Binding}" />
+                                <Button
+                                    Width="30"
+                                    Height="30"
+                                    Click="BtnRemoveDomain_Click"
+                                    DockPanel.Dock="Right"
+                                    Style="{StaticResource SvoRay.IconButton}"
+                                    Tag="{Binding}"
+                                    ToolTip="{x:Static resx:ResUI.SvoRayRemoveFromList}">
+                                    <materialDesign:PackIcon
+                                        Width="15"
+                                        Height="15"
+                                        Kind="Close" />
+                                </Button>
+                            </DockPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
@@ -269,42 +333,30 @@
 
         <TextBlock
             x:Name="txtStatus"
-            Grid.Row="3"
-            Margin="2,10,2,0"
-            FontSize="12"
-            Foreground="#F0A9A9"
-            TextWrapping="Wrap"
+            Grid.Row="5"
+            Margin="4,10,4,0"
+            Style="{StaticResource SvoRay.Caption}"
             Visibility="Collapsed" />
 
-        <StackPanel
-            Grid.Row="4"
-            Margin="0,16,0,0"
-            HorizontalAlignment="Right"
-            Orientation="Horizontal">
+        <Grid Grid.Row="6" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
             <Button
                 x:Name="btnCancel"
-                Width="120"
-                Height="42"
-                Margin="0,0,10,0"
-                Background="Transparent"
-                BorderBrush="#35FFFFFF"
-                BorderThickness="1"
+                Height="46"
+                Margin="0,0,5,0"
+                HorizontalContentAlignment="Center"
                 Content="{x:Static resx:ResUI.TbCancel}"
-                Foreground="White" />
+                FontSize="14"
+                Style="{StaticResource SvoRay.Row}" />
             <Button
                 x:Name="btnSave"
-                Width="140"
-                Height="42"
-                BorderThickness="0"
+                Grid.Column="1"
+                Margin="5,0,0,0"
                 Content="{x:Static resx:ResUI.SvoRaySave}"
-                Foreground="White">
-                <Button.Background>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                        <GradientStop Offset="0" Color="#6C6EF7" />
-                        <GradientStop Offset="1" Color="#35CDB8" />
-                    </LinearGradientBrush>
-                </Button.Background>
-            </Button>
-        </StackPanel>
+                Style="{StaticResource SvoRay.PrimaryButton}" />
+        </Grid>
     </Grid>
 </Window>

@@ -15,10 +15,11 @@ public sealed class WindowsManager
     }
 
     /// <summary>
-    /// Returns the tray icon for a connection state. The four icons differ by shape,
-    /// not only by colour, so they stay readable at the 16-24 px system tray size.
+    /// Returns the tray icon for a connection state. The icons differ by shape, not only by
+    /// colour, so they stay readable at the 16-24 px system tray size. Game mode has its own
+    /// "on" icon - a ring with a centre dot - since games then leave the VPN.
     /// </summary>
-    public async Task<Icon> GetNotifyIcon(ESvoRayConnectionState state)
+    public async Task<Icon> GetNotifyIcon(ESvoRayConnectionState state, bool gameMode = false)
     {
         try
         {
@@ -26,6 +27,7 @@ public sealed class WindowsManager
             return LoadIcon(state switch
             {
                 ESvoRayConnectionState.Connecting => "TrayConnecting.ico",
+                ESvoRayConnectionState.On when gameMode => "TrayGame.ico",
                 ESvoRayConnectionState.On => "TrayOn.ico",
                 ESvoRayConnectionState.Error => "TrayError.ico",
                 _ => "TrayOff.ico"

@@ -1,0 +1,59 @@
+<Window
+    x:Class="v2rayN.Views.SvoRayUpdateWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:common="clr-namespace:v2rayN.Common"
+    xmlns:resx="clr-namespace:ServiceLib.Resx;assembly=ServiceLib"
+    Title="{x:Static resx:ResUI.SvoRayUpdateTitle}"
+    Width="380"
+    Background="{x:Static common:SvoRayPalette.Background}"
+    ResizeMode="NoResize"
+    ShowInTaskbar="False"
+    SizeToContent="Height"
+    TextElement.FontFamily="{StaticResource SvoRay.Font}"
+    TextElement.Foreground="{x:Static common:SvoRayPalette.Text}"
+    WindowStartupLocation="CenterOwner">
+    <!--  Confirms a SvoRay update: which version, what will happen, and where the notes are  -->
+    <StackPanel Margin="22,18,22,18">
+        <TextBlock
+            x:Name="txtQuestion"
+            FontSize="15"
+            FontWeight="SemiBold"
+            Style="{StaticResource SvoRay.Body}"
+            TextWrapping="Wrap" />
+        <TextBlock
+            Margin="0,10,0,0"
+            Style="{StaticResource SvoRay.Caption}"
+            Text="{x:Static resx:ResUI.SvoRayUpdateDetails}" />
+        <TextBlock Margin="0,12,0,0" FontSize="13">
+            <Hyperlink
+                x:Name="lnkNotes"
+                Foreground="{x:Static common:SvoRayPalette.Accent}"
+                TextDecorations="None">
+                <Run x:Name="runNotes" />
+            </Hyperlink>
+        </TextBlock>
+        <Grid Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button
+                x:Name="btnLater"
+                Height="42"
+                Content="{x:Static resx:ResUI.SvoRayLater}"
+                FontSize="13"
+                IsCancel="True"
+                Style="{StaticResource SvoRay.GhostButton}" />
+            <Button
+                x:Name="btnInstall"
+                Grid.Column="2"
+                Height="42"
+                IsDefault="True"
+                Style="{StaticResource SvoRay.PrimaryButton}">
+                <TextBlock Text="{x:Static resx:ResUI.SvoRayInstall}" />
+            </Button>
+        </Grid>
+    </StackPanel>
+</Window>

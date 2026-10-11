@@ -398,13 +398,7 @@ public class StatusBarViewModel : MyReactiveObject
 
     private async Task RefreshServersMenu()
     {
-        var lstModel = await AppManager.Instance.ProfileModels(_config.SubIndexId, "");
-
-        var models = new List<ComboItem>();
-        foreach (var it in lstModel ?? [])
-        {
-            models.Add(new ComboItem() { ID = it.IndexId, Text = it.GetDisplayName() });
-        }
+        var models = await BuildServerItemsAsync();
 
         // The simple-mode selector always lists every profile; only the tray submenu is capped.
         SimpleServers.Clear();
@@ -424,6 +418,35 @@ public class StatusBarViewModel : MyReactiveObject
         {
             SelectedServer = selected;
         }
+    }
+
+    /// <summary>
+    /// Every server of every subscription, plus the ones added on their own, grouped in the order
+    /// of the subscriptions. The selector used to show only the subscription imported last, so an
+    /// earlier one stayed in the database, kept being updated and could not be picked. With more
+    /// than one source each name says which subscription the server belongs to.
+    /// </summary>
+    private static async Task<List<ComboItem>> BuildServerItemsAsync()
+    {
+        var profiles = await AppManager.Instance.ProfileModels("", "") ?? [];
+        var subs = await AppManager.Instance.SubItems() ?? [];
+        var order = subs.Select((sub, index) => (sub.Id, index)).ToDictionary(t => t.Id, t => t.index);
+        var labels = subs.ToDictionary(sub => sub.Id, SvoRaySubscriptionLabel.For);
+
+        var sources = profiles.Select(p => p.Subid.IsNotEmpty() && order.ContainsKey(p.Subid) ? p.Subid : "").Distinct().Count();
+        return profiles
+            .Select((profile, position) => (profile, position))
+            .OrderBy(t => t.profile.Subid.IsNotEmpty() && order.TryGetValue(t.profile.Subid, out var index) ? index : int.MaxValue)
+            .ThenBy(t => t.position)
+            .Select(t => new ComboItem
+            {
+                ID = t.profile.IndexId,
+                Text = SvoRaySubscriptionLabel.Compose(
+                    t.profile.Subid.IsNotEmpty() ? labels.GetValueOrDefault(t.profile.Subid) : null,
+                    t.profile.GetDisplayName(),
+                    sources > 1),
+            })
+            .ToList();
     }
 
     private void ServerSelectedChanged(bool c)

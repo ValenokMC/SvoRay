@@ -613,6 +613,7 @@ public class ProfilesViewModel : MyReactiveObject
         if (await ConfigHandler.SetDefaultServerIndex(_config, indexId) == 0)
         {
             await RefreshServers();
+            await SvoRayRoutingHandler.RefreshIfActiveAsync(_config);
             Reload();
         }
     }

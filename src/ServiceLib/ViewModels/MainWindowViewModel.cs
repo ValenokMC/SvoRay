@@ -310,7 +310,24 @@ public class MainWindowViewModel : MyReactiveObject
             .ObserveOn(RxSchedulers.MainThreadScheduler)
             .Subscribe(async blProxy => await UpdateSubscriptionProcess("", blProxy));
 
-        _ = Init();
+        _ = InitLoggedAsync();
+    }
+
+    /// <summary>
+    /// Init runs fire-and-forget, so a throw inside it used to vanish: the steps after the
+    /// failing one never ran, which left the server list empty and the certificate policy
+    /// uninitialised, with nothing in the log to say why.
+    /// </summary>
+    private async Task InitLoggedAsync()
+    {
+        try
+        {
+            await Init();
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("MainWindowViewModel.Init", ex);
+        }
     }
 
     private async Task Init()
@@ -535,22 +552,36 @@ public class MainWindowViewModel : MyReactiveObject
 
     #region Subscription
 
-    public async Task<bool> ImportSubscriptionAndRefreshAsync(string url)
+    /// <summary>
+    /// Imports a subscription link or server links from the simple screen.
+    /// <paramref name="replaceCurrent"/> is "Replace": once the new source has servers, the
+    /// source of the server selected before - its whole subscription, or that one server if it
+    /// was added on its own - is removed. Without it ("Add") nothing is removed, and both stay
+    /// in the selector. Importing a link that is already there never creates a copy.
+    /// </summary>
+    public async Task<bool> ImportSubscriptionAndRefreshAsync(string url, bool replaceCurrent = false)
     {
         var value = url.TrimEx();
         var uri = Utils.TryUri(value);
         var isSubscription = uri is not null
             && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
 
+        var previous = replaceCurrent ? await AppManager.Instance.GetProfileItem(_config.IndexId) : null;
+        var previousSubid = previous?.Subid.IsNotEmpty() == true ? previous.Subid : null;
+
         if (!isSubscription)
         {
-            var imported = await ConfigHandler.AddBatchServers(_config, value, _config.SubIndexId, false);
-            if (imported <= 0)
+            var selected = await ConfigHandler.AddStandaloneServers(_config, value, previousSubid,
+                previousSubid is null ? previous?.IndexId : null);
+            if (selected is null)
             {
                 NoticeManager.Instance.Enqueue(ResUI.OperationFailed);
                 return false;
             }
 
+            await ConfigHandler.SetDefaultServerIndex(_config, selected);
+            await RemovePreviousSourceAsync(previous, keepSubid: null, keepIndexId: selected);
+            await SvoRayRoutingHandler.RefreshIfActiveAsync(_config);
             await RefreshSimpleUiAsync();
             NoticeManager.Instance.Enqueue(ResUI.OperationSuccess);
             return true;
@@ -581,8 +612,6 @@ public class MainWindowViewModel : MyReactiveObject
         }
 
         await UpdateSubscriptionProcess(subscription.Id, false);
-        await RefreshSubscriptions();
-        await RefreshServersDispatcherAsync();
 
         var profiles = await AppManager.Instance.ProfileItems(subscription.Id);
         var success = profiles is { Count: > 0 };
@@ -594,10 +623,74 @@ public class MainWindowViewModel : MyReactiveObject
                 var firstUsableProfile = profiles.FirstOrDefault(item => item.Port > 0);
                 await ConfigHandler.SetDefaultServerIndex(_config, firstUsableProfile?.IndexId);
             }
+            await RemovePreviousSourceAsync(previous, keepSubid: subscription.Id, keepIndexId: null);
+        }
+
+        await RefreshSubscriptions();
+        await RefreshServersDispatcherAsync();
+        if (success)
+        {
+            // The selected server may now belong to another subscription with other rules.
+            await SvoRayRoutingHandler.RefreshIfActiveAsync(_config);
             await Reload();
         }
         NoticeManager.Instance.Enqueue(success ? ResUI.OperationSuccess : ResUI.MsgFailedImportSubscription);
         return success;
+    }
+
+    /// <summary>
+    /// The second half of "Replace": drops what the previously selected server came from, unless
+    /// the import turned out to be that same source (the same link pasted again).
+    /// </summary>
+    private async Task RemovePreviousSourceAsync(ProfileItem? previous, string? keepSubid, string? keepIndexId)
+    {
+        if (previous is null)
+        {
+            return;
+        }
+
+        if (previous.Subid.IsNotEmpty() && await AppManager.Instance.GetSubItem(previous.Subid) is not null)
+        {
+            if (previous.Subid != keepSubid)
+            {
+                await ConfigHandler.DeleteSubItem(_config, previous.Subid);
+            }
+        }
+        else if (previous.IndexId != keepIndexId)
+        {
+            await ConfigHandler.RemoveServers(_config, [previous]);
+        }
+    }
+
+    /// <summary>
+    /// Removes a subscription with all its servers, or a single server added on its own, from the
+    /// simple screen. When the selected server goes with it, the first remaining one is selected,
+    /// and a running connection is rebuilt on it or stopped when nothing is left.
+    /// </summary>
+    public async Task<bool> RemoveSourceAsync(string? subId, string? indexId)
+    {
+        if (subId.IsNotEmpty())
+        {
+            await ConfigHandler.DeleteSubItem(_config, subId!);
+        }
+        else if (indexId.IsNotEmpty() && await AppManager.Instance.GetProfileItem(indexId!) is { } profile)
+        {
+            await ConfigHandler.RemoveServers(_config, [profile]);
+        }
+        else
+        {
+            return false;
+        }
+
+        if (await AppManager.Instance.GetProfileItem(_config.IndexId) is null)
+        {
+            var next = (await AppManager.Instance.ProfileItems("") ?? []).FirstOrDefault(t => t.Port > 0);
+            await ConfigHandler.SetDefaultServerIndex(_config, next?.IndexId);
+            await SvoRayRoutingHandler.RefreshIfActiveAsync(_config);
+        }
+
+        await RefreshSimpleUiAsync();
+        return true;
     }
 
     public async Task RefreshSimpleUiAsync()

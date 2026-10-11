@@ -192,6 +192,7 @@ public sealed class AppManager
             Logging.SaveLog("AppExitAsync Begin");
 
             await SysProxyHandler.UpdateSysProxy(_config, true);
+            await SvoRayForwarding.RestoreAsync(_config);
             AppEvents.AppExitRequested.Publish();
             await Task.Delay(50); //Wait for AppExitRequested to be processed
 

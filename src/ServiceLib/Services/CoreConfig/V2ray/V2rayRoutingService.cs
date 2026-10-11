@@ -13,6 +13,23 @@ public partial class CoreConfigV2rayService
                 {
                     _coreConfig.routing.rules.AddRange(tunRules);
                 }
+                if (Utils.IsWindows())
+                {
+                    // Xray's own sockets are bound to the physical adapter (autoOutboundsInterface),
+                    // so its traffic never enters its own TUN. Should a socket ever open unbound -
+                    // the adapter briefly gone, say - its packets would come back through the TUN
+                    // and the "process self/ -> direct" rule below would open another one, round
+                    // and round. A safeguard: while the binding works this rule never matches.
+                    // Only "self/": "xray/" would also catch the separate core the delay check
+                    // starts, whose traffic must still go direct. (The binding failing outright,
+                    // as it does with forwarding on, is handled by SvoRayForwarding.)
+                    _coreConfig.routing.rules.Add(new()
+                    {
+                        inboundTag = ["tun"],
+                        process = ["self/"],
+                        outboundTag = Global.BlockTag,
+                    });
+                }
                 var lstDirectExe = BuildRoutingDirectExe();
                 if (lstDirectExe.Count > 0)
                 {

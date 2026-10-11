@@ -49,7 +49,8 @@ public class Logging
         _logger2.Debug(ex.StackTrace);
         if (ex?.InnerException != null)
         {
-            _logger2.Error(ex.InnerException);
+            // ToString keeps the whole chain: a XAML failure hides its real cause two levels down.
+            _logger2.Error(ex.InnerException.ToString());
         }
     }
 }

@@ -43,6 +43,12 @@ public class ThemeSettingViewModel : MyReactiveObject
                 ChangePrimaryColor(swatch.ExemplarHue.Color);
             }
         }
+        else
+        {
+            // Until the user picks a colour, advanced mode takes SvoRay's accent, so the two
+            // modes read as one app rather than SvoRay on top and stock v2rayN underneath.
+            ChangePrimaryColor(SvoRayPalette.AccentColor);
+        }
     }
 
     private void BindingUI()

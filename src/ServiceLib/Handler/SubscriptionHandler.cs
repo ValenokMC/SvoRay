@@ -149,9 +149,30 @@ public static class SubscriptionHandler
 
         var download = await DownloadSubscriptionContent(downloadHandle, url, blProxy, item.UserAgent);
         var supportUrl = SvoRaySupportUrl.Normalize(download?.GetHeaderValue("Support-Url"));
-        if (!string.Equals(item.SupportUrl, supportUrl, StringComparison.Ordinal))
+        var changed = !string.Equals(item.SupportUrl, supportUrl, StringComparison.Ordinal);
+        item.SupportUrl = supportUrl;
+
+        // Only an answer that carried a subscription says anything about routing: a failed or
+        // empty download must not wipe the profile the server sent last time.
+        if (download?.Content.IsNotEmpty() == true)
         {
-            item.SupportUrl = supportUrl;
+            var routing = SvoRayServerRouting.FromHeaders(
+                download.GetHeaderValue(SvoRayServerRouting.HeaderName),
+                download.GetHeaderValue(SvoRayServerRouting.EnableHeaderName));
+            changed |= !string.Equals(item.RoutingProfile, routing, StringComparison.Ordinal);
+            item.RoutingProfile = routing;
+
+            var usage = SvoRaySubscriptionUsage.Parse(download.GetHeaderValue(SvoRaySubscriptionUsage.HeaderName))?.Serialize();
+            changed |= !string.Equals(item.UsageInfo, usage, StringComparison.Ordinal);
+            item.UsageInfo = usage;
+
+            var title = SvoRaySubscriptionLabel.ParseTitle(download.GetHeaderValue(SvoRaySubscriptionLabel.HeaderName));
+            changed |= !string.Equals(item.ProfileTitle, title, StringComparison.Ordinal);
+            item.ProfileTitle = title;
+        }
+
+        if (changed)
+        {
             await SQLiteHelper.Instance.UpdateAsync(item);
         }
 

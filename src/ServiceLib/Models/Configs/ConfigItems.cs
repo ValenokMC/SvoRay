@@ -72,7 +72,9 @@ public class GUIItem
     public bool KeepOlderDedupl { get; set; }
     public int AutoUpdateInterval { get; set; }
     public int TrayMenuServersLimit { get; set; } = 20;
-    public bool EnableHWA { get; set; } = false;
+    // SvoRay draws on the GPU by default: software rendering is what made its window stutter.
+    // WPF still falls back to software by itself where no GPU is usable (remote desktop, VMs).
+    public bool EnableHWA { get; set; } = true;
     public bool EnableLog { get; set; } = true;
     public string? RootCertProvider { get; set; }
 }
@@ -320,4 +322,50 @@ public class SvoRayItem
 
     /// <summary>Id of the routing profile simple mode generates, so it is reused instead of duplicated.</summary>
     public string? RoutingId { get; set; }
+
+    /// <summary>
+    /// Apply the routing profile the subscription sends (the same one Happ and INCY get), so a PC
+    /// keeps Russian sites and game stores direct like the phone does.
+    /// </summary>
+    public bool UseServerRouting { get; set; } = true;
+
+    /// <summary>
+    /// Game mode: everything started from a game library or launcher folder goes direct, while
+    /// Discord, the browser and the rest stay on the VPN. Off until the user switches it on.
+    /// </summary>
+    public bool GameMode { get; set; }
+
+    /// <summary>
+    /// Set once hardware rendering has been switched on for a config written by an earlier
+    /// build, which stored v2rayN's software-only default. Later choices in the advanced
+    /// settings are left alone.
+    /// </summary>
+    public bool HardwareRenderingMigrated { get; set; }
+
+    /// <summary>
+    /// Set once a config written by an earlier build has been switched to TUN, the 0.5.0 default.
+    /// After that the user's choice of mode is kept as is.
+    /// </summary>
+    public bool TunDefaultMigrated { get; set; }
+
+    /// <summary>
+    /// Folders the user added to game mode by hand, for games no launcher reports. Checked again
+    /// at every connect, so a folder that was removed or turned into something too broad is skipped.
+    /// </summary>
+    public List<string> CustomGameFolders { get; set; } = [];
+
+    /// <summary>Unix time of the last look at SvoRay's latest release, for the daily check.</summary>
+    public long LastUpdateCheck { get; set; }
+
+    /// <summary>
+    /// The newer release that check found, so the footer keeps offering it after a restart until
+    /// the next check; null when the running build was the latest.
+    /// </summary>
+    public string? AvailableUpdateVersion { get; set; }
+
+    /// <summary>
+    /// The adapter whose IPv4 forwarding SvoRay turned off for TUN and has to turn back on;
+    /// null when it changed nothing. See <see cref="SvoRayForwarding"/>.
+    /// </summary>
+    public int? SuspendedForwardingInterface { get; set; }
 }
