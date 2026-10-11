@@ -20,7 +20,7 @@
 
 **English** · [Русский](README_RU.md) · [Changelog](CHANGELOG.md) · [Releases](https://github.com/ValenokMC/SvoRay/releases) · [Support](SUPPORT.md)
 
-[**Download SvoRay for Windows →**](https://github.com/ValenokMC/SvoRay/releases/latest)<br>
+[**Download SvoRay for Windows →**](https://github.com/ValenokMC/SvoRay/releases/latest/download/SvoRay-setup.exe)<br>
 Windows 10/11 x64 · installer and portable ZIP · no account required
 
 </div>
@@ -74,11 +74,11 @@ SvoRay routes your traffic through a server you supply. It does not provide anon
 
 ## Install
 
-1. Download `SvoRay-<version>-setup.exe` from [Releases](../../releases).
+1. Download the installer: <https://github.com/ValenokMC/SvoRay/releases/latest/download/SvoRay-setup.exe> always gives the latest version (the same file as `SvoRay-<version>-setup.exe` in [Releases](../../releases)).
 2. Optionally verify the download against `SHA256SUMS.txt` published with the release:
 
    ```powershell
-   Get-FileHash .\SvoRay-0.5.0-setup.exe -Algorithm SHA256
+   Get-FileHash .\SvoRay-setup.exe -Algorithm SHA256
    ```
 
    The build is not signed with a commercial certificate, so comparing the hash is the only way to confirm you got the right file.

@@ -1,6 +1,6 @@
 ﻿param(
     [string]$CoreSource = "$env:LOCALAPPDATA\Programs\v2rayN\v2rayN-windows-64",
-    [string]$Version = '0.5.1',
+    [string]$Version = '0.5.2',
     [string]$Runtime = 'win-x64',
     [switch]$SkipPublish,
     # Inno Setup compiler when it lives outside the standard folders, e.g. D:\soft\Inno Setup 6\ISCC.exe
@@ -52,8 +52,15 @@ if (-not (Test-Path -LiteralPath $setupExe -PathType Leaf)) {
     throw "Installer was not produced: $setupExe"
 }
 
+# The same installer under a name without the version, so that
+# https://github.com/ValenokMC/SvoRay/releases/latest/download/SvoRay-setup.exe always gives the
+# latest release. SvoRay's own updater keeps using the versioned name.
+$latestExe = Join-Path $distRoot 'SvoRay-setup.exe'
+Copy-Item -LiteralPath $setupExe -Destination $latestExe -Force
+
 $artifacts = @(
     $setupExe,
+    $latestExe,
     (Join-Path $distRoot "SvoRay-$Version-$Runtime.zip"),
     (Join-Path $distRoot "SvoRay-$Version-source.zip")
 ) | Where-Object { Test-Path -LiteralPath $_ }

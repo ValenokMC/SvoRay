@@ -3,6 +3,24 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## 0.5.2 — 11 October 2026
+
+Full notes: [docs/RELEASE_NOTES_0.5.2_RU.md](docs/RELEASE_NOTES_0.5.2_RU.md) (Russian).
+
+### Security
+
+- **Only local paths from launcher records and the registry are touched.** SvoRay runs elevated,
+  and some launcher records sit in folders any user can write to. A planted `\\host\share` path
+  would have made it open a network share and hand that host the user's NTLM credentials. Game
+  discovery, final-path resolution and the server-routing geo files now accept only fully
+  qualified paths on a local drive. Found by CodeQL.
+
+### Added
+
+- **A permanent download link**: every release also carries `SvoRay-setup.exe`, so
+  <https://github.com/ValenokMC/SvoRay/releases/latest/download/SvoRay-setup.exe> always downloads
+  the latest installer.
+
 ## 0.5.1 — 11 October 2026
 
 Full notes: [docs/RELEASE_NOTES_0.5.1_RU.md](docs/RELEASE_NOTES_0.5.1_RU.md) (Russian).

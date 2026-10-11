@@ -20,7 +20,7 @@
 
 [English](README.md) · **Русский** · [Изменения](CHANGELOG.md) · [Релизы](https://github.com/ValenokMC/SvoRay/releases) · [Поддержка](SUPPORT.md)
 
-[**Скачать SvoRay для Windows →**](https://github.com/ValenokMC/SvoRay/releases/latest)<br>
+[**Скачать SvoRay для Windows →**](https://github.com/ValenokMC/SvoRay/releases/latest/download/SvoRay-setup.exe)<br>
 Windows 10/11 x64 · установщик и portable ZIP · аккаунт не требуется
 
 </div>
@@ -73,7 +73,7 @@ SvoRay не продаёт подписки и не привязывает по�
 
 ## Установка
 
-1. Скачайте `SvoRay-0.5.0-setup.exe`.
+1. Скачайте установщик: <https://github.com/ValenokMC/SvoRay/releases/latest/download/SvoRay-setup.exe> — эта ссылка всегда ведёт на последнюю версию (тот же файл, что `SvoRay-<версия>-setup.exe` в [релизах](https://github.com/ValenokMC/SvoRay/releases)).
 2. Запустите установщик и подтвердите запрос Windows UAC.
 3. Windows SmartScreen может показать предупреждение «Неизвестный издатель»: сборка не подписана коммерческим сертификатом. Чтобы продолжить, нажмите «Подробнее» → «Выполнить в любом случае».
 4. По завершении можно сразу запустить приложение. Ярлык создаётся только в меню «Пуск».
@@ -123,7 +123,7 @@ SvoRay не продаёт подписки и не привязывает по�
 Поскольку подписи нет, единственный способ проверить загруженный файл — сверить его SHA256 с `SHA256SUMS.txt`, опубликованным рядом с релизом:
 
 ```powershell
-Get-FileHash .\SvoRay-0.5.0-setup.exe -Algorithm SHA256
+Get-FileHash .\SvoRay-setup.exe -Algorithm SHA256
 ```
 
 Что именно проверялось перед публикацией и какие риски остались — в `docs/SECURITY_AUDIT.md`.
@@ -140,7 +140,7 @@ Get-FileHash .\SvoRay-0.5.0-setup.exe -Algorithm SHA256
 .\build\BuildInstaller.ps1
 ```
 
-Скрипт публикует self-contained сборку, добавляет компоненты v2rayN/Xray/sing-box/geodata, собирает `SvoRay-0.5.0-setup.exe`, portable ZIP, source ZIP и `SHA256SUMS.txt` в каталог `dist`.
+Скрипт публикует self-contained сборку, добавляет компоненты v2rayN/Xray/sing-box/geodata, собирает `SvoRay-<версия>-setup.exe` и его копию `SvoRay-setup.exe`, portable ZIP, source ZIP и `SHA256SUMS.txt` в каталог `dist`.
 
 ## Частые вопросы
 
