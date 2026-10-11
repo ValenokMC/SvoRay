@@ -463,7 +463,7 @@ public static class SvoRayGames
             Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "SteamPath", null) as string,
             Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath", null) as string,
             Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Valve\Steam", "InstallPath", null) as string,
-        }.FirstOrDefault(path => path.IsNotEmpty() && Directory.Exists(path));
+        }.FirstOrDefault(path => SvoRayPaths.IsLocalPath(path) && Directory.Exists(path));
         if (steam is null)
         {
             return [];
@@ -472,7 +472,7 @@ public static class SvoRayGames
         // Steam itself: the client, its web helper and the default library under it.
         var result = new List<string> { steam };
         var vdf = Path.Combine(steam, "steamapps", "libraryfolders.vdf");
-        if (File.Exists(vdf))
+        if (SvoRayPaths.IsLocalPath(vdf) && File.Exists(vdf))
         {
             result.AddRange(ParseLibraryFolders(File.ReadAllText(vdf)).Select(lib => Path.Combine(lib, "steamapps", "common")));
         }
@@ -482,7 +482,7 @@ public static class SvoRayGames
     private static IEnumerable<string> FindEpicFolders(SvoRayGameLocations at)
     {
         var manifests = Path.Combine(at.ProgramData, "Epic", "EpicGamesLauncher", "Data", "Manifests");
-        return Directory.Exists(manifests)
+        return SvoRayPaths.IsLocalPath(manifests) && Directory.Exists(manifests)
             ? Directory.EnumerateFiles(manifests, "*.item").Select(f => ParseEpicManifest(SafeReadText(f))).OfType<string>().ToList()
             : [];
     }
@@ -492,7 +492,7 @@ public static class SvoRayGames
         var result = new List<string>();
         var riot = Path.Combine(at.ProgramData, "Riot Games");
         var metadata = Path.Combine(riot, "Metadata");
-        if (Directory.Exists(metadata))
+        if (SvoRayPaths.IsLocalPath(metadata) && Directory.Exists(metadata))
         {
             result.AddRange(Directory.EnumerateFiles(metadata, "*.product_settings.yaml", SearchOption.AllDirectories)
                 .Where(f => !Path.GetFileName(f).StartsWith("riot_client", StringComparison.OrdinalIgnoreCase))
@@ -506,7 +506,7 @@ public static class SvoRayGames
     private static IEnumerable<string> FindBattleNetFolders(SvoRayGameLocations at)
     {
         var db = Path.Combine(at.ProgramData, "Battle.net", "Agent", "product.db");
-        return File.Exists(db) ? ParseBattleNetProductDb(File.ReadAllBytes(db)) : [];
+        return SvoRayPaths.IsLocalPath(db) && File.Exists(db) ? ParseBattleNetProductDb(File.ReadAllBytes(db)) : [];
     }
 
     private static IEnumerable<string> FindLestaFolders(SvoRayGameLocations at)
@@ -530,7 +530,7 @@ public static class SvoRayGames
         foreach (var drive in at.FixedDrives)
         {
             var file = Path.Combine(drive, ".GamingRoot");
-            if (File.Exists(file))
+            if (SvoRayPaths.IsLocalPath(file) && File.Exists(file))
             {
                 result.AddRange(ParseGamingRoot(File.ReadAllBytes(file)).Select(relative => Path.Combine(drive, relative.TrimStart('\\', '/'))));
             }
@@ -618,7 +618,7 @@ public static class SvoRayGames
     {
         try
         {
-            return File.Exists(path) ? File.ReadAllText(path) : null;
+            return SvoRayPaths.IsLocalPath(path) && File.Exists(path) ? File.ReadAllText(path) : null;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -765,14 +765,16 @@ public static class SvoRayGames
         try
         {
             var full = Path.GetFullPath(path!);
-            if (!Directory.Exists(full))
+            // Launcher records and the registry are not trusted: never touch a share or a device.
+            if (!SvoRayPaths.IsLocalPath(full) || !Directory.Exists(full))
             {
                 return null;
             }
 
             if (OperatingSystem.IsWindows() && FinalPath(full) is { } final)
             {
-                return final;
+                // A symbolic link on a local drive can still lead to a share.
+                return SvoRayPaths.IsLocalPath(final) ? final : null;
             }
             return WalkCase(full);
         }
@@ -794,6 +796,10 @@ public static class SvoRayGames
             StringSplitOptions.RemoveEmptyEntries);
         foreach (var part in parts)
         {
+            if (!SvoRayPaths.IsLocalPath(current))
+            {
+                return null;
+            }
             var match = Directory.EnumerateDirectories(current)
                 .Select(Path.GetFileName)
                 .FirstOrDefault(name => string.Equals(name, part, StringComparison.OrdinalIgnoreCase));
@@ -813,6 +819,11 @@ public static class SvoRayGames
         const uint ShareAll = 0x7;
         const uint OpenExisting = 3;
         const uint BackupSemantics = 0x02000000;
+
+        if (!SvoRayPaths.IsLocalPath(folder))
+        {
+            return null;
+        }
 
         using var handle = CreateFileW(folder, FileReadAttributes, ShareAll, IntPtr.Zero, OpenExisting, BackupSemantics, IntPtr.Zero);
         if (handle.IsInvalid)

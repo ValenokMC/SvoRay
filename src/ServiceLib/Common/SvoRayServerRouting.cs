@@ -191,7 +191,7 @@ public static class SvoRayServerRouting
         var tags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            if (!File.Exists(path))
+            if (!SvoRayPaths.IsLocalPath(path) || !File.Exists(path))
             {
                 return tags;
             }
@@ -246,7 +246,8 @@ public static class SvoRayServerRouting
 
     private static async Task EnsureGeoFileAsync(string? url, string path)
     {
-        if (url.IsNullOrEmpty())
+        // The files live in SvoRay's own bin folder; anything else is refused before it is written.
+        if (url.IsNullOrEmpty() || !SvoRayPaths.IsLocalPath(path))
         {
             return;
         }
