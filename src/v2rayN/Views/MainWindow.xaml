@@ -653,6 +653,14 @@
                                     Style="{StaticResource SvoRay.PrimaryButton}">
                                     <TextBlock x:Name="txtImportButton" Text="{x:Static resx:ResUI.SvoRayImport}" />
                                 </Button>
+                                <!--  A WireGuard / WARP .conf: several lines, so it comes as a file or a paste, not a link  -->
+                                <Button
+                                    x:Name="btnImportFileSimple"
+                                    Margin="0,6,0,0"
+                                    HorizontalAlignment="Center"
+                                    Content="{x:Static resx:ResUI.SvoRayImportFile}"
+                                    Style="{StaticResource SvoRay.GhostButton}"
+                                    ToolTip="{x:Static resx:ResUI.SvoRayImportFileHint}" />
                                 <TextBlock
                                     x:Name="txtImportStatus"
                                     Margin="2,9,2,0"

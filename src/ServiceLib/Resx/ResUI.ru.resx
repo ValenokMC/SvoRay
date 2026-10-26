@@ -2319,4 +2319,16 @@
   <data name="SvoRayRemove" xml:space="preserve">
     <value>Удалить</value>
   </data>
+  <data name="SvoRayImportFile" xml:space="preserve">
+    <value>Выбрать файл .conf</value>
+  </data>
+  <data name="SvoRayImportFileHint" xml:space="preserve">
+    <value>Конфиг WireGuard или WARP, в том числе сделанный для AmneziaWG. Весь конфиг можно и вставить в поле выше.</value>
+  </data>
+  <data name="SvoRayImportFileFilter" xml:space="preserve">
+    <value>Конфиг WireGuard / AmneziaWG (*.conf)|*.conf|Все файлы (*.*)|*.*</value>
+  </data>
+  <data name="SvoRayAwgUnsupported" xml:space="preserve">
+    <value>Этому конфигу AmneziaWG нужен сервер AmneziaWG: в нём заданы H1–H4 или S1–S4. SvoRay подключает конфиги вида WARP, где заданы только Jc, Jmin, Jmax и I1–I5.</value>
+  </data>
 </root>

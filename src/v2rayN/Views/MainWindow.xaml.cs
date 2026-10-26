@@ -6,6 +6,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using MaterialDesignThemes.Wpf;
+using ServiceLib.Handler.Fmt;
 using ServiceLib.Handler.SysProxy;
 using ServiceLib.Services;
 using v2rayN.Base;
@@ -27,6 +28,7 @@ public partial class MainWindow
     private const double AdvancedHeight = 760;
     private const double AdvancedMinWidth = 860;
     private const double AdvancedMinHeight = 620;
+    private const long MaxConfigFileBytes = 256 * 1024;
 
     private static Config _config;
     private readonly SerialDisposable _layoutBindingsDisposable = new();
@@ -90,6 +92,8 @@ public partial class MainWindow
         btnAdvancedMode.Click += (_, _) => ShowAdvancedMode();
         btnSimpleMode.Click += (_, _) => ShowSimpleMode();
         btnImportSubscriptionSimple.Click += BtnImportSubscriptionSimple_Click;
+        btnImportFileSimple.Click += BtnImportFileSimple_Click;
+        DataObject.AddPastingHandler(txtSubscriptionUrl, TxtSubscriptionUrl_Pasting);
         btnUpdateSubscriptions.Click += BtnUpdateSubscriptions_Click;
         btnAddSource.Click += BtnAddSource_Click;
         btnSourceMenu.Click += BtnSourceMenu_Click;
@@ -563,7 +567,76 @@ public partial class MainWindow
             return;
         }
 
+        await ImportSimpleAsync(value);
+    }
+
+    private async void BtnImportFileSimple_Click(object sender, RoutedEventArgs e)
+    {
+        if (UI.OpenFileDialog(out var fileName, ResUI.SvoRayImportFileFilter) != true)
+        {
+            return;
+        }
+
+        string text;
+        try
+        {
+            // A WireGuard config is a few hundred bytes; anything this large is not one.
+            if (new FileInfo(fileName).Length > MaxConfigFileBytes)
+            {
+                ShowImportError(ResUI.SvoRayImportFailed);
+                return;
+            }
+            text = await File.ReadAllTextAsync(fileName);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog($"SvoRay config file read failed: {ex.GetType().Name}");
+            ShowImportError(ResUI.SvoRayImportError);
+            return;
+        }
+
+        await ImportSimpleAsync(text.TrimEx());
+    }
+
+    /// <summary>
+    /// The field is one line and would keep only "[Interface]" of a pasted config, so a pasted
+    /// WireGuard config is imported whole, as if it came from a file.
+    /// </summary>
+    private async void TxtSubscriptionUrl_Pasting(object sender, DataObjectPastingEventArgs e)
+    {
+        if (e.DataObject.GetData(DataFormats.UnicodeText) is not string text
+            || !IsWireguardConfig(text))
+        {
+            return;
+        }
+
+        e.CancelCommand();
+        await ImportSimpleAsync(text.TrimEx());
+    }
+
+    private static bool IsWireguardConfig(string text)
+    {
+        return text.Contains("[Interface]", StringComparison.OrdinalIgnoreCase)
+               && text.Contains("[Peer]", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task ImportSimpleAsync(string value)
+    {
+        if (value.IsNullOrEmpty())
+        {
+            ShowImportError(ResUI.SvoRayImportFailed);
+            return;
+        }
+        if (IsWireguardConfig(value)
+            && WireguardFmt.ResolveConfig(value, out var unsupportedAmnezia) is null
+            && unsupportedAmnezia)
+        {
+            ShowImportError(ResUI.SvoRayAwgUnsupported);
+            return;
+        }
+
         btnImportSubscriptionSimple.IsEnabled = false;
+        btnImportFileSimple.IsEnabled = false;
         txtImportButton.Text = ResUI.SvoRayImporting;
         txtImportStatus.Visibility = Visibility.Collapsed;
         try
@@ -593,6 +666,7 @@ public partial class MainWindow
         {
             txtImportButton.Text = ResUI.SvoRayImport;
             btnImportSubscriptionSimple.IsEnabled = true;
+            btnImportFileSimple.IsEnabled = true;
         }
     }
 

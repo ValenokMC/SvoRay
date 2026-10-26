@@ -3,6 +3,19 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## 0.6.0 — 26 October 2026
+
+Full notes: [docs/RELEASE_NOTES_0.6.0_RU.md](docs/RELEASE_NOTES_0.6.0_RU.md) (Russian).
+
+### Added
+
+- **WireGuard and Cloudflare WARP configs on the simple screen.** Choose a `.conf` file or paste
+  the whole config into the import field. Configs made for AmneziaWG connect too when they only
+  add client-side decoys (`Jc`, `Jmin`, `Jmax`, `I1`–`I5`), as WARP configs for AmneziaWG do: a
+  small relay inside SvoRay sends the decoys ahead of every handshake, while Xray or sing-box
+  carries plain WireGuard. Configs that need an AmneziaWG server (custom `H1`–`H4` or `S1`–`S4`)
+  are refused with an explanation instead of importing and never connecting.
+
 ## 0.5.2 — 11 October 2026
 
 Full notes: [docs/RELEASE_NOTES_0.5.2_RU.md](docs/RELEASE_NOTES_0.5.2_RU.md) (Russian).

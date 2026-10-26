@@ -191,8 +191,10 @@ public partial class CoreConfigV2rayService
             return false;
         }
 
+        // A WireGuard outbound keeps its interface addresses in settings.address; the server is the peer endpoint.
         var outboundAddress = outbound.settings?.servers?.FirstOrDefault()?.address
                               ?? outbound.settings?.vnext?.FirstOrDefault()?.address
+                              ?? EndpointHost(outbound.settings?.peers?.FirstOrDefault()?.endpoint)
                               ?? outbound.settings?.address?.ToString()
                               ?? string.Empty;
 
@@ -202,5 +204,21 @@ public partial class CoreConfigV2rayService
         }
 
         return !IPAddress.TryParse(outboundAddress, out var address) || !IPAddress.IsLoopback(address);
+    }
+
+    /// <summary>The host of "host:port" or "[v6]:port".</summary>
+    private static string? EndpointHost(string? endpoint)
+    {
+        if (endpoint.IsNullOrEmpty())
+        {
+            return null;
+        }
+        if (endpoint!.StartsWith('['))
+        {
+            var close = endpoint.IndexOf(']');
+            return close > 1 ? endpoint[1..close] : null;
+        }
+        var colon = endpoint.LastIndexOf(':');
+        return colon > 0 ? endpoint[..colon] : endpoint;
     }
 }
