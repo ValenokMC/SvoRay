@@ -1,6 +1,6 @@
 ﻿param(
     [string]$CoreSource = "$env:LOCALAPPDATA\Programs\v2rayN\v2rayN-windows-64",
-    [string]$Version = '0.6.0',
+    [string]$Version = '0.6.1',
     [string]$Runtime = 'win-x64',
     [switch]$SkipPublish,
     # Inno Setup compiler when it lives outside the standard folders, e.g. D:\soft\Inno Setup 6\ISCC.exe

@@ -3,7 +3,9 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
-## Unreleased
+## 0.6.1 — 26 October 2026
+
+Full notes: [docs/RELEASE_NOTES_0.6.1_RU.md](docs/RELEASE_NOTES_0.6.1_RU.md) (Russian).
 
 ### Changed
 
