@@ -2341,12 +2341,24 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
     <value>Choose a .conf file</value>
   </data>
   <data name="SvoRayImportFileHint" xml:space="preserve">
-    <value>A WireGuard or WARP config, including one made for AmneziaWG. You can also paste the whole config into the field above.</value>
+    <value>WireGuard, WARP or AmneziaWG (Jc, I1–I5). A config copied as text can be pasted on the Link tab.</value>
   </data>
   <data name="SvoRayImportFileFilter" xml:space="preserve">
     <value>WireGuard / AmneziaWG config (*.conf)|*.conf|All files (*.*)|*.*</value>
   </data>
   <data name="SvoRayAwgUnsupported" xml:space="preserve">
     <value>This AmneziaWG config needs an AmneziaWG server: it sets H1–H4 or S1–S4. SvoRay connects WARP-style configs, where only Jc, Jmin, Jmax and I1–I5 are set.</value>
+  </data>
+  <data name="SvoRayStandaloneServers" xml:space="preserve">
+    <value>Servers added on their own</value>
+  </data>
+  <data name="SvoRayAddSourceItem" xml:space="preserve">
+    <value>Add a subscription or file…</value>
+  </data>
+  <data name="SvoRayImportLinkTab" xml:space="preserve">
+    <value>Link</value>
+  </data>
+  <data name="SvoRayImportFileTab" xml:space="preserve">
+    <value>File .conf</value>
   </data>
 </root>

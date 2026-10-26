@@ -3,6 +3,18 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## Unreleased
+
+### Changed
+
+- **The import form has two tabs, Link and File .conf.** The file tab is one large button that
+  opens the file dialog. There is no drag and drop: SvoRay runs elevated, and Windows does not
+  let a file from a normal Explorer window drop into it. A config pasted on the Link tab still
+  imports whole.
+- **Sources are managed in the server list.** The open list puts a heading over each
+  subscription, with a bin that removes it, and over the servers added on their own, each with a
+  cross. The last row adds a source. The "…" menu above the list is gone.
+
 ## 0.6.0 — 26 October 2026
 
 Full notes: [docs/RELEASE_NOTES_0.6.0_RU.md](docs/RELEASE_NOTES_0.6.0_RU.md) (Russian).

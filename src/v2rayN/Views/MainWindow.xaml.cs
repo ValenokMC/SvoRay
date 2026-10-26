@@ -93,17 +93,22 @@ public partial class MainWindow
         btnSimpleMode.Click += (_, _) => ShowSimpleMode();
         btnImportSubscriptionSimple.Click += BtnImportSubscriptionSimple_Click;
         btnImportFileSimple.Click += BtnImportFileSimple_Click;
+        rdoImportLink.Checked += (_, _) => ShowImportKind(file: false);
+        rdoImportFile.Checked += (_, _) => ShowImportKind(file: true);
         DataObject.AddPastingHandler(txtSubscriptionUrl, TxtSubscriptionUrl_Pasting);
         btnUpdateSubscriptions.Click += BtnUpdateSubscriptions_Click;
         btnAddSource.Click += BtnAddSource_Click;
-        btnSourceMenu.Click += BtnSourceMenu_Click;
         btnAppUpdate.Click += BtnAppUpdate_Click;
         iconProxyHelp.ToolTipOpening += (_, _) => FitModeHint(iconProxyHelp);
         iconTunHelp.ToolTipOpening += (_, _) => FitModeHint(iconTunHelp);
         btnCheckPing.Click += BtnCheckPing_Click;
         btnSupport.Click += BtnSupport_Click;
-        cmbSimpleServers.SelectionChanged += (_, _) =>
+        cmbSimpleServers.SelectionChanged += (_, e) =>
         {
+            if (KeepSelectionOnServer(e))
+            {
+                return;
+            }
             ResetPingResult();
             // The quota and the server rules belong to the selected server's subscription.
             _ = RefreshServerRoutingFlagAsync();
@@ -182,7 +187,7 @@ public partial class MainWindow
                 .DisposeWith(disposables);
 
             // The simple selector uses the uncapped list so large subscriptions stay usable.
-            this.OneWayBind(ViewModel, vm => vm.StatusBarViewModel.SimpleServers, v => v.cmbSimpleServers.ItemsSource).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.StatusBarViewModel.SimpleServerList, v => v.cmbSimpleServers.ItemsSource).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.StatusBarViewModel.SelectedServer, v => v.cmbSimpleServers.SelectedItem).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.StatusBarViewModel.HasSubscriptions, v => v.btnUpdateSubscriptions.Visibility).DisposeWith(disposables);
             this.WhenAnyValue(v => v.ViewModel.StatusBarViewModel.ConnectionState)
@@ -700,84 +705,120 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// The "..." menu: remove a subscription with its servers, or the selected server when it
-    /// was added on its own. Built when opened, so it always lists what is there now.
+    /// The buttons inside the open server list: a subscription heading's bin removes the
+    /// subscription with its servers, the cross of a server added on its own removes that
+    /// server. The list closes first, so it does not cover the question.
     /// </summary>
-    private async void BtnSourceMenu_Click(object sender, RoutedEventArgs e)
+    private async void SimpleServerItem_ButtonClick(object sender, RoutedEventArgs e)
     {
-        try
+        if (e.OriginalSource is not Button { Tag: "remove", DataContext: SimpleServerItem item })
         {
-            var menu = new ContextMenu
-            {
-                Style = (Style)FindResource("SvoRay.ContextMenu"),
-                PlacementTarget = btnSourceMenu,
-                // Right edges aligned: the button sits at the window's right edge, and a menu
-                // opening from its left corner would hang out of the window.
-                Placement = PlacementMode.Custom,
-                CustomPopupPlacementCallback = (popupSize, targetSize, _) =>
-                    [new CustomPopupPlacement(new Point(targetSize.Width - popupSize.Width, targetSize.Height + 4), PopupPrimaryAxis.Horizontal)],
-            };
-
-            var profiles = await AppManager.Instance.ProfileItems("") ?? [];
-            foreach (var sub in await AppManager.Instance.SubItems() ?? [])
-            {
-                var count = profiles.Count(t => t.Subid == sub.Id);
-                if (count == 0 && sub.Url.IsNullOrEmpty())
-                {
-                    continue;
-                }
-                var label = SvoRaySubscriptionLabel.For(sub);
-                AddMenuItem(menu, string.Format(ResUI.SvoRayRemoveSubscription, label),
-                    string.Format(ResUI.SvoRayRemoveSubscriptionConfirm, label, count), sub.Id, null);
-            }
-
-            var selected = profiles.FirstOrDefault(t => t.IndexId == _config.IndexId);
-            if (selected is not null && (selected.Subid.IsNullOrEmpty() || await AppManager.Instance.GetSubItem(selected.Subid) is null))
-            {
-                var name = selected.GetSummary();
-                name = selected.Remarks.IsNotEmpty() ? selected.Remarks : name;
-                AddMenuItem(menu, string.Format(ResUI.SvoRayRemoveServer, name),
-                    string.Format(ResUI.SvoRayRemoveServerConfirm, name), null, selected.IndexId);
-            }
-
-            if (menu.Items.Count > 0)
-            {
-                menu.IsOpen = true;
-            }
+            return;
         }
-        catch (Exception ex)
+        e.Handled = true;
+        cmbSimpleServers.IsDropDownOpen = false;
+
+        if (item.Kind == ESimpleServerItemKind.Subscription)
         {
-            Logging.SaveLog("SvoRay source menu", ex);
+            await RemoveSourceAsync(string.Format(ResUI.SvoRayRemoveSubscriptionConfirm, item.SourceLabel, item.Count), item.SubId, null);
+        }
+        else if (item is { IsServer: true, CanRemove: true })
+        {
+            await RemoveSourceAsync(string.Format(ResUI.SvoRayRemoveServerConfirm, item.SourceLabel), null, item.ID);
         }
     }
 
-    private void AddMenuItem(ContextMenu menu, string header, string question, string? subId, string? indexId)
+    /// <summary>
+    /// A click on a heading does nothing and a click on the last row opens the import form:
+    /// neither may become the selected server. Buttons inside a row get their own clicks.
+    /// </summary>
+    private void SimpleServerItem_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        var item = new MenuItem { Header = header };
-        item.Click += async (_, _) =>
+        if (sender is not ComboBoxItem { DataContext: SimpleServerItem { IsServer: false } item } container
+            || IsInsideButton(e.OriginalSource as DependencyObject, container))
         {
-            if (!SvoRayConfirmWindow.Ask(this, question, ResUI.SvoRayRemove))
+            return;
+        }
+        e.Handled = true;
+        if (item.Kind == ESimpleServerItemKind.Add)
+        {
+            cmbSimpleServers.IsDropDownOpen = false;
+            OpenImportForm(replace: false);
+        }
+    }
+
+    private static bool IsInsideButton(DependencyObject? element, DependencyObject container)
+    {
+        for (var current = element; current is not null && current != container; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is ButtonBase)
             {
-                return;
+                return true;
             }
-            try
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Arrow keys on the closed selector step through every row, headings included. A row that
+    /// is not a server passes the selection on to the nearest server in the same direction.
+    /// </summary>
+    private bool KeepSelectionOnServer(SelectionChangedEventArgs e)
+    {
+        if (cmbSimpleServers.SelectedItem is not SimpleServerItem { IsServer: false })
+        {
+            return false;
+        }
+
+        var items = cmbSimpleServers.Items;
+        var index = cmbSimpleServers.SelectedIndex;
+        var previous = e.RemovedItems.Count > 0 ? items.IndexOf(e.RemovedItems[0]) : -1;
+        var step = previous > index ? -1 : 1;
+        object? target = null;
+        for (var i = index + step; i >= 0 && i < items.Count; i += step)
+        {
+            if (items[i] is SimpleServerItem { IsServer: true })
             {
-                var wasConnected = _lastConnectionState is not ESvoRayConnectionState.Off;
-                await ViewModel.RemoveSourceAsync(subId, indexId);
-                if (wasConnected && !ViewModel.StatusBarViewModel.HasProfiles)
-                {
-                    await ToggleConnectionAsync(false);
-                }
-                await RefreshServerRoutingFlagAsync();
-                ShowSimpleStatus(ResUI.SvoRayRemoved, false);
+                target = items[i];
+                break;
             }
-            catch (Exception ex)
+        }
+        target ??= previous >= 0 ? items[previous] : null;
+        // Not from inside SelectionChanged: the selector is still settling the current change.
+        Dispatcher.BeginInvoke(() => cmbSimpleServers.SelectedItem = target);
+        return true;
+    }
+
+    private async Task RemoveSourceAsync(string question, string? subId, string? indexId)
+    {
+        if (!SvoRayConfirmWindow.Ask(this, question, ResUI.SvoRayRemove))
+        {
+            return;
+        }
+        try
+        {
+            var wasConnected = _lastConnectionState is not ESvoRayConnectionState.Off;
+            await ViewModel.RemoveSourceAsync(subId, indexId);
+            if (wasConnected && !ViewModel.StatusBarViewModel.HasProfiles)
             {
-                Logging.SaveLog("SvoRay remove source", ex);
-                ShowSimpleStatus(ResUI.SvoRayRemoveFailed, true);
+                await ToggleConnectionAsync(false);
             }
-        };
-        menu.Items.Add(item);
+            await RefreshServerRoutingFlagAsync();
+            ShowSimpleStatus(ResUI.SvoRayRemoved, false);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay remove source", ex);
+            ShowSimpleStatus(ResUI.SvoRayRemoveFailed, true);
+        }
+    }
+
+    /// <summary>The import form's two tabs: a link (or a pasted config), or a .conf file.</summary>
+    private void ShowImportKind(bool file)
+    {
+        ImportLinkPanel.Visibility = file ? Visibility.Collapsed : Visibility.Visible;
+        btnImportFileSimple.Visibility = file ? Visibility.Visible : Visibility.Collapsed;
+        txtImportStatus.Visibility = Visibility.Collapsed;
     }
 
     private async void BtnSupport_Click(object sender, RoutedEventArgs e)

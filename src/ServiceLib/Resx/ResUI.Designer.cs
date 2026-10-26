@@ -5463,6 +5463,30 @@ namespace ServiceLib.Resx {
             }
         }
 
+        public static string SvoRayStandaloneServers {
+            get {
+                return ResourceManager.GetString("SvoRayStandaloneServers", resourceCulture);
+            }
+        }
+
+        public static string SvoRayAddSourceItem {
+            get {
+                return ResourceManager.GetString("SvoRayAddSourceItem", resourceCulture);
+            }
+        }
+
+        public static string SvoRayImportLinkTab {
+            get {
+                return ResourceManager.GetString("SvoRayImportLinkTab", resourceCulture);
+            }
+        }
+
+        public static string SvoRayImportFileTab {
+            get {
+                return ResourceManager.GetString("SvoRayImportFileTab", resourceCulture);
+            }
+        }
+
         public static string SvoRayAwgUnsupported {
             get {
                 return ResourceManager.GetString("SvoRayAwgUnsupported", resourceCulture);
