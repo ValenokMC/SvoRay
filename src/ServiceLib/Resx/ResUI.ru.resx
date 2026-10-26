@@ -2323,12 +2323,24 @@
     <value>Выбрать файл .conf</value>
   </data>
   <data name="SvoRayImportFileHint" xml:space="preserve">
-    <value>Конфиг WireGuard или WARP, в том числе сделанный для AmneziaWG. Весь конфиг можно и вставить в поле выше.</value>
+    <value>WireGuard, WARP или AmneziaWG (Jc, I1–I5). Конфиг, скопированный текстом, можно вставить на вкладке «Ссылка».</value>
   </data>
   <data name="SvoRayImportFileFilter" xml:space="preserve">
     <value>Конфиг WireGuard / AmneziaWG (*.conf)|*.conf|Все файлы (*.*)|*.*</value>
   </data>
   <data name="SvoRayAwgUnsupported" xml:space="preserve">
     <value>Этому конфигу AmneziaWG нужен сервер AmneziaWG: в нём заданы H1–H4 или S1–S4. SvoRay подключает конфиги вида WARP, где заданы только Jc, Jmin, Jmax и I1–I5.</value>
+  </data>
+  <data name="SvoRayStandaloneServers" xml:space="preserve">
+    <value>Отдельные серверы</value>
+  </data>
+  <data name="SvoRayAddSourceItem" xml:space="preserve">
+    <value>Добавить подписку или файл…</value>
+  </data>
+  <data name="SvoRayImportLinkTab" xml:space="preserve">
+    <value>Ссылка</value>
+  </data>
+  <data name="SvoRayImportFileTab" xml:space="preserve">
+    <value>Файл .conf</value>
   </data>
 </root>

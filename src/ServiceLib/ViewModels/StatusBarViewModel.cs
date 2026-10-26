@@ -36,6 +36,13 @@ public class StatusBarViewModel : MyReactiveObject
     /// </summary>
     public IObservableCollection<ComboItem> SimpleServers { get; } = new ObservableCollectionExtended<ComboItem>();
 
+    /// <summary>
+    /// The same servers grouped under a heading per source, with a last row that adds one, for
+    /// the simple screen's selector. Its server rows are the very objects in <see cref="SimpleServers"/>,
+    /// so both selectors show the one <see cref="SelectedServer"/>.
+    /// </summary>
+    public IObservableCollection<ComboItem> SimpleServerList { get; } = new ObservableCollectionExtended<ComboItem>();
+
     [Reactive]
     public RoutingItem SelectedRouting { get; set; }
 
@@ -398,11 +405,13 @@ public class StatusBarViewModel : MyReactiveObject
 
     private async Task RefreshServersMenu()
     {
-        var models = await BuildServerItemsAsync();
+        var (models, grouped) = await BuildServerItemsAsync();
 
         // The simple-mode selector always lists every profile; only the tray submenu is capped.
         SimpleServers.Clear();
         SimpleServers.AddRange(models);
+        SimpleServerList.Clear();
+        SimpleServerList.AddRange(grouped);
 
         BlServers = models.Count <= _config.GuiItem.TrayMenuServersLimit;
         Servers.Clear();
@@ -420,33 +429,11 @@ public class StatusBarViewModel : MyReactiveObject
         }
     }
 
-    /// <summary>
-    /// Every server of every subscription, plus the ones added on their own, grouped in the order
-    /// of the subscriptions. The selector used to show only the subscription imported last, so an
-    /// earlier one stayed in the database, kept being updated and could not be picked. With more
-    /// than one source each name says which subscription the server belongs to.
-    /// </summary>
-    private static async Task<List<ComboItem>> BuildServerItemsAsync()
+    private static async Task<(List<SimpleServerItem> Servers, List<SimpleServerItem> Grouped)> BuildServerItemsAsync()
     {
         var profiles = await AppManager.Instance.ProfileModels("", "") ?? [];
         var subs = await AppManager.Instance.SubItems() ?? [];
-        var order = subs.Select((sub, index) => (sub.Id, index)).ToDictionary(t => t.Id, t => t.index);
-        var labels = subs.ToDictionary(sub => sub.Id, SvoRaySubscriptionLabel.For);
-
-        var sources = profiles.Select(p => p.Subid.IsNotEmpty() && order.ContainsKey(p.Subid) ? p.Subid : "").Distinct().Count();
-        return profiles
-            .Select((profile, position) => (profile, position))
-            .OrderBy(t => t.profile.Subid.IsNotEmpty() && order.TryGetValue(t.profile.Subid, out var index) ? index : int.MaxValue)
-            .ThenBy(t => t.position)
-            .Select(t => new ComboItem
-            {
-                ID = t.profile.IndexId,
-                Text = SvoRaySubscriptionLabel.Compose(
-                    t.profile.Subid.IsNotEmpty() ? labels.GetValueOrDefault(t.profile.Subid) : null,
-                    t.profile.GetDisplayName(),
-                    sources > 1),
-            })
-            .ToList();
+        return SvoRayServerList.Build(profiles, subs, ResUI.SvoRayStandaloneServers, ResUI.SvoRayAddSourceItem);
     }
 
     private void ServerSelectedChanged(bool c)
