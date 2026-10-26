@@ -53,6 +53,7 @@ subscription or profile and keep the option to use every upstream v2rayN setting
 - one screen: connection status, a power button, a profile selector
 - Russian and English simple interfaces, selected in the header and applied after restart
 - imports an HTTPS subscription or an individual `vless://`, `hysteria2://` and other links v2rayN supports
+- **WireGuard and Cloudflare WARP**: choose a `.conf` file or paste the config; WARP configs made for AmneziaWG (`Jc`, `Jmin`, `Jmax`, `I1`–`I5`) connect too, with the decoys sent before every handshake
 - two connection modes: TUN for the whole system, or the Windows system proxy
 - a domain list that decides what the VPN carries: everything except the list, or the list only
 - **game mode**: games from Steam, Epic, Battle.net, EA app, Rockstar, GOG, Ubisoft, Riot, Lesta, HoYoPlay, Xbox and Roblox, plus folders you add yourself, go direct with your normal ping while Discord and everything else stay on the VPN — one switch, even mid-connection
