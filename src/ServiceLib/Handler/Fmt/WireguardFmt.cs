@@ -74,8 +74,27 @@ public class WireguardFmt : BaseFmt
         return ToUri(EConfigType.WireGuard, item.Address, item.Port, item.Password, dicQuery, remark);
     }
 
+    /// <summary>The Cloudflare WARP server key, shared by every WARP config.</summary>
+    public const string WarpPublicKey = "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=";
+
+    private const int AwgMaxJunkCount = 128;
+    private const int AwgMaxJunkSize = 1280;
+
     public static List<ProfileItem>? ResolveConfig(string strData)
     {
+        return ResolveConfig(strData, out _);
+    }
+
+    /// <summary>
+    /// Reads a WireGuard or AmneziaWG .conf. <paramref name="unsupportedAmnezia"/> is true when
+    /// the config needs AmneziaWG on the server side too (custom H1-H4 headers or S1-S4
+    /// padding) or carries decoys that cannot be read: such a config is refused, because a plain
+    /// WireGuard core would import it but never connect. Jc/Jmin/Jmax and I1-I5 alone are sent
+    /// by the client only, before each handshake, and are kept for the local relay.
+    /// </summary>
+    public static List<ProfileItem>? ResolveConfig(string strData, out bool unsupportedAmnezia)
+    {
+        unsupportedAmnezia = false;
         var interfaceDic = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var peerDicList = new List<Dictionary<string, string>>();
         var currentDicRef = interfaceDic;
@@ -131,6 +150,12 @@ public class WireguardFmt : BaseFmt
             return null;
         }
 
+        if (!TryResolveAmnezia(interfaceDic, out var awgJc, out var awgJmin, out var awgJmax, out var awgSpecialPackets))
+        {
+            unsupportedAmnezia = true;
+            return null;
+        }
+
         var wgMtu = interfaceDic.TryGetValue("MTU", out var mtuStr) && int.TryParse(mtuStr, out var mtuVal) ? mtuVal : 0;
         var wgInterfaceAddress = interfaceDic.TryGetValue("Address", out var interfaceAddress) ? interfaceAddress : string.Empty;
 
@@ -156,11 +181,18 @@ public class WireguardFmt : BaseFmt
                 WgInterfaceAddress = wgInterfaceAddress,
                 WgReserved = (peerDic.TryGetValue("Reserved", out var reserved) ? reserved : string.Empty).NullIfEmpty(),
                 WgMtu = wgMtu > 0 ? wgMtu : null,
+                AwgJc = awgJc,
+                AwgJmin = awgJmin,
+                AwgJmax = awgJmax,
+                AwgSpecialPackets = awgSpecialPackets,
             };
 
+            var isWarp = protoExtra.WgPublicKey == WarpPublicKey;
             var item = new ProfileItem
             {
-                Remarks = $"{nameof(EConfigType.WireGuard)} Peer {index + 1}",
+                Remarks = isWarp
+                    ? (peerDicList.Count > 1 ? $"Cloudflare WARP {index + 1}" : "Cloudflare WARP")
+                    : $"{nameof(EConfigType.WireGuard)} Peer {index + 1}",
                 ConfigType = EConfigType.WireGuard,
                 Address = peerAddress,
                 Port = peerPort,
@@ -173,6 +205,72 @@ public class WireguardFmt : BaseFmt
         }
 
         return resultList;
+    }
+
+    /// <summary>
+    /// Takes the AmneziaWG keys of an [Interface] section. False when one of them asks for
+    /// something only an AmneziaWG server understands, or cannot be read.
+    /// </summary>
+    private static bool TryResolveAmnezia(Dictionary<string, string> interfaceDic,
+        out int? jc, out int? jmin, out int? jmax, out List<string>? specialPackets)
+    {
+        jc = null;
+        jmin = null;
+        jmax = null;
+        specialPackets = null;
+
+        // H1-H4 are the four WireGuard message types; anything but 1-4 changes the handshake itself.
+        for (var i = 1; i <= 4; i++)
+        {
+            if (interfaceDic.TryGetValue($"H{i}", out var header) && header.IsNotEmpty()
+                && header != i.ToString() && header != $"{i}-{i}")
+            {
+                return false;
+            }
+        }
+        // S1-S4 pad the WireGuard messages; the server has to strip them.
+        for (var i = 1; i <= 4; i++)
+        {
+            if (interfaceDic.TryGetValue($"S{i}", out var padding) && padding.IsNotEmpty() && padding != "0")
+            {
+                return false;
+            }
+        }
+
+        if (interfaceDic.TryGetValue("Jc", out var jcText) && jcText.IsNotEmpty())
+        {
+            if (!int.TryParse(jcText, out var count) || count is < 0 or > AwgMaxJunkCount)
+            {
+                return false;
+            }
+            if (count > 0)
+            {
+                if (!int.TryParse(interfaceDic.GetValueOrDefault("Jmin"), out var min)
+                    || !int.TryParse(interfaceDic.GetValueOrDefault("Jmax"), out var max)
+                    || min < 1 || max < min || max > AwgMaxJunkSize)
+                {
+                    return false;
+                }
+                jc = count;
+                jmin = min;
+                jmax = max;
+            }
+        }
+
+        for (var i = 1; i <= 5; i++)
+        {
+            if (!interfaceDic.TryGetValue($"I{i}", out var spec) || spec.IsNullOrEmpty())
+            {
+                continue;
+            }
+            if (!AwgSignature.TryParse(spec, out _))
+            {
+                return false;
+            }
+            (specialPackets ??= []).Add(spec);
+        }
+
+        return true;
     }
 
     private static bool TryParseEndpoint(string endpoint, out string address, out int port)

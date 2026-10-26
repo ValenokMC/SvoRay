@@ -28,6 +28,12 @@ public record ProtocolExtraItem
     public string? WgReserved { get; init; }
     public int? WgMtu { get; init; }
 
+    // amneziawg decoys the local relay sends before each handshake; the server never sees them as WireGuard
+    public int? AwgJc { get; init; }
+    public int? AwgJmin { get; init; }
+    public int? AwgJmax { get; init; }
+    public List<string>? AwgSpecialPackets { get; init; }
+
     // hysteria2
     public string? SalamanderPass { get; init; }
     public int? UpMbps { get; init; }

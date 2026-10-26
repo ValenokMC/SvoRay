@@ -274,7 +274,7 @@ public partial class CoreConfigV2rayService
                     }
                 case EConfigType.WireGuard:
                     {
-                        var address = _node.Address;
+                        var (address, port) = AwgRelayManager.Instance.ResolveEndpoint(_node, _config.CoreBasicItem.SendThrough);
                         if (Utils.IsIpv6(address))
                         {
                             address = $"[{address}]";
@@ -282,7 +282,7 @@ public partial class CoreConfigV2rayService
                         var peer = new WireguardPeer4Ray
                         {
                             publicKey = protocolExtra.WgPublicKey ?? "",
-                            endpoint = address + ":" + _node.Port.ToString(),
+                            endpoint = address + ":" + port.ToString(),
                             preSharedKey = protocolExtra.WgPresharedKey,
                         };
                         var setting = new Outboundsettings4Ray

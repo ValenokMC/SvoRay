@@ -5445,6 +5445,30 @@ namespace ServiceLib.Resx {
             }
         }
 
+        public static string SvoRayImportFile {
+            get {
+                return ResourceManager.GetString("SvoRayImportFile", resourceCulture);
+            }
+        }
+
+        public static string SvoRayImportFileFilter {
+            get {
+                return ResourceManager.GetString("SvoRayImportFileFilter", resourceCulture);
+            }
+        }
+
+        public static string SvoRayImportFileHint {
+            get {
+                return ResourceManager.GetString("SvoRayImportFileHint", resourceCulture);
+            }
+        }
+
+        public static string SvoRayAwgUnsupported {
+            get {
+                return ResourceManager.GetString("SvoRayAwgUnsupported", resourceCulture);
+            }
+        }
+
         public static string SvoRayImporting {
             get {
                 return ResourceManager.GetString("SvoRayImporting", resourceCulture);

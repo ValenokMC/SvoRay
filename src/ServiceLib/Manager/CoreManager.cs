@@ -78,6 +78,8 @@ public class CoreManager
 
         var node = mainContext.Node;
         var fileName = Utils.GetBinConfigPath(Global.CoreConfigFileName);
+        // Writing the config starts the AmneziaWG relays it points at; the old core keeps its own until it stops.
+        AwgRelayManager.Instance.MarkStale();
         var result = await CoreConfigHandler.GenerateClientConfig(mainContext, fileName);
         if (result.Success != true)
         {
@@ -88,7 +90,8 @@ public class CoreManager
         await UpdateFunc(false, $"{node.GetSummary()}");
         await UpdateFunc(false, $"{Utils.GetRuntimeInfo()}");
         await UpdateFunc(false, string.Format(ResUI.StartService, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")));
-        await CoreStop();
+        await StopProcesses();
+        AwgRelayManager.Instance.StopStale();
         await Task.Delay(100);
 
         if (Utils.IsWindows() && (mainContext?.IsTunEnabled == true || preContext?.IsTunEnabled == true))
@@ -151,6 +154,12 @@ public class CoreManager
     }
 
     public async Task CoreStop()
+    {
+        await StopProcesses();
+        AwgRelayManager.Instance.StopAll();
+    }
+
+    private async Task StopProcesses()
     {
         try
         {

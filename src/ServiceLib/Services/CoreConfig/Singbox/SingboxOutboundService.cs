@@ -339,13 +339,14 @@ public partial class CoreConfigSingboxService
             {
                 case EConfigType.WireGuard:
                     {
+                        var (address, port) = AwgRelayManager.Instance.ResolveEndpoint(_node, _config.CoreBasicItem.SendThrough);
                         var peer = new Peer4Sbox
                         {
                             public_key = protocolExtra.WgPublicKey ?? string.Empty,
                             pre_shared_key = protocolExtra.WgPresharedKey,
                             reserved = Utils.String2List(protocolExtra.WgReserved)?.Select(s => s.Trim()).Select(int.Parse).ToList(),
-                            address = _node.Address,
-                            port = _node.Port,
+                            address = address,
+                            port = port,
                             allowed_ips = ["0.0.0.0/0", "::/0"],
                         };
                         endpoint.private_key = _node.Password;
