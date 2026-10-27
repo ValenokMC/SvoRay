@@ -340,6 +340,8 @@ public partial class MainWindow
     {
         togGameMode.IsChecked = _config.SvoRayItem.GameMode;
         txtGameModeState.Text = _config.SvoRayItem.GameMode ? ResUI.SvoRayGameModeOnShort : ResUI.SvoRayGameModeOffShort;
+        // Games skip the system proxy on their own, so the switch only means something in TUN.
+        togGameMode.Visibility = _config.SvoRayItem.Mode == ESvoRayMode.Tun ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// <summary>
@@ -928,6 +930,7 @@ public partial class MainWindow
 
             _config.SvoRayItem.Mode = mode;
             await ConfigHandler.SaveConfig(_config);
+            UpdateGameModeView();
 
             if (wasConnected)
             {
@@ -1539,7 +1542,7 @@ public partial class MainWindow
                 txtConnectionSubtitle.Text = (_config.SvoRayItem.Mode == ESvoRayMode.Proxy
                     ? ResUI.SvoRayProxyOnDescription
                     : ResUI.SvoRayTunOnDescription)
-                    + (_config.SvoRayItem.GameMode ? ResUI.SvoRayGamesBypassSuffix : string.Empty);
+                    + (SvoRayRoutingHandler.GamesBypassVpn(_config.SvoRayItem) ? ResUI.SvoRayGamesBypassSuffix : string.Empty);
                 break;
 
             case ESvoRayConnectionState.Error:

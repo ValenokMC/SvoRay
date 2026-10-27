@@ -3,6 +3,15 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## 0.6.2 — 27 October 2026
+
+Full notes: [docs/RELEASE_NOTES_0.6.2_RU.md](docs/RELEASE_NOTES_0.6.2_RU.md) (Russian).
+
+### Changed
+
+- **Game mode is a TUN-only switch.** Games ignore the system proxy and connect directly in proxy
+  mode anyway, so the switch is hidden there and adds no rule. The saved choice comes back with TUN.
+
 ## 0.6.1 — 26 October 2026
 
 Full notes: [docs/RELEASE_NOTES_0.6.1_RU.md](docs/RELEASE_NOTES_0.6.1_RU.md) (Russian).

@@ -2179,7 +2179,7 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
     <value>off</value>
   </data>
   <data name="SvoRayGameModeTip" xml:space="preserve">
-    <value>Games and game launchers (Steam, Epic, Battle.net, EA, Riot, Ubisoft, GOG and others) connect directly, without VPN latency. All other traffic, including Discord and the browser, stays on the VPN. Applies in TUN mode.</value>
+    <value>Games and game launchers (Steam, Epic, Battle.net, EA, Riot, Ubisoft, GOG and others) connect directly, without VPN latency. All other traffic, including Discord and the browser, stays on the VPN.</value>
   </data>
   <data name="SvoRayGameModeOn" xml:space="preserve">
     <value>Game mode is on: games run without the VPN</value>
