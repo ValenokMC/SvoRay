@@ -48,6 +48,16 @@ public class SvoRayGameModeAndServerRoutingTests
     }
 
     [Fact]
+    public void GameMode_ShouldAddNoProcessRuleInProxyMode()
+    {
+        var settings = new SvoRayItem { GameMode = true, Mode = ESvoRayMode.Proxy };
+
+        SvoRayRoutingHandler.GamesBypassVpn(settings).Should().BeFalse();
+        SvoRayRoutingHandler.BuildRules(settings, Inputs())
+            .Should().NotContain(r => r.Process != null && r.Process.Count > 0);
+    }
+
+    [Fact]
     public void GameModeOff_ShouldAddNoProcessRule()
     {
         var rules = SvoRayRoutingHandler.BuildRules(new SvoRayItem { GameMode = false }, Inputs());

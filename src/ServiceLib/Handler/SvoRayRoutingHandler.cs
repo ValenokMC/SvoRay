@@ -254,7 +254,7 @@ public static class SvoRayRoutingHandler
             ServerProfile = profile,
             GeoSiteTags = siteTags,
             GeoIpTags = ipTags,
-            GameFolders = settings.GameMode ? SvoRayGames.FindGameFolders(settings.CustomGameFolders) : [],
+            GameFolders = GamesBypassVpn(settings) ? SvoRayGames.FindGameFolders(settings.CustomGameFolders) : [],
         };
 
         static IReadOnlySet<string>? ReadTags(string fileName)
@@ -301,6 +301,14 @@ public static class SvoRayRoutingHandler
         }
     }
 
+    /// <summary>
+    /// Whether game mode takes effect. Only in TUN: in proxy mode games ignore the system proxy
+    /// and connect directly anyway, so the switch would change nothing. The setting itself is
+    /// kept, and comes back with TUN.
+    /// </summary>
+    public static bool GamesBypassVpn(SvoRayItem settings) =>
+        settings.GameMode && settings.Mode == ESvoRayMode.Tun;
+
     public static List<RulesItem> BuildRules(SvoRayItem settings)
     {
         return BuildRules(settings, new SvoRayRoutingInputs());
@@ -320,7 +328,7 @@ public static class SvoRayRoutingHandler
     {
         var rules = new List<RulesItem>();
 
-        if (settings.GameMode)
+        if (GamesBypassVpn(settings))
         {
             rules.Add(new RulesItem
             {
