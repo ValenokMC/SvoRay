@@ -9,6 +9,8 @@ The Windows package also contains unmodified runtime components taken from the o
 - [sing-box](https://github.com/SagerNet/sing-box) and its bundled `LICENSE`;
 - routing/geolocation data distributed with v2rayN.
 
+The country flags on the simple screen come from [flag-icons](https://github.com/lipis/flag-icons) 7.2.3 (MIT, Copyright © 2013 Panayiotis Lipiridis), converted to PNG; its license text is kept next to them in `src/v2rayN/Resources/Flags`.
+
 Each component remains under its own upstream license. SvoRay is not an official 2dust, XTLS, SagerNet, Apple, or OpenAI product. The name and glass interface belong to this fork; the networking implementation is inherited from v2rayN and its cores.
 
 No subscription URL, VPN credential, server address, generated core configuration, log, or DNS cache is included in the release archive.

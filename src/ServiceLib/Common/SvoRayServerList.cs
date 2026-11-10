@@ -28,12 +28,16 @@ public static class SvoRayServerList
             {
                 var subId = SubIdOf(t.profile);
                 var name = t.profile.GetDisplayName();
+                var (flag, plainName) = SvoRayFlag.Split(name);
+                var text = SvoRaySubscriptionLabel.Compose(subId is null ? null : labels[subId], name, severalSources);
                 return new SimpleServerItem
                 {
                     Kind = ESimpleServerItemKind.Server,
                     ID = t.profile.IndexId,
-                    Text = SvoRaySubscriptionLabel.Compose(subId is null ? null : labels[subId], name, severalSources),
-                    ListText = name,
+                    Text = text,
+                    ShortText = SvoRayFlag.Split(text).Text,
+                    FlagCode = flag,
+                    ListText = plainName,
                     SubId = subId,
                     SourceLabel = name,
                     CanRemove = subId is null,
@@ -50,11 +54,14 @@ public static class SvoRayServerList
             {
                 continue;
             }
+            var (labelFlag, plainLabel) = SvoRayFlag.Split(labels[sub.Id]);
             grouped.Add(new SimpleServerItem
             {
                 Kind = ESimpleServerItemKind.Subscription,
                 Text = $"{labels[sub.Id]} · {own.Count}",
-                ListText = $"{labels[sub.Id]} · {own.Count}",
+                ShortText = $"{plainLabel} · {own.Count}",
+                FlagCode = labelFlag,
+                ListText = $"{plainLabel} · {own.Count}",
                 SubId = sub.Id,
                 SourceLabel = labels[sub.Id],
                 Count = own.Count,

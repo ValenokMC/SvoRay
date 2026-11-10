@@ -5,8 +5,8 @@
 		<AssemblyName>SvoRay</AssemblyName>
 		<Product>SvoRay</Product>
 		<Description>Simple and private Windows VPN client powered by v2rayN.</Description>
-		<Version>0.6.2</Version>
-		<InformationalVersion>0.6.2+v2rayN.7.24.4</InformationalVersion>
+		<Version>0.6.3</Version>
+		<InformationalVersion>0.6.3+v2rayN.7.24.4</InformationalVersion>
 		<TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
 		<GenerateSatelliteAssembliesForCore>true</GenerateSatelliteAssembliesForCore>
 		<UseWPF>true</UseWPF>
@@ -43,6 +43,8 @@
 		<Resource Include="Resources\TrayGame.ico" />
 		<Resource Include="Resources\TrayError.ico" />
 		<Resource Include="Resources\v2rayN.ico" />
+		<!-- Country flags from flag-icons (MIT, see LICENSE-flag-icons.txt), shown instead of flag emoji -->
+		<Resource Include="Resources\Flags\*.png" />
 	</ItemGroup>
 
 	<ItemGroup>
