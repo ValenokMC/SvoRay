@@ -90,3 +90,17 @@ public class SvoRayServerListTests
             (ESimpleServerItemKind.Add, Add));
     }
 }
+
+public class SvoRayFlagTests
+{
+    [Theory]
+    [InlineData("\U0001F1E9\U0001F1EA Germany", "de", "Germany")]
+    [InlineData("Finland \U0001F1EB\U0001F1EE", "fi", "Finland")]
+    [InlineData("Provider · \U0001F1EC\U0001F1EA Tbilisi", "ge", "Provider ·  Tbilisi")]
+    [InlineData("Netherlands", null, "Netherlands")]
+    [InlineData("", null, "")]
+    public void Split_takes_the_flag_out_of_the_name(string name, string? code, string text)
+    {
+        SvoRayFlag.Split(name).Should().Be((code, text));
+    }
+}

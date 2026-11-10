@@ -12,6 +12,12 @@ public class SimpleServerItem : ComboItem
 
     public string ListText { get; init; } = string.Empty;
 
+    /// <summary>The full name without its flag emoji, which the screen draws as a picture instead.</summary>
+    public string ShortText { get; init; } = string.Empty;
+
+    /// <summary>Lower-case country code of the flag shown before the name; null when there is none.</summary>
+    public string? FlagCode { get; init; }
+
     /// <summary>The subscription a heading stands for.</summary>
     public string? SubId { get; init; }
 

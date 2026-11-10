@@ -3,6 +3,17 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## 0.6.3 — 10 November 2026
+
+Full notes: [docs/RELEASE_NOTES_0.6.3_RU.md](docs/RELEASE_NOTES_0.6.3_RU.md) (Russian).
+
+### Changed
+
+- **Country flags are pictures in the server list.** Providers put a flag emoji before a server's
+  name, and Windows draws it as two letters ("DE", "FI"). The open list, the closed selector and
+  the subscription headings now show the flag itself, taken out of the name. A name without a
+  flag looks as before. The tray menu stays text.
+
 ## 0.6.2 — 27 October 2026
 
 Full notes: [docs/RELEASE_NOTES_0.6.2_RU.md](docs/RELEASE_NOTES_0.6.2_RU.md) (Russian).
