@@ -1,4 +1,4 @@
-namespace ServiceLib.Handler;
+﻿namespace ServiceLib.Handler;
 
 /// <summary>Where a kill switch filter applies: outgoing connects or accepted incoming ones, per IP version.</summary>
 public enum KillSwitchLayer
@@ -106,6 +106,9 @@ public static class SvoRayKillSwitch
     /// <summary>Programs whose traffic is the VPN itself.</summary>
     public static Func<IReadOnlyList<string>> FindTrustedApps { get; set; } = DefaultTrustedApps;
 
+    /// <summary>The VPN server's own addresses, which TUN keeps out of the tunnel.</summary>
+    public static Func<IReadOnlyList<(IPAddress Address, byte Prefix)>> FindServerNetworks { get; set; } = DefaultServerNetworks;
+
     private static readonly Lock _lock = new();
     private static IKillSwitchFirewall? _firewall;
     private static string? _appliedKey;
@@ -125,10 +128,20 @@ public static class SvoRayKillSwitch
     /// The filters for the given trusted programs and tunnel adapters, the same on all four layers
     /// apart from DHCP's ports and DNS, which only outgoing traffic needs.
     /// </summary>
-    public static IReadOnlyList<KillSwitchFilter> Plan(IEnumerable<string> trustedApps, IEnumerable<ulong> tunnelInterfaces)
+    /// <param name="serverNetworks">
+    /// The VPN server's addresses. TUN routes them past the tunnel, or the core would send its
+    /// own connection into itself, so any program that connects to the server - some providers
+    /// answer a blocked service's name with the server's address and serve it there - goes out
+    /// directly. That reveals nothing the core's own connection does not, so it is let through.
+    /// </param>
+    public static IReadOnlyList<KillSwitchFilter> Plan(
+        IEnumerable<string> trustedApps,
+        IEnumerable<ulong> tunnelInterfaces,
+        IEnumerable<(IPAddress Address, byte Prefix)>? serverNetworks = null)
     {
         var apps = trustedApps.ToList();
         var tunnels = tunnelInterfaces.ToList();
+        var servers = (serverNetworks ?? []).ToList();
         var filters = new List<KillSwitchFilter>();
 
         foreach (var layer in Enum.GetValues<KillSwitchLayer>())
@@ -144,6 +157,10 @@ public static class SvoRayKillSwitch
             foreach (var app in apps)
             {
                 filters.Add(Permit("VPN program", layer, PermitWeight, new KillSwitchCondition.Application(app)));
+            }
+            foreach (var (address, prefix) in servers.Where(n => (n.Address.AddressFamily == AddressFamily.InterNetworkV6) == v6))
+            {
+                filters.Add(Permit("VPN server", layer, PermitWeight, new KillSwitchCondition.RemoteNetwork(address, prefix)));
             }
 
             // The address lease: without it the PC drops off its own network a few hours in.
@@ -191,7 +208,12 @@ public static class SvoRayKillSwitch
                     .Distinct()
                     .Order()
                     .ToList();
-                var key = string.Join('|', apps) + "#" + string.Join(',', tunnels);
+                var servers = FindServerNetworks()
+                    .DistinctBy(n => (n.Address.ToString(), n.Prefix))
+                    .OrderBy(n => n.Address.ToString(), StringComparer.Ordinal)
+                    .ToList();
+                var key = string.Join('|', apps) + "#" + string.Join(',', tunnels)
+                    + "#" + string.Join(',', servers.Select(n => $"{n.Address}/{n.Prefix}"));
                 if (_firewall is not null && key == _appliedKey)
                 {
                     return true;
@@ -199,7 +221,7 @@ public static class SvoRayKillSwitch
 
                 var fresh = _firewall is null;
                 _firewall ??= CreateFirewall();
-                if (!_firewall.Apply(Plan(apps, tunnels)))
+                if (!_firewall.Apply(Plan(apps, tunnels, servers)))
                 {
                     if (fresh)
                     {
@@ -210,7 +232,7 @@ public static class SvoRayKillSwitch
                     return false;
                 }
 
-                Logging.SaveLog($"{_tag}: {(fresh ? "on" : "updated")}, {apps.Count} programs, {tunnels.Count} tunnel adapters");
+                Logging.SaveLog($"{_tag}: {(fresh ? "on" : "updated")}, {apps.Count} programs, {tunnels.Count} tunnel adapters, {servers.Count} server addresses");
                 _appliedKey = key;
                 return true;
             }
@@ -261,6 +283,37 @@ public static class SvoRayKillSwitch
             throw new PlatformNotSupportedException("The kill switch needs the Windows Filtering Platform.");
         }
         return new SvoRayWfp();
+    }
+
+    /// <summary>
+    /// The addresses SvoRay keeps out of the tunnel for TUN, which are the server's: resolved when
+    /// the user connects, before the kill switch could cut off the lookup. Only single hosts are
+    /// taken - a whole range typed into the advanced settings is not the server.
+    /// </summary>
+    private static IReadOnlyList<(IPAddress Address, byte Prefix)> DefaultServerNetworks()
+    {
+        var excluded = AppManager.Instance.Config?.TunModeItem?.RouteExcludeAddress;
+        return ParseServerNetworks(excluded);
+    }
+
+    public static IReadOnlyList<(IPAddress Address, byte Prefix)> ParseServerNetworks(IEnumerable<string>? routes)
+    {
+        var networks = new List<(IPAddress, byte)>();
+        foreach (var route in routes ?? [])
+        {
+            var parts = route.Trim().Split('/');
+            if (parts.Length is < 1 or > 2 || !IPAddress.TryParse(parts[0], out var address))
+            {
+                continue;
+            }
+            var hostPrefix = (byte)(address.AddressFamily == AddressFamily.InterNetworkV6 ? 128 : 32);
+            if (parts.Length == 2 && (!byte.TryParse(parts[1], out var prefix) || prefix != hostPrefix))
+            {
+                continue;
+            }
+            networks.Add((address, hostPrefix));
+        }
+        return networks;
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-using AwesomeAssertions;
+﻿using AwesomeAssertions;
 using ServiceLib.Handler;
 using Xunit;
 
@@ -18,6 +18,8 @@ public class SvoRayKillSwitchTests : IDisposable
     private readonly Func<IKillSwitchFirewall> _create = SvoRayKillSwitch.CreateFirewall;
     private readonly Func<string, ulong?> _find = SvoRayKillSwitch.FindInterfaceLuid;
     private readonly Func<IReadOnlyList<string>> _apps = SvoRayKillSwitch.FindTrustedApps;
+    private readonly Func<IReadOnlyList<(IPAddress Address, byte Prefix)>> _servers = SvoRayKillSwitch.FindServerNetworks;
+    private readonly List<(IPAddress Address, byte Prefix)> _serverNetworks = [];
     private readonly List<FakeFirewall> _firewalls = [];
     private readonly Dictionary<string, ulong> _adapters = [];
     private bool _refuse;
@@ -33,6 +35,7 @@ public class SvoRayKillSwitchTests : IDisposable
         };
         SvoRayKillSwitch.FindInterfaceLuid = name => _adapters.TryGetValue(name, out var luid) ? luid : null;
         SvoRayKillSwitch.FindTrustedApps = () => [App, Core];
+        SvoRayKillSwitch.FindServerNetworks = () => _serverNetworks.ToList();
     }
 
     public void Dispose()
@@ -41,6 +44,64 @@ public class SvoRayKillSwitchTests : IDisposable
         SvoRayKillSwitch.CreateFirewall = _create;
         SvoRayKillSwitch.FindInterfaceLuid = _find;
         SvoRayKillSwitch.FindTrustedApps = _apps;
+        SvoRayKillSwitch.FindServerNetworks = _servers;
+    }
+
+    [Fact]
+    public void Plan_ShouldLetAnyProgramReachTheVpnServer()
+    {
+        // TUN keeps the server's address out of the tunnel. A program that connects to it -
+        // a provider can answer a blocked service's name with the server's address - goes out
+        // directly, and the kill switch must not cut it off.
+        var server4 = IPAddress.Parse("45.0.2.10");
+        var server6 = IPAddress.Parse("2001:db8::10");
+        var plan = SvoRayKillSwitch.Plan([Core], [42], [(server4, 32), (server6, 128)]);
+
+        foreach (var layer in Enum.GetValues<KillSwitchLayer>())
+        {
+            var v6 = layer is KillSwitchLayer.ConnectV6 or KillSwitchLayer.AcceptV6;
+            var server = v6
+                ? new KillSwitchCondition.RemoteNetwork(server6, 128)
+                : new KillSwitchCondition.RemoteNetwork(server4, 32);
+            plan.Should().ContainSingle(f => f.Layer == layer && f.Name == "VPN server")
+                .Which.Should().Match<KillSwitchFilter>(f =>
+                    f.Permit && f.Weight == SvoRayKillSwitch.PermitWeight
+                    && f.Conditions.Count == 1 && f.Conditions[0] == server);
+        }
+    }
+
+    [Theory]
+    [InlineData("45.0.2.10/32", "45.0.2.10", 32)]
+    [InlineData("45.0.2.10", "45.0.2.10", 32)]
+    [InlineData(" 2001:db8::10/128 ", "2001:db8::10", 128)]
+    public void ParseServerNetworks_ShouldTakeSingleHosts(string route, string address, byte prefix)
+    {
+        SvoRayKillSwitch.ParseServerNetworks([route])
+            .Should().Equal((IPAddress.Parse(address), prefix));
+    }
+
+    [Theory]
+    [InlineData("10.0.0.0/8")]
+    [InlineData("0.0.0.0/0")]
+    [InlineData("2001:db8::/32")]
+    [InlineData("vpn.example.com")]
+    [InlineData("45.0.2.10/abc")]
+    public void ParseServerNetworks_ShouldNotOpenWholeRanges(string route)
+    {
+        // A range typed into the advanced settings is not the server; opening it would be a hole.
+        SvoRayKillSwitch.ParseServerNetworks([route]).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Engage_ShouldApplyAgainWhenTheServerChanges()
+    {
+        SvoRayKillSwitch.Engage().Should().BeTrue();
+        _serverNetworks.Add((IPAddress.Parse("45.0.2.10"), 32));
+        SvoRayKillSwitch.Engage().Should().BeTrue();
+
+        var applied = _firewalls.Single().Applied;
+        applied.Should().HaveCount(2);
+        applied[1].Should().Contain(f => f.Name == "VPN server");
     }
 
     [Fact]
