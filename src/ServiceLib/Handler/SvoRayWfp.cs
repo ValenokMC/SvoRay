@@ -318,9 +318,7 @@ public sealed class SvoRayWfp : IKillSwitchFirewall
             case KillSwitchCondition.RemoteNetwork network when network.Address.AddressFamily == AddressFamily.InterNetwork:
             {
                 // FWP_V4_ADDR_AND_MASK: addr, mask, both in host byte order.
-                var bytes = network.Address.GetAddressBytes();
-                var address = (uint)(bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3]);
-                var mask = network.PrefixLength == 0 ? 0u : uint.MaxValue << (32 - network.PrefixLength);
+                var (address, mask) = V4AddressAndMask(network.Address, network.PrefixLength);
                 var value = memory.Alloc(8);
                 Marshal.WriteInt32(value, 0, unchecked((int)address));
                 Marshal.WriteInt32(value, 4, unchecked((int)mask));
@@ -350,6 +348,19 @@ public sealed class SvoRayWfp : IKillSwitchFirewall
         Marshal.WriteInt32(target, 16, (int)match);
         Marshal.WriteInt32(target, 24, (int)type);
         return true;
+    }
+
+    /// <summary>
+    /// An IPv4 network as FWP_V4_ADDR_AND_MASK wants it: address and mask as host-order numbers.
+    /// Built from unsigned parts - an int shifted from 192 or 255 is negative, and the build checks
+    /// for overflow, so the first version threw on every private range.
+    /// </summary>
+    public static (uint Address, uint Mask) V4AddressAndMask(IPAddress address, byte prefixLength)
+    {
+        var bytes = address.GetAddressBytes();
+        var value = ((uint)bytes[0] << 24) | ((uint)bytes[1] << 16) | ((uint)bytes[2] << 8) | bytes[3];
+        var mask = prefixLength == 0 ? 0u : uint.MaxValue << (32 - Math.Min((int)prefixLength, 32));
+        return (value, mask);
     }
 
     private static Guid LayerKey(KillSwitchLayer layer) => layer switch

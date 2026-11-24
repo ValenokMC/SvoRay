@@ -204,6 +204,20 @@ public class SvoRayKillSwitchTests : IDisposable
         SvoRayKillSwitch.Disengage();
     }
 
+    [Theory]
+    [InlineData("192.168.0.0", 16, 0xC0A80000u, 0xFFFF0000u)]
+    [InlineData("255.255.255.255", 32, 0xFFFFFFFFu, 0xFFFFFFFFu)]
+    [InlineData("224.0.0.0", 4, 0xE0000000u, 0xF0000000u)]
+    [InlineData("10.0.0.0", 8, 0x0A000000u, 0xFF000000u)]
+    [InlineData("0.0.0.0", 0, 0u, 0u)]
+    public void V4AddressAndMask_ShouldNotOverflowOnHighAddresses(string address, byte prefix, uint expectedAddress, uint expectedMask)
+    {
+        var (value, mask) = SvoRayWfp.V4AddressAndMask(IPAddress.Parse(address), prefix);
+
+        value.Should().Be(expectedAddress);
+        mask.Should().Be(expectedMask);
+    }
+
     private static bool Contains(KillSwitchCondition.RemoteNetwork network, IPAddress address)
     {
         if (network.Address.AddressFamily != address.AddressFamily)
