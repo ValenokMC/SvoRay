@@ -5,28 +5,37 @@ public enum ECoreSwitchKind
     /// <summary>Stop the running core and start a new one with the new config.</summary>
     Restart,
 
-    /// <summary>Keep the running core and point its server selector at another server.</summary>
+    /// <summary>Keep the running core and only change which server it sends traffic to.</summary>
     HotSwitch,
 }
 
 /// <summary>
 /// What a generated config looks like from the point of view of a switch: everything except the
-/// server the selector currently points at, reduced to a hash, and that server's outbound tag.
+/// selected server, reduced to a hash, and the selected server itself. For sing-box the selection
+/// is the outbound tag the server selector points at; for Xray it is the <see cref="Global.ProxyTag"/>
+/// outbound, as JSON, that the running core gets in place of its current one.
 /// </summary>
-public sealed record CoreConfigShape(string Fingerprint, string SelectedTag);
+public sealed record CoreConfigShape(string Fingerprint, string Selection);
 
-/// <summary>The core that is running now and the config it was started with.</summary>
-public sealed record RunningCoreState(ECoreType CoreType, CoreConfigShape Shape);
+/// <summary>The core that is running now, the config it runs and how often it was switched in place.</summary>
+public sealed record RunningCoreState(ECoreType CoreType, CoreConfigShape Shape, int HotSwitches = 0);
 
 /// <summary>
-/// Decides whether a new config can be applied to the running core by switching its server
-/// selector, or needs a restart. A hot switch is allowed only when the new config is the running
-/// one with a different server selected: same core, same inbounds, TUN, DNS and routing, the same
-/// set of servers in the selector. Anything else - another core type, a mode change, a routing
-/// change, a subscription update that changed the server set - restarts the core as before.
+/// Decides whether a new config can be applied to the running core without restarting it. That
+/// is allowed only when the new config is the running one with another server selected: same
+/// core, same inbounds, TUN, DNS and routing, and for sing-box the same set of servers in the
+/// selector. Anything else - another core type, a mode change, a routing change, a subscription
+/// update that changed the server set - restarts the core as before.
 /// </summary>
 public static class CoreSwitchPlanner
 {
+    /// <summary>
+    /// Xray does not close an outbound it removes, so every swap leaves the old one behind until
+    /// its connections end (a QUIC-based one may keep its connection alive). After this many
+    /// swaps the next switch restarts the core once, which clears them all.
+    /// </summary>
+    public const int MaxXrayHotSwitches = 20;
+
     /// <summary>
     /// Reads the switchable part of a sing-box config: the <see cref="Global.ProxyTag"/> selector
     /// and its <c>default</c>. Returns null for configs without such a selector (a single server,
@@ -34,22 +43,7 @@ public static class CoreSwitchPlanner
     /// </summary>
     public static CoreConfigShape? ReadSingboxShape(string? configJson)
     {
-        if (configJson.IsNullOrEmpty())
-        {
-            return null;
-        }
-
-        JsonNode? root;
-        try
-        {
-            root = JsonNode.Parse(configJson);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-
-        if (root?["outbounds"] is not JsonArray outbounds)
+        if (ParseObject(configJson) is not { } root || root["outbounds"] is not JsonArray outbounds)
         {
             return null;
         }
@@ -71,9 +65,46 @@ public static class CoreSwitchPlanner
         }
 
         selector.Remove("default");
-        var normalized = root.ToJsonString();
-        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalized)));
-        return new CoreConfigShape(hash, selectedTag!);
+        return new CoreConfigShape(Hash(root), selectedTag!);
+    }
+
+    /// <summary>
+    /// Reads the switchable part of an Xray config: the single <see cref="Global.ProxyTag"/>
+    /// outbound, which the handler API can replace in the running core. Returns null when the
+    /// config has no handler API to do that with, or when the proxy is not one plain outbound
+    /// (balancers, chains), which always restart.
+    /// </summary>
+    public static CoreConfigShape? ReadXrayShape(string? configJson)
+    {
+        if (ParseObject(configJson) is not { } root || root["outbounds"] is not JsonArray outbounds)
+        {
+            return null;
+        }
+        if (root["api"] is not JsonObject api
+            || api["services"] is not JsonArray services
+            || !services.Select(s => (string?)s).Contains(XrayApiService.HandlerService)
+            || ((string?)api["listen"]).IsNullOrEmpty())
+        {
+            return null;
+        }
+        if (root["routing"]?["balancers"] is JsonArray { Count: > 0 })
+        {
+            return null;
+        }
+
+        var proxies = outbounds
+            .OfType<JsonObject>()
+            .Where(o => (string?)o["tag"] == Global.ProxyTag)
+            .ToList();
+        if (proxies.Count != 1)
+        {
+            return null;
+        }
+
+        var proxy = proxies[0];
+        var selection = proxy.ToJsonString();
+        outbounds.Remove(proxy);
+        return new CoreConfigShape(Hash(root), selection);
     }
 
     public static ECoreSwitchKind Decide(RunningCoreState? running, bool coreAlive, ECoreType newCoreType,
@@ -83,7 +114,7 @@ public static class CoreSwitchPlanner
         {
             return ECoreSwitchKind.Restart;
         }
-        if (running.CoreType != ECoreType.sing_box || newCoreType != ECoreType.sing_box)
+        if (running.CoreType != newCoreType || newCoreType is not (ECoreType.sing_box or ECoreType.Xray))
         {
             return ECoreSwitchKind.Restart;
         }
@@ -91,9 +122,13 @@ public static class CoreSwitchPlanner
         {
             return ECoreSwitchKind.Restart;
         }
+        if (newCoreType == ECoreType.Xray && running.HotSwitches >= MaxXrayHotSwitches)
+        {
+            return ECoreSwitchKind.Restart;
+        }
         // The same server again is a reload asked for on purpose (the reload menu item, a
         // recovery attempt); it keeps restarting the core as it always did.
-        return running.Shape.SelectedTag == newShape.SelectedTag
+        return running.Shape.Selection == newShape.Selection
             ? ECoreSwitchKind.Restart
             : ECoreSwitchKind.HotSwitch;
     }
@@ -108,5 +143,26 @@ public static class CoreSwitchPlanner
     public static bool ShouldRemoveTunDevices(bool isWindows, bool isTun, bool tunDeviceMayBeStale)
     {
         return isWindows && isTun && tunDeviceMayBeStale;
+    }
+
+    private static JsonObject? ParseObject(string? json)
+    {
+        if (json.IsNullOrEmpty())
+        {
+            return null;
+        }
+        try
+        {
+            return JsonNode.Parse(json) as JsonObject;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static string Hash(JsonNode root)
+    {
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(root.ToJsonString())));
     }
 }

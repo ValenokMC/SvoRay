@@ -1,17 +1,19 @@
 namespace ServiceLib.Handler;
 
 /// <summary>
-/// Picks the servers a running sing-box core is generated with, so that switching between them
-/// is a selector change through the Clash API instead of a core restart. The candidates are the
-/// selected server's own subscription: the list the user actually switches within, and one whose
-/// routing rules are shared, so the rest of the config stays the same whichever of them is used.
+/// Picks the servers a core is generated for, so that switching between them needs no restart.
+/// The candidates are the selected server's own subscription: the list the user actually
+/// switches within, and one whose routing rules are shared, so the rest of the config stays the
+/// same whichever of them is used. sing-box gets all of them as outbounds behind a selector that
+/// the Clash API switches; Xray keeps the one proxy outbound, which its handler API replaces, and
+/// needs the others only so that their addresses are resolved outside the tunnel from the start.
 /// </summary>
 public static class ServerSwitchCandidates
 {
     /// <summary>
     /// Above this the subscription is generated as before, with the selected server only. Every
-    /// candidate is an outbound and a DNS rule in the config; sing-box creates no connection for
-    /// an unused outbound, but there is no reason to grow the config without bound.
+    /// candidate is a DNS rule in the config and, for sing-box, an outbound; an unused outbound
+    /// opens no connection, but there is no reason to grow the config without bound.
     /// </summary>
     public const int MaxCandidates = 200;
 
@@ -74,16 +76,16 @@ public static class ServerSwitchCandidates
     }
 
     /// <summary>
-    /// The core can only be switched in place for a plain server run by sing-box on its own.
-    /// Groups, proxy chains (including a subscription's previous/next profile, which turns the
-    /// server into a chain), custom configs, WireGuard (whose AmneziaWG relays start with the
+    /// The core can only be switched in place for a plain server run by sing-box or Xray on its
+    /// own. Groups, proxy chains (including a subscription's previous/next profile, which turns
+    /// the server into a chain), custom configs, WireGuard (whose AmneziaWG relays start with the
     /// config) and a pre-socks core keep the restart path.
     /// </summary>
     public static bool IsSwitchable(CoreConfigContext context, CoreConfigContext? preContext)
     {
         var node = context.Node;
         return preContext is null
-            && context.RunCoreType == ECoreType.sing_box
+            && context.RunCoreType is ECoreType.sing_box or ECoreType.Xray
             && !node.Subid.IsNullOrEmpty()
             && !node.ConfigType.IsComplexType()
             && node.ConfigType != EConfigType.WireGuard;
@@ -118,10 +120,22 @@ public static class ServerSwitchCandidates
         return !profile.IndexId.IsNullOrEmpty()
             && !profile.ConfigType.IsComplexType()
             && profile.ConfigType != EConfigType.WireGuard
-            && Global.SingboxSupportConfigType.Contains(profile.ConfigType)
-            && profile.GetNetwork() is not (nameof(ETransport.kcp) or nameof(ETransport.xhttp))
             && profile.IsValid()
-            && coreTypeOf(profile) == selectedCore;
+            && coreTypeOf(profile) == selectedCore
+            && CoreCanRun(selectedCore, profile);
+    }
+
+    /// <summary>The same checks the config generators make before they accept a server.</summary>
+    private static bool CoreCanRun(ECoreType coreType, ProfileItem profile)
+    {
+        return coreType switch
+        {
+            ECoreType.sing_box => Global.SingboxSupportConfigType.Contains(profile.ConfigType)
+                && profile.GetNetwork() is not (nameof(ETransport.kcp) or nameof(ETransport.xhttp)),
+            ECoreType.Xray => Global.XraySupportConfigType.Contains(profile.ConfigType)
+                && profile.GetNetwork() is not nameof(ETransport.quic),
+            _ => false,
+        };
     }
 
     /// <summary>Outbound tag of the candidate at <paramref name="index"/> in the selector.</summary>

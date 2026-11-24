@@ -40,8 +40,8 @@ public class ServerSwitchSelectorTests
 
         first.Should().NotBeNull();
         third.Should().NotBeNull();
-        first!.SelectedTag.Should().Be("proxy-1");
-        third!.SelectedTag.Should().Be("proxy-3");
+        first!.Selection.Should().Be("proxy-1");
+        third!.Selection.Should().Be("proxy-3");
         third.Fingerprint.Should().Be(first.Fingerprint, "only the selector default may differ, or the switch would restart the core");
     }
 
@@ -110,13 +110,14 @@ public class ServerSwitchSelectorTests
     }
 
     [Fact]
-    public void IsSwitchable_OnlyPlainSingboxServerWithoutPreCore()
+    public void IsSwitchable_OnlyPlainServerOnSingboxOrXrayWithoutPreCore()
     {
         var (config, servers) = Setup();
         var context = CoreConfigTestFactory.CreateContext(config, servers[0], ECoreType.sing_box);
 
         ServerSwitchCandidates.IsSwitchable(context, null).Should().BeTrue();
-        ServerSwitchCandidates.IsSwitchable(context with { RunCoreType = ECoreType.Xray }, null).Should().BeFalse();
+        ServerSwitchCandidates.IsSwitchable(context with { RunCoreType = ECoreType.Xray }, null).Should().BeTrue();
+        ServerSwitchCandidates.IsSwitchable(context with { RunCoreType = ECoreType.mihomo }, null).Should().BeFalse();
         ServerSwitchCandidates.IsSwitchable(context, context).Should().BeFalse();
 
         var noSub = Server("x", "x.example.com");

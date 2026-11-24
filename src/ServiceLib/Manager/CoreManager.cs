@@ -99,12 +99,15 @@ public class CoreManager
         }
         SwitchTiming.Mark("config generated");
 
-        var newShape = mainContext.RunCoreType == ECoreType.sing_box
-            ? CoreSwitchPlanner.ReadSingboxShape(result.Data?.ToString())
-            : null;
+        var newShape = mainContext.RunCoreType switch
+        {
+            ECoreType.sing_box => CoreSwitchPlanner.ReadSingboxShape(result.Data?.ToString()),
+            ECoreType.Xray => CoreSwitchPlanner.ReadXrayShape(result.Data?.ToString()),
+            _ => null,
+        };
         var switchKind = CoreSwitchPlanner.Decide(_runningState, IsCoreRunning && _processPreService is null,
             mainContext.RunCoreType, preContext != null, newShape);
-        SwitchTiming.Mark($"decision: {switchKind}{(newShape != null ? " (server selector)" : "")}");
+        SwitchTiming.Mark($"decision: {switchKind}{(newShape != null ? " (switchable config)" : "")}");
         if (switchKind == ECoreSwitchKind.HotSwitch && await TryHotSwitchAsync(newShape!))
         {
             await UpdateFunc(true, $"{node.GetSummary()}");
@@ -173,11 +176,11 @@ public class CoreManager
             if (newShape != null && IsCoreRunning && preContext is null)
             {
                 _runningState = new RunningCoreState(mainContext.RunCoreType, newShape);
-                if (_config.CoreBasicItem.EnableCacheFile4Sbox)
+                if (mainContext.RunCoreType == ECoreType.sing_box && _config.CoreBasicItem.EnableCacheFile4Sbox)
                 {
                     // The cache file remembers the selector's last choice and sing-box restores
                     // it over the config's default; the server the user picked must win.
-                    await ClashApiManager.Instance.TrySelectProxyAsync(Global.ProxyTag, newShape.SelectedTag);
+                    await ClashApiManager.Instance.TrySelectProxyAsync(Global.ProxyTag, newShape.Selection);
                 }
             }
             await UpdateFunc(true, $"{node.GetSummary()}");
@@ -185,20 +188,52 @@ public class CoreManager
     }
 
     /// <summary>
-    /// Points the running core's server selector at the new server. False when the core did not
-    /// accept it; the caller then restarts the core as usual.
+    /// Moves the running core to the new server: sing-box by pointing its server selector at it,
+    /// Xray by replacing its proxy outbound. False when that did not work; the caller then
+    /// restarts the core as usual, which also repairs a half-done Xray swap.
     /// </summary>
     private async Task<bool> TryHotSwitchAsync(CoreConfigShape newShape)
     {
-        SwitchTiming.MarkGapStart("hot switch: selecting the server in the running core");
-        var ok = await ClashApiManager.Instance.TrySelectProxyAsync(Global.ProxyTag, newShape.SelectedTag);
+        var running = _runningState!;
+        bool ok;
+        if (running.CoreType == ECoreType.sing_box)
+        {
+            SwitchTiming.MarkGapStart("hot switch: selecting the server in the running core");
+            ok = await ClashApiManager.Instance.TrySelectProxyAsync(Global.ProxyTag, newShape.Selection);
+        }
+        else
+        {
+            var xrayExe = CoreInfoManager.Instance.GetCoreExecFile(
+                CoreInfoManager.Instance.GetCoreInfo(ECoreType.Xray), out _);
+            var swap = xrayExe.IsNullOrEmpty()
+                ? EXraySwapResult.Unchanged
+                : await XrayApiService.SwapOutboundAsync(xrayExe, AppManager.Instance.StatePort3,
+                    running.Shape.Selection, newShape.Selection,
+                    phase =>
+                    {
+                        if (phase.StartsWith("removing"))
+                        {
+                            SwitchTiming.MarkGapStart($"hot switch: {phase}");
+                        }
+                        else
+                        {
+                            SwitchTiming.Mark($"hot switch: {phase}");
+                        }
+                    });
+            ok = swap == EXraySwapResult.Swapped;
+            if (!ok)
+            {
+                SwitchTiming.Mark($"hot switch failed ({swap})");
+            }
+        }
+
         if (!ok)
         {
             SwitchTiming.Mark("hot switch refused by the core; restarting it");
             _runningState = null;
             return false;
         }
-        _runningState = _runningState! with { Shape = newShape };
+        _runningState = running with { Shape = newShape, HotSwitches = running.HotSwitches + 1 };
         SwitchTiming.Mark("hot switch done");
         return true;
     }

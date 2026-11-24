@@ -8,6 +8,7 @@ public sealed class AppManager
     private Config _config;
     private int? _statePort;
     private int? _statePort2;
+    private int? _statePort3;
     public static AppManager Instance => _instance.Value;
     public Config Config => _config;
     public IWindowDialog WindowDialog { get; set; } = null!;
@@ -27,6 +28,16 @@ public sealed class AppManager
         {
             _statePort2 ??= Utils.GetFreePort(GetLocalPort(EInboundProtocol.api2));
             return _statePort2.Value + (_config.TunModeItem.EnableTun ? 1 : 0);
+        }
+    }
+
+    /// <summary>Port of the running Xray core's handler API, see <see cref="XrayApiService"/>.</summary>
+    public int StatePort3
+    {
+        get
+        {
+            _statePort3 ??= Utils.GetFreePort(GetLocalPort(EInboundProtocol.api3));
+            return _statePort3.Value;
         }
     }
 
@@ -182,6 +193,7 @@ public sealed class AppManager
     {
         _statePort = null;
         _statePort2 = null;
+        _statePort3 = null;
         return true;
     }
 

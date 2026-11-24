@@ -73,6 +73,62 @@ public class CoreSwitchPlannerTests
             .Should().Be(ECoreSwitchKind.Restart);
     }
 
+    [Fact]
+    public void Decide_Xray_HotSwitchesUntilTheSwapLimit()
+    {
+        var running = new RunningCoreState(ECoreType.Xray, ShapeA);
+
+        CoreSwitchPlanner.Decide(running, coreAlive: true, ECoreType.Xray, hasPreCore: false, ShapeB)
+            .Should().Be(ECoreSwitchKind.HotSwitch);
+        CoreSwitchPlanner.Decide(running with { HotSwitches = CoreSwitchPlanner.MaxXrayHotSwitches },
+                coreAlive: true, ECoreType.Xray, hasPreCore: false, ShapeB)
+            .Should().Be(ECoreSwitchKind.Restart, "removed Xray outbounds are never closed, a restart clears them");
+    }
+
+    [Fact]
+    public void Decide_OtherCores_AlwaysRestart()
+    {
+        var running = new RunningCoreState(ECoreType.mihomo, ShapeA);
+        CoreSwitchPlanner.Decide(running, coreAlive: true, ECoreType.mihomo, hasPreCore: false, ShapeB)
+            .Should().Be(ECoreSwitchKind.Restart);
+    }
+
+    [Fact]
+    public void ReadXrayShape_MasksOnlyTheProxyOutbound()
+    {
+        var a = CoreSwitchPlanner.ReadXrayShape(XrayConfig("a.example.com", "1.1.1.1"));
+        var b = CoreSwitchPlanner.ReadXrayShape(XrayConfig("b.example.com", "1.1.1.1"));
+        var otherDns = CoreSwitchPlanner.ReadXrayShape(XrayConfig("b.example.com", "8.8.8.8"));
+
+        a.Should().NotBeNull();
+        b!.Fingerprint.Should().Be(a!.Fingerprint);
+        b.Selection.Should().NotBe(a.Selection);
+        b.Selection.Should().Contain("b.example.com").And.Contain("\"tag\":\"proxy\"");
+        otherDns!.Fingerprint.Should().NotBe(a.Fingerprint);
+    }
+
+    [Fact]
+    public void ReadXrayShape_WithoutHandlerApiOrWithBalancer_ReturnsNull()
+    {
+        var noApi = JsonNode.Parse(XrayConfig("a.example.com", "1.1.1.1"))!.AsObject();
+        noApi.Remove("api");
+        var balancer = JsonNode.Parse(XrayConfig("a.example.com", "1.1.1.1"))!.AsObject();
+        balancer["routing"] = JsonNode.Parse("""{"balancers":[{"tag":"proxy-balancer","selector":["proxy"]}]}""");
+
+        CoreSwitchPlanner.ReadXrayShape(noApi.ToJsonString()).Should().BeNull();
+        CoreSwitchPlanner.ReadXrayShape(balancer.ToJsonString()).Should().BeNull();
+        CoreSwitchPlanner.ReadXrayShape(null).Should().BeNull();
+    }
+
+    [Fact]
+    public void WrapOutbound_GivesTheConfigShapeTheXrayCommandsRead()
+    {
+        var wrapped = JsonNode.Parse(XrayApiService.WrapOutbound("""{"tag":"proxy","protocol":"vless"}"""))!;
+
+        wrapped["outbounds"]!.AsArray().Should().ContainSingle();
+        ((string?)wrapped["outbounds"]![0]!["tag"]).Should().Be("proxy");
+    }
+
     [Theory]
     [InlineData(true, true, true, true)]
     [InlineData(true, true, false, false)]
@@ -92,8 +148,8 @@ public class CoreSwitchPlannerTests
         var other = CoreSwitchPlanner.ReadSingboxShape(Config("proxy-2", "1.1.1.1"));
 
         a.Should().NotBeNull();
-        a!.SelectedTag.Should().Be("proxy-1");
-        b!.SelectedTag.Should().Be("proxy-2");
+        a!.Selection.Should().Be("proxy-1");
+        b!.Selection.Should().Be("proxy-2");
         b.Fingerprint.Should().Be(a.Fingerprint);
         other!.Fingerprint.Should().NotBe(a.Fingerprint);
     }
@@ -112,6 +168,18 @@ public class CoreSwitchPlannerTests
         CoreSwitchPlanner.ReadSingboxShape("not json").Should().BeNull();
         CoreSwitchPlanner.ReadSingboxShape(null).Should().BeNull();
     }
+
+    private static string XrayConfig(string server, string dns) => $$"""
+        {
+          "api": { "tag": "api", "listen": "127.0.0.1:10815", "services": [ "HandlerService" ] },
+          "dns": { "servers": [ "{{dns}}" ] },
+          "outbounds": [
+            { "tag": "proxy", "protocol": "vless", "settings": { "address": "{{server}}", "port": 443 } },
+            { "tag": "direct", "protocol": "freedom" }
+          ],
+          "routing": { "rules": [ { "outboundTag": "proxy", "network": "tcp,udp" } ] }
+        }
+        """;
 
     private static string Config(string selected, string dns) => $$"""
         {
