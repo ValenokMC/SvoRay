@@ -286,14 +286,17 @@ public static class SvoRayKillSwitch
     }
 
     /// <summary>
-    /// The addresses SvoRay keeps out of the tunnel for TUN, which are the server's: resolved when
-    /// the user connects, before the kill switch could cut off the lookup. Only single hosts are
-    /// taken - a whole range typed into the advanced settings is not the server.
+    /// The server's addresses in every mode: those SvoRay keeps out of the tunnel for TUN, and the
+    /// current server's as last resolved (<see cref="SvoRayServerAddresses"/>), which stay known
+    /// while the kill switch blocks the lookup. Only single hosts are taken from the routes - a
+    /// whole range typed into the advanced settings is not the server.
     /// </summary>
     private static IReadOnlyList<(IPAddress Address, byte Prefix)> DefaultServerNetworks()
     {
-        var excluded = AppManager.Instance.Config?.TunModeItem?.RouteExcludeAddress;
-        return ParseServerNetworks(excluded);
+        var excluded = ParseServerNetworks(AppManager.Instance.Config?.TunModeItem?.RouteExcludeAddress);
+        var current = SvoRayServerAddresses.Current
+            .Select(a => (a, (byte)(a.AddressFamily == AddressFamily.InterNetworkV6 ? 128 : 32)));
+        return excluded.Concat(current).Distinct().ToList();
     }
 
     public static IReadOnlyList<(IPAddress Address, byte Prefix)> ParseServerNetworks(IEnumerable<string>? routes)
