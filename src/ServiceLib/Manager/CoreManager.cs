@@ -77,6 +77,8 @@ public class CoreManager
         }
 
         var node = mainContext.Node;
+        var isTun = mainContext.IsTunEnabled || preContext?.IsTunEnabled == true;
+        SwitchTiming.Mark($"load core: core {mainContext.RunCoreType}{(preContext != null ? $" + pre {preContext.RunCoreType}" : "")}, {(isTun ? "tun" : "proxy")}");
         var fileName = Utils.GetBinConfigPath(Global.CoreConfigFileName);
         // Writing the config starts the AmneziaWG relays it points at; the old core keeps its own until it stops.
         AwgRelayManager.Instance.MarkStale();
@@ -86,23 +88,36 @@ public class CoreManager
             await UpdateFunc(true, result.Msg);
             return;
         }
+        SwitchTiming.Mark("config generated");
 
         await UpdateFunc(false, $"{node.GetSummary()}");
         await UpdateFunc(false, $"{Utils.GetRuntimeInfo()}");
         await UpdateFunc(false, string.Format(ResUI.StartService, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")));
+        SwitchTiming.MarkGapStart("stopping old core");
         await StopProcesses();
         AwgRelayManager.Instance.StopStale();
         await Task.Delay(100);
+        SwitchTiming.Mark("old core stopped (incl. 100 ms delay)");
 
-        if (Utils.IsWindows() && (mainContext?.IsTunEnabled == true || preContext?.IsTunEnabled == true))
+        if (Utils.IsWindows() && isTun)
         {
             await Task.Delay(100);
             await WindowsUtils.RemoveTunDevice();
+            SwitchTiming.Mark("tun devices removed (pnputil, incl. 100 ms delay)");
         }
 
         await CoreStart(mainContext);
+        SwitchTiming.Mark("core process started");
         await WaitForProxyPort(preContext);
+        if (preContext?.IsTunEnabled == true)
+        {
+            SwitchTiming.Mark("proxy port ready");
+        }
         await CoreStartPreService(preContext);
+        if (preContext != null)
+        {
+            SwitchTiming.Mark("pre core started");
+        }
 
         AppManager.Instance.RunningCoreType = preContext?.RunCoreType ?? mainContext.RunCoreType;
 

@@ -610,10 +610,12 @@ public class ProfilesViewModel : MyReactiveObject
             return;
         }
 
+        SwitchTiming.Begin("server selected");
         if (await ConfigHandler.SetDefaultServerIndex(_config, indexId) == 0)
         {
             await RefreshServers();
             await SvoRayRoutingHandler.RefreshIfActiveAsync(_config);
+            SwitchTiming.Mark("server list and routing refreshed");
             Reload();
         }
     }

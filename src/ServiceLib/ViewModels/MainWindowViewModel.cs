@@ -816,6 +816,7 @@ public class MainWindowViewModel : MyReactiveObject
 
         try
         {
+            SwitchTiming.Continue("reload started");
             SetReloadEnabled(false);
 
             // A reload is what brings the core up, and plenty of things ask for one that have
@@ -841,16 +842,22 @@ public class MainWindowViewModel : MyReactiveObject
             {
                 return;
             }
+            SwitchTiming.Mark("config context built");
 
             await Task.Run(async () =>
             {
                 await LoadCore(allResult.MainResult.Context, allResult.PreSocksResult?.Context);
+                _ = SwitchTiming.ProbeFirstTrafficAsync(AppManager.Instance.GetLocalPort(EInboundProtocol.socks),
+                    _config.SpeedTestItem.SpeedPingTestUrl);
                 await SysProxyHandler.UpdateSysProxy(_config, false);
+                SwitchTiming.Mark("system proxy updated");
                 await Task.Delay(1000);
+                SwitchTiming.Mark("fixed 1000 ms delay");
             });
             RxSchedulers.MainThreadScheduler.Schedule(async () =>
             {
                 await StatusBarViewModel.TestServerAvailability();
+                SwitchTiming.Mark("availability check finished");
             });
 
             var showClashUI = AppManager.Instance.IsRunningCore(ECoreType.sing_box);
@@ -872,6 +879,7 @@ public class MainWindowViewModel : MyReactiveObject
         {
             SetReloadEnabled(true);
             UpdateSvoRayConnectionState();
+            SwitchTiming.Mark("ui shows state");
             _reloadSemaphore.Release();
             //If there is a next reload job, execute it.
             if (_hasNextReloadJob)
