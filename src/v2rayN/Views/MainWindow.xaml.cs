@@ -55,6 +55,9 @@ public partial class MainWindow
     /// <summary>Keeps the kill switch filters current: the tunnel adapter comes and goes with the core.</summary>
     private DispatcherTimer? _killSwitchTimer;
 
+    /// <summary>Notices a core that exited on its own while the screen shows "connected".</summary>
+    private DispatcherTimer? _coreWatchTimer;
+
     /// <summary>Holds the kill switch up across a mode switch, which disconnects and reconnects.</summary>
     private bool _killSwitchHeld;
 
@@ -1149,6 +1152,21 @@ public partial class MainWindow
 
     #region Kill switch and autostart
 
+    private void UpdateCoreWatch(ESvoRayConnectionState state)
+    {
+        if (state != ESvoRayConnectionState.On)
+        {
+            _coreWatchTimer?.Stop();
+            return;
+        }
+        if (_coreWatchTimer is null)
+        {
+            _coreWatchTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _coreWatchTimer.Tick += (_, _) => ViewModel?.CheckCoreAlive();
+        }
+        _coreWatchTimer.Start();
+    }
+
     /// <summary>
     /// Puts the kill switch up while a connection is wanted - connecting, connected, or failed and
     /// not yet switched off - and takes it down once the user disconnects. Called on every state
@@ -1675,6 +1693,7 @@ public partial class MainWindow
         _lastConnectionState = state;
         UpdateForwardingGuard(state);
         UpdateKillSwitch();
+        UpdateCoreWatch(state);
         togSvoRayConnect.IsChecked = state is ESvoRayConnectionState.Connecting or ESvoRayConnectionState.On;
         togSvoRayConnect.IsEnabled = state != ESvoRayConnectionState.Connecting;
         // The template tells "connecting" and "error" apart from plain on/off through Tag.

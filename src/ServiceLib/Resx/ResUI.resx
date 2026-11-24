@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -1907,6 +1907,9 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   </data>
   <data name="SvoRayConnectionStartFailed" xml:space="preserve">
     <value>Could not start the connection. Details are available in advanced mode.</value>
+  </data>
+  <data name="SvoRayCoreStopped" xml:space="preserve">
+    <value>The VPN core stopped. Turn the VPN off and on again.</value>
   </data>
   <data name="SvoRayDisable" xml:space="preserve">
     <value>Turn off</value>

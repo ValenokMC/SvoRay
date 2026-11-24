@@ -901,6 +901,32 @@ public class MainWindowViewModel : MyReactiveObject
     }
 
     /// <summary>
+    /// Catches a core that exited on its own while the screen says "connected": nothing else
+    /// notices, and the user is left with no internet (or, with the kill switch, a blocked one)
+    /// under a green "VPN on". Called on a timer by the window.
+    /// </summary>
+    public void CheckCoreAlive()
+    {
+        var reloading = _reloadSemaphore.CurrentCount == 0;
+        if (!ShouldReportCoreStopped(reloading, IsSvoRayConnectionRequested(_config),
+                CoreManager.Instance.IsCoreRunning, StatusBarViewModel.ConnectionState))
+        {
+            return;
+        }
+        Logging.SaveLog("SvoRay: the core exited on its own");
+        StatusBarViewModel.SetConnectionState(ESvoRayConnectionState.Error, ResUI.SvoRayCoreStopped);
+    }
+
+    /// <summary>
+    /// Only a core that is gone while the user wants the connection and the screen shows it on;
+    /// a reload stops and starts the core on purpose.
+    /// </summary>
+    public static bool ShouldReportCoreStopped(bool reloading, bool requested, bool coreRunning, ESvoRayConnectionState shown)
+    {
+        return !reloading && requested && !coreRunning && shown == ESvoRayConnectionState.On;
+    }
+
+    /// <summary>
     /// Whether the user asked for a connection, expressed in whatever the current simple mode
     /// switches: the TUN adapter, or the Windows system proxy. In proxy mode the core keeps
     /// running while disconnected - nothing is routed into it, which is what "off" means there.

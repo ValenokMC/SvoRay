@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -1889,6 +1889,9 @@
   </data>
   <data name="SvoRayConnectionStartFailed" xml:space="preserve">
     <value>Не удалось запустить подключение. Подробности — в расширенном режиме.</value>
+  </data>
+  <data name="SvoRayCoreStopped" xml:space="preserve">
+    <value>VPN-ядро остановилось. Выключите и снова включите VPN.</value>
   </data>
   <data name="SvoRayDisable" xml:space="preserve">
     <value>Выключить</value>
