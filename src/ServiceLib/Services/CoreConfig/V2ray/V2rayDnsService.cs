@@ -1,4 +1,4 @@
-namespace ServiceLib.Services.CoreConfig;
+﻿namespace ServiceLib.Services.CoreConfig;
 
 public partial class CoreConfigV2rayService
 {
@@ -92,25 +92,30 @@ public partial class CoreConfigV2rayService
                 .Where(tag => tag is not null && tag.StartsWith(Global.DirectDnsTag, StringComparison.Ordinal))
                 .Select(tag => tag!)
                 .ToList();
-            if (directDnsTags.Count > 0)
-            {
-                _coreConfig.routing.rules.Add(new()
-                {
-                    type = "field",
-                    inboundTag = directDnsTags,
-                    outboundTag = Global.DirectTag,
-                });
-            }
-
+            // Both rules go first. Xray takes the first rule that matches, and the routing already
+            // ends with a catch-all ("port 0-65535 -> proxy"): appended after it, they never
+            // applied, so a "direct" DNS query went to the proxy. When the core resolves its own
+            // server's name (the kill switch makes it do so), that query needs the proxy, and the
+            // proxy needs the answer - the tunnel never came up. They match only the DNS module's
+            // own queries, so nothing else is affected by their place.
             var finalRule = BuildFinalRule();
             dnsItem.tag = Global.DnsTag;
-            _coreConfig.routing.rules.Add(new()
+            _coreConfig.routing.rules.Insert(0, new()
             {
                 type = "field",
                 inboundTag = [Global.DnsTag],
                 outboundTag = finalRule.outboundTag,
                 balancerTag = finalRule.balancerTag,
             });
+            if (directDnsTags.Count > 0)
+            {
+                _coreConfig.routing.rules.Insert(0, new()
+                {
+                    type = "field",
+                    inboundTag = directDnsTags,
+                    outboundTag = Global.DirectTag,
+                });
+            }
 
             _coreConfig.dns = dnsItem;
         }
