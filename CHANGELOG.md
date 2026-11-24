@@ -1,23 +1,47 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
-## Unreleased
+## 0.6.4 — 24 November 2026
+
+Full notes: [docs/RELEASE_NOTES_0.6.4_RU.md](docs/RELEASE_NOTES_0.6.4_RU.md) (Russian).
 
 ### Added
 
 - **Kill Switch.** A switch on the simple screen. From the moment you connect until you turn the
   VPN off, nothing reaches the internet except through it: not while it connects, not after it
   drops, not during a switch between proxy and TUN. The tunnel, the cores, SvoRay itself, loopback,
-  DHCP and the local network stay open; DNS to the local network does not, since a router forwards
-  it to the provider. Built on the Windows Filtering Platform in a dynamic session, so Windows
+  DHCP, the local network and the VPN server's own address (some providers serve blocked services
+  there) stay open; DNS to the local network does not, since a router forwards it to the provider.
+  While the switch is on, the core resolves names with its own DNS rather than through Windows. Built on the Windows Filtering Platform in a dynamic session, so Windows
   removes the filters the moment SvoRay closes, crashes or is updated, and the PC is never left
   without internet and nothing to explain it. In proxy mode only programs that use the system
   proxy keep working while the switch holds.
 - **Start with Windows.** A switch on the simple screen. SvoRay registers a logon task with the
   highest run level (no UAC prompt), starts in the tray, waits for the network and connects. The
   uninstaller removes the task.
+
+### Changed
+
+- **Faster server switching.** Picking another server of the same subscription no longer restarts
+  the core: the new server is swapped in through Xray's API (sing-box: the Clash API) while the
+  tunnel and the local proxy stay up, so the switch itself takes a fraction of a second. Anything
+  else - another subscription, mode or routing - still restarts the core, now without the fixed
+  pauses and without removing the TUN adapter every time.
+- **The status line no longer shakes the screen.** "VPN works · country · ms" after a check, and
+  the other short notices, appear as a toast over the footer instead of a line that pushed the
+  content past the window's edge and back.
+
+### Fixed
+
+- **A dead core is shown as an error.** If the core stops on its own, the simple screen no longer
+  keeps saying "VPN on"; it reports the error and, with the kill switch on, that the internet is
+  blocked.
+- **Xray's DNS rules took effect.** The rules that send the DNS module's direct queries out
+  directly came after the routing's catch-all and never applied, so those queries went through
+  the proxy. With the kill switch on, the core resolves its own server through that module, and
+  the query looped back into the proxy that needed the answer.
 
 ## 0.6.3 — 10 November 2026
 
