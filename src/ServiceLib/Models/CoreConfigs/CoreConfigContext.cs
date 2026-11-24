@@ -20,6 +20,13 @@ public record CoreConfigContext
     // Typically, it is the core of the outbound chain
     public HashSet<ECoreType> ProtectCoreTypeList { get; init; } = [];
 
+    /// <summary>
+    /// Servers the core is generated with besides <see cref="Node"/>, behind a manual selector,
+    /// so a later switch between them needs no restart. Null for the usual single server.
+    /// See <see cref="ServerSwitchCandidates"/>.
+    /// </summary>
+    public List<ProfileItem>? SwitchCandidates { get; init; }
+
     public bool IsWindows { get; init; }
     public bool IsMacOS { get; init; }
 }

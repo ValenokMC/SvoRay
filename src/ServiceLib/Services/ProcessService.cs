@@ -108,7 +108,14 @@ public class ProcessService : IDisposable
             }
             catch { }
 
-            await Task.Delay(100);
+            // Until the process is gone it still holds its ports and its TUN adapter, which the
+            // next core needs; waiting for that is usually far shorter than a fixed delay.
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                await _process.WaitForExitAsync(cts.Token);
+            }
+            catch (OperationCanceledException) { }
         }
         catch (Exception ex)
         {
