@@ -69,6 +69,9 @@ public class Global
     public const string Socks5Protocol = "socks5://";
     public const string InnerUriProtocol = "v2rayn://";
     public const string AsIs = "AsIs";
+
+    /// <summary>How Xray resolves domains while the kill switch is on: by itself, IPv4 first.</summary>
+    public const string KillSwitchDomainStrategy = "UseIPv4v6";
     public const string IPIfNonMatch = "IPIfNonMatch";
     public const string IPOnDemand = "IPOnDemand";
     public const string GeoSitePrefix = "geosite:";

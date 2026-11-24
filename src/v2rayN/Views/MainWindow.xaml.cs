@@ -1204,6 +1204,14 @@ public partial class MainWindow
             ShowSimpleStatus(enable ? ResUI.SvoRayKillSwitchOn : ResUI.SvoRayKillSwitchOff, false);
         }
         UpdateSimpleConnectionState(_lastConnectionState);
+
+        // The core's config depends on the switch: with it on, the core resolves its server's
+        // name itself rather than through Windows, which the switch cuts off. A running core
+        // has to pick that up, or it loses its server once Windows' DNS cache runs out.
+        if (connected && ViewModel is not null)
+        {
+            await ViewModel.Reload();
+        }
     }
 
     /// <summary>
