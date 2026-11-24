@@ -1,4 +1,4 @@
-namespace ServiceLib.Services.CoreConfig;
+﻿namespace ServiceLib.Services.CoreConfig;
 
 public partial class CoreConfigV2rayService
 {
@@ -36,7 +36,7 @@ public partial class CoreConfigV2rayService
             var simpleDnsItem = context.SimpleDnsItem;
             var dnsItem = _coreConfig.dns as Dns4Ray ?? new Dns4Ray();
 
-            var strategy4Freedom = simpleDnsItem?.Strategy4Freedom ?? Global.AsIs;
+            var strategy4Freedom = KillSwitchDomainStrategy(simpleDnsItem?.Strategy4Freedom);
             //Outbound Freedom domainStrategy
             if (strategy4Freedom.IsNotEmpty() && strategy4Freedom != Global.AsIs)
             {
@@ -60,7 +60,7 @@ public partial class CoreConfigV2rayService
                     .ForEach(outbound => outbound.targetStrategy = strategy4Proxy);
             }
 
-            var strategy4DialProxy = simpleDnsItem?.Strategy4ProxyDial ?? Global.AsIs;
+            var strategy4DialProxy = KillSwitchDomainStrategy(simpleDnsItem?.Strategy4ProxyDial);
             //Outbound DialProxy domainStrategy
             if (strategy4DialProxy.IsNotEmpty() && strategy4DialProxy != Global.AsIs)
             {
@@ -92,25 +92,30 @@ public partial class CoreConfigV2rayService
                 .Where(tag => tag is not null && tag.StartsWith(Global.DirectDnsTag, StringComparison.Ordinal))
                 .Select(tag => tag!)
                 .ToList();
-            if (directDnsTags.Count > 0)
-            {
-                _coreConfig.routing.rules.Add(new()
-                {
-                    type = "field",
-                    inboundTag = directDnsTags,
-                    outboundTag = Global.DirectTag,
-                });
-            }
-
+            // Both rules go first. Xray takes the first rule that matches, and the routing already
+            // ends with a catch-all ("port 0-65535 -> proxy"): appended after it, they never
+            // applied, so a "direct" DNS query went to the proxy. When the core resolves its own
+            // server's name (the kill switch makes it do so), that query needs the proxy, and the
+            // proxy needs the answer - the tunnel never came up. They match only the DNS module's
+            // own queries, so nothing else is affected by their place.
             var finalRule = BuildFinalRule();
             dnsItem.tag = Global.DnsTag;
-            _coreConfig.routing.rules.Add(new()
+            _coreConfig.routing.rules.Insert(0, new()
             {
                 type = "field",
                 inboundTag = [Global.DnsTag],
                 outboundTag = finalRule.outboundTag,
                 balancerTag = finalRule.balancerTag,
             });
+            if (directDnsTags.Count > 0)
+            {
+                _coreConfig.routing.rules.Insert(0, new()
+                {
+                    type = "field",
+                    inboundTag = directDnsTags,
+                    outboundTag = Global.DirectTag,
+                });
+            }
 
             _coreConfig.dns = dnsItem;
         }
@@ -524,6 +529,22 @@ public partial class CoreConfigV2rayService
             domains = domainList.ToList(),
         };
         servers.AsArray().Add(JsonUtils.SerializeToNode(dnsServer));
+    }
+
+    /// <summary>
+    /// With "AsIs" Xray hands a domain to Windows, whose DNS Client service sends the query. The
+    /// kill switch blocks DNS outside the VPN from every program but the cores, so once Windows'
+    /// cache expires the core can no longer find its own server and the tunnel dies. With the kill
+    /// switch on, the core resolves through its own DNS instead: the server's domain is in the
+    /// direct DNS rules, so the query leaves from the core, which the kill switch lets through.
+    /// A strategy the user chose stays as it is.
+    /// </summary>
+    private string KillSwitchDomainStrategy(string? userStrategy)
+    {
+        var strategy = userStrategy.IsNullOrEmpty() ? Global.AsIs : userStrategy!;
+        return _config.SvoRayItem?.KillSwitch == true && strategy == Global.AsIs
+            ? Global.KillSwitchDomainStrategy
+            : strategy;
     }
 
     private void FillSockoptDomainStrategy(Outbounds4Ray outbound, string? domainStrategy, bool skipHappyEyeballs = false)

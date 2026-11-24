@@ -56,6 +56,8 @@ subscription or profile and keep the option to use every upstream v2rayN setting
 - **WireGuard and Cloudflare WARP**: choose a `.conf` file or paste the config; WARP configs made for AmneziaWG (`Jc`, `Jmin`, `Jmax`, `I1`–`I5`) connect too, with the decoys sent before every handshake
 - two connection modes: TUN for the whole system, or the Windows system proxy
 - a domain list that decides what the VPN carries: everything except the list, or the list only
+- **Kill Switch**: while the VPN is on, the internet works only through it — nothing goes out directly while it connects or after it drops; the local network stays reachable, and closing SvoRay brings the normal internet back at once
+- **start with Windows**: at sign-in SvoRay starts in the tray without a UAC prompt and connects
 - **game mode**: games from Steam, Epic, Battle.net, EA app, Rockstar, GOG, Ubisoft, Riot, Lesta, HoYoPlay, Xbox and Roblox, plus folders you add yourself, go direct with your normal ping while Discord and everything else stay on the VPN — one switch, even mid-connection
 - **rules from the server**: the routing profile your subscription sends in the Happ format (the one Happ and INCY use on the phone) applies on Windows too
 - several subscriptions side by side: add, replace or remove one from the server row; each server shows which subscription it comes from

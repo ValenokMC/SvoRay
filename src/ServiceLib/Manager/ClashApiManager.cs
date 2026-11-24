@@ -116,6 +116,26 @@ public sealed class ClashApiManager
         }
     }
 
+    /// <summary>
+    /// Points the selector <paramref name="selector"/> of the running core at
+    /// <paramref name="outboundTag"/> and reports whether the core accepted it: a server switch
+    /// that relies on it must fall back to a restart otherwise.
+    /// </summary>
+    public async Task<bool> TrySelectProxyAsync(string selector, string outboundTag, int timeoutMs = 2000)
+    {
+        try
+        {
+            var url = $"{GetApiUrl()}/proxies/{Uri.EscapeDataString(selector)}";
+            var body = new Dictionary<string, string> { ["name"] = outboundTag };
+            return await HttpClientHelper.Instance.TryPutAsync(url, body, TimeSpan.FromMilliseconds(timeoutMs));
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog(_tag, ex);
+            return false;
+        }
+    }
+
     public async Task ClashConfigUpdate(Dictionary<string, string> headers)
     {
         if (_proxies == null)

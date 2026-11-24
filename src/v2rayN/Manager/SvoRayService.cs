@@ -66,6 +66,19 @@ internal static class SvoRayService
 
         await SvoRayRoutingHandler.ApplyAsync(config);
 
+        // The server's addresses: TUN keeps them past the tunnel, and the kill switch lets any
+        // program reach them. While the switch holds, Windows' DNS is cut off and the last answer
+        // stands in (see SvoRayServerAddresses).
+        IReadOnlyList<IPAddress> serverAddresses = [];
+        if (config.SvoRayItem.Mode == ESvoRayMode.Tun || config.SvoRayItem.KillSwitch)
+        {
+            var server = await ConfigHandler.GetDefaultServer(config);
+            serverAddresses = await SvoRayServerAddresses.ResolveAsync(
+                server?.Address,
+                host => Dns.GetHostAddressesAsync(host).WaitAsync(TimeSpan.FromSeconds(5)),
+                preferKnown: SvoRayKillSwitch.IsEngaged);
+        }
+
         if (config.SvoRayItem.Mode == ESvoRayMode.Tun)
         {
             var network = GetPreferredNetwork();
@@ -84,11 +97,7 @@ internal static class SvoRayService
             config.TunModeItem.Stack = "gvisor";
             config.TunModeItem.Mtu = 1500;
 
-            var profile = await ConfigHandler.GetDefaultServer(config);
-            if (profile is not null)
-            {
-                config.TunModeItem.RouteExcludeAddress = await ResolveEndpointRoutes(profile.Address);
-            }
+            config.TunModeItem.RouteExcludeAddress = EndpointRoutes(serverAddresses);
         }
         else
         {
@@ -103,34 +112,14 @@ internal static class SvoRayService
         await ConfigHandler.SaveConfig(config);
     }
 
-    private static async Task<List<string>> ResolveEndpointRoutes(string? address)
+    /// <summary>Host routes for the server's IPv4 addresses; TUN here carries IPv4 only.</summary>
+    public static List<string> EndpointRoutes(IEnumerable<IPAddress> addresses)
     {
-        if (address.IsNullOrEmpty())
-        {
-            return [];
-        }
-
-        if (IPAddress.TryParse(address, out var literal))
-        {
-            return literal.AddressFamily == AddressFamily.InterNetwork
-                ? [$"{literal}/32"]
-                : [];
-        }
-
-        try
-        {
-            var addresses = await Dns.GetHostAddressesAsync(address!)
-                .WaitAsync(TimeSpan.FromSeconds(5));
-            return addresses
-                .Where(item => item.AddressFamily == AddressFamily.InterNetwork)
-                .Select(item => $"{item}/32")
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-        }
-        catch
-        {
-            return [];
-        }
+        return addresses
+            .Where(item => item.AddressFamily == AddressFamily.InterNetwork)
+            .Select(item => $"{item}/32")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private static (string InterfaceName, string LocalAddress)? GetPreferredNetwork()

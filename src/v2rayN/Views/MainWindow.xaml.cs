@@ -52,6 +52,15 @@ public partial class MainWindow
     /// <summary>Re-checks forwarding on the physical adapter while TUN is connected.</summary>
     private DispatcherTimer? _forwardingTimer;
 
+    /// <summary>Keeps the kill switch filters current: the tunnel adapter comes and goes with the core.</summary>
+    private DispatcherTimer? _killSwitchTimer;
+
+    /// <summary>Notices a core that exited on its own while the screen shows "connected".</summary>
+    private DispatcherTimer? _coreWatchTimer;
+
+    /// <summary>Holds the kill switch up across a mode switch, which disconnects and reconnects.</summary>
+    private bool _killSwitchHeld;
+
     private DispatcherTimer? _simpleStatusTimer;
 
     /// <summary>Profile the running check belongs to; null when no check is in flight.</summary>
@@ -117,6 +126,8 @@ public partial class MainWindow
         btnCancelImport.Click += BtnCancelImport_Click;
         btnSimpleRouting.Click += BtnSimpleRouting_Click;
         togGameMode.Click += TogGameMode_Click;
+        togKillSwitch.Click += TogKillSwitch_Click;
+        togAutoStart.Click += TogAutoStart_Click;
         togSvoRayConnect.Click += TogSvoRayConnect_Click;
         rdoModeProxy.Checked += async (_, _) => await ApplyModeAsync(ESvoRayMode.Proxy);
         rdoModeTun.Checked += async (_, _) => await ApplyModeAsync(ESvoRayMode.Tun);
@@ -294,7 +305,7 @@ public partial class MainWindow
         var appVersion = typeof(MainWindow).Assembly.GetName().Version;
         var displayVersion = appVersion is null ? "dev" : $"{appVersion.Major}.{appVersion.Minor}.{appVersion.Build}";
         Title = $"SvoRay · {displayVersion} · {(Utils.IsAdministrator() ? ResUI.SvoRayAdministrator : ResUI.SvoRayStandardMode)}";
-        if (_config.UiItem.AutoHideStartup)
+        if (_config.UiItem.AutoHideStartup || App.StartedAtLogon)
         {
             WindowState = WindowState.Minimized;
         }
@@ -312,6 +323,17 @@ public partial class MainWindow
         Loaded += async (_, _) => await CheckAppUpdateOnStartupAsync();
         // Undo a change a crash left behind; a TUN that reconnects applies it again.
         _ = SvoRayForwarding.RestoreAsync(_config);
+        // A connection kept from the last session comes back before the first state change, and
+        // the kill switch has to be up before it does, not after.
+        UpdateKillSwitch();
+        if (_config.GuiItem.AutoRun)
+        {
+            _ = RefreshAutoStartTaskAsync();
+        }
+        if (App.StartedAtLogon)
+        {
+            Loaded += async (_, _) => await ConnectAtLogonAsync();
+        }
     }
 
     /// <summary>
@@ -333,6 +355,8 @@ public partial class MainWindow
 
         UpdateRoutingSummary();
         UpdateGameModeView();
+        togKillSwitch.IsChecked = _config.SvoRayItem.KillSwitch;
+        togAutoStart.IsChecked = _config.GuiItem.AutoRun;
         _ = RefreshServerRoutingFlagAsync();
     }
 
@@ -521,7 +545,7 @@ public partial class MainWindow
     {
         txtSimpleStatus.Text = message;
         txtSimpleStatus.Foreground = isError ? SvoRayPalette.Danger : SvoRayPalette.TextSecondary;
-        txtSimpleStatus.Visibility = Visibility.Visible;
+        bdSimpleStatus.Visibility = Visibility.Visible;
 
         _simpleStatusTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _simpleStatusTimer.Tick -= HideSimpleStatus;
@@ -533,7 +557,7 @@ public partial class MainWindow
     private void HideSimpleStatus(object? sender, EventArgs e)
     {
         _simpleStatusTimer?.Stop();
-        txtSimpleStatus.Visibility = Visibility.Collapsed;
+        bdSimpleStatus.Visibility = Visibility.Collapsed;
     }
 
     private void BtnShowImport_Click(object sender, RoutedEventArgs e)
@@ -921,6 +945,8 @@ public partial class MainWindow
         }
 
         var wasConnected = _lastConnectionState is ESvoRayConnectionState.On or ESvoRayConnectionState.Connecting;
+        // The switch disconnects and reconnects; the kill switch stays up through the gap.
+        _killSwitchHeld = wasConnected;
         try
         {
             if (wasConnected)
@@ -941,6 +967,11 @@ public partial class MainWindow
         {
             Logging.SaveLog("SvoRay mode", ex);
             ShowSimpleStatus(ResUI.SvoRayModeSwitchFailed, true);
+        }
+        finally
+        {
+            _killSwitchHeld = false;
+            UpdateKillSwitch();
         }
     }
 
@@ -1118,6 +1149,165 @@ public partial class MainWindow
             _ = SvoRayForwarding.RestoreAsync(_config);
         }
     }
+
+    #region Kill switch and autostart
+
+    private void UpdateCoreWatch(ESvoRayConnectionState state)
+    {
+        if (state != ESvoRayConnectionState.On)
+        {
+            _coreWatchTimer?.Stop();
+            return;
+        }
+        if (_coreWatchTimer is null)
+        {
+            _coreWatchTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _coreWatchTimer.Tick += (_, _) => ViewModel?.CheckCoreAlive();
+        }
+        _coreWatchTimer.Start();
+    }
+
+    /// <summary>
+    /// Puts the kill switch up while a connection is wanted - connecting, connected, or failed and
+    /// not yet switched off - and takes it down once the user disconnects. Called on every state
+    /// change; the timer then keeps it current, because the tunnel adapter appears only after the
+    /// core has started and comes back under a new LUID when the core restarts.
+    /// </summary>
+    private void UpdateKillSwitch()
+    {
+        var wanted = _config.SvoRayItem.KillSwitch
+            && (_killSwitchHeld || MainWindowViewModel.IsSvoRayConnectionRequested(_config));
+        if (!wanted)
+        {
+            _killSwitchTimer?.Stop();
+            SvoRayKillSwitch.Disengage();
+            return;
+        }
+
+        var wasEngaged = SvoRayKillSwitch.IsEngaged;
+        if (!SvoRayKillSwitch.Engage())
+        {
+            if (!wasEngaged)
+            {
+                ShowSimpleStatus(ResUI.SvoRayKillSwitchFailed, true);
+            }
+            return;
+        }
+
+        if (_killSwitchTimer is null)
+        {
+            _killSwitchTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _killSwitchTimer.Tick += (_, _) => SvoRayKillSwitch.Engage();
+        }
+        _killSwitchTimer.Start();
+    }
+
+    private async void TogKillSwitch_Click(object sender, RoutedEventArgs e)
+    {
+        var enable = togKillSwitch.IsChecked == true;
+        _config.SvoRayItem.KillSwitch = enable;
+        try
+        {
+            await ConfigHandler.SaveConfig(_config);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay kill switch", ex);
+        }
+
+        var connected = MainWindowViewModel.IsSvoRayConnectionRequested(_config);
+        UpdateKillSwitch();
+        if (!enable || !connected || SvoRayKillSwitch.IsEngaged)
+        {
+            ShowSimpleStatus(enable ? ResUI.SvoRayKillSwitchOn : ResUI.SvoRayKillSwitchOff, false);
+        }
+        UpdateSimpleConnectionState(_lastConnectionState);
+
+        // The core's config depends on the switch: with it on, the core resolves its server's
+        // name itself rather than through Windows, which the switch cuts off. A running core
+        // has to pick that up, or it loses its server once Windows' DNS cache runs out.
+        if (connected && ViewModel is not null)
+        {
+            await ViewModel.Reload();
+        }
+    }
+
+    /// <summary>
+    /// Registers or removes the logon task. The switch shows what was actually done: if Windows
+    /// refuses, it goes back to where it was.
+    /// </summary>
+    private async void TogAutoStart_Click(object sender, RoutedEventArgs e)
+    {
+        var enable = togAutoStart.IsChecked == true;
+        togAutoStart.IsEnabled = false;
+        try
+        {
+            _config.GuiItem.AutoRun = enable;
+            if (!await Task.Run(() => AutoStartupHandler.UpdateTask(_config)))
+            {
+                throw new InvalidOperationException("the logon task was not registered");
+            }
+            await ConfigHandler.SaveConfig(_config);
+            ShowSimpleStatus(enable ? ResUI.SvoRayAutoStartOn : ResUI.SvoRayAutoStartOff, false);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay autostart", ex);
+            _config.GuiItem.AutoRun = !enable;
+            ShowSimpleStatus(ResUI.SvoRayAutoStartFailed, true);
+        }
+        finally
+        {
+            togAutoStart.IsChecked = _config.GuiItem.AutoRun;
+            togAutoStart.IsEnabled = true;
+        }
+    }
+
+    /// <summary>
+    /// Writes the logon task again at every start, so it points at this build and passes the
+    /// autostart argument even if an earlier version registered it.
+    /// </summary>
+    private async Task RefreshAutoStartTaskAsync()
+    {
+        try
+        {
+            await Task.Run(() => AutoStartupHandler.UpdateTask(_config));
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay autostart", ex);
+        }
+    }
+
+    /// <summary>
+    /// Started by the logon task: stay in the tray and connect. Right after logon the network
+    /// adapter is often still coming up and the profiles are still loading, so both are waited
+    /// for - a minute at most - rather than connecting into an error.
+    /// </summary>
+    private async Task ConnectAtLogonAsync()
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(60);
+        while (DateTime.UtcNow < deadline && !System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2));
+        }
+        while (DateTime.UtcNow < deadline && ViewModel?.StatusBarViewModel.HasProfiles != true)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+        }
+
+        // Nothing to connect to, or the last session's connection is already coming back.
+        if (ViewModel?.StatusBarViewModel.HasProfiles != true
+            || MainWindowViewModel.IsSvoRayConnectionRequested(_config))
+        {
+            return;
+        }
+
+        Logging.SaveLog("SvoRay autostart: connecting at logon");
+        await ToggleConnectionAsync(true);
+    }
+
+    #endregion Kill switch and autostart
 
     #region SvoRay update
 
@@ -1502,6 +1692,8 @@ public partial class MainWindow
     {
         _lastConnectionState = state;
         UpdateForwardingGuard(state);
+        UpdateKillSwitch();
+        UpdateCoreWatch(state);
         togSvoRayConnect.IsChecked = state is ESvoRayConnectionState.Connecting or ESvoRayConnectionState.On;
         togSvoRayConnect.IsEnabled = state != ESvoRayConnectionState.Connecting;
         // The template tells "connecting" and "error" apart from plain on/off through Tag.
@@ -1534,7 +1726,9 @@ public partial class MainWindow
         {
             case ESvoRayConnectionState.Connecting:
                 txtConnectionTitle.Text = ResUI.SvoRayConnecting;
-                txtConnectionSubtitle.Text = string.Empty;
+                txtConnectionSubtitle.Text = SvoRayKillSwitch.IsEngaged
+                    ? ResUI.SvoRayKillSwitchBlockingSuffix.TrimStart(' ', '·')
+                    : string.Empty;
                 break;
 
             case ESvoRayConnectionState.On:
@@ -1547,8 +1741,9 @@ public partial class MainWindow
 
             case ESvoRayConnectionState.Error:
                 txtConnectionTitle.Text = ResUI.SvoRayConnectionError;
-                txtConnectionSubtitle.Text = ViewModel?.StatusBarViewModel.ConnectionErrorText
-                    ?? ResUI.SvoRayConnectionStartFailed;
+                txtConnectionSubtitle.Text = (ViewModel?.StatusBarViewModel.ConnectionErrorText
+                    ?? ResUI.SvoRayConnectionStartFailed)
+                    + (SvoRayKillSwitch.IsEngaged ? ResUI.SvoRayKillSwitchBlockingSuffix : string.Empty);
                 break;
 
             default:
@@ -1734,7 +1929,7 @@ public partial class MainWindow
         }
         ApplyWindowSize(SimplePanel.Visibility == Visibility.Visible);
 
-        if (_config.UiItem.AutoHideStartup)
+        if (_config.UiItem.AutoHideStartup || App.StartedAtLogon)
         {
             ShowHideWindow(false);
         }

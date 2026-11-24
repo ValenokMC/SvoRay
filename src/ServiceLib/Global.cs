@@ -69,6 +69,9 @@ public class Global
     public const string Socks5Protocol = "socks5://";
     public const string InnerUriProtocol = "v2rayn://";
     public const string AsIs = "AsIs";
+
+    /// <summary>How Xray resolves domains while the kill switch is on: by itself, IPv4 first.</summary>
+    public const string KillSwitchDomainStrategy = "UseIPv4v6";
     public const string IPIfNonMatch = "IPIfNonMatch";
     public const string IPOnDemand = "IPOnDemand";
     public const string GeoSitePrefix = "geosite:";
@@ -86,6 +89,9 @@ public class Global
     public const int MinFontSize = 8;
     public const int MinFontSizeCount = 13;
     public const string RebootAs = "rebootas";
+
+    /// <summary>Passed by the logon task: start in the tray and connect.</summary>
+    public const string AutoStartArg = "--autostart";
     public const string AvaAssets = "avares://v2rayN/Assets/";
     public const string LocalAppData = "SVORAY_LOCAL_APPLICATION_DATA";
     public const string V2RayLocalAsset = "V2RAY_LOCATION_ASSET";

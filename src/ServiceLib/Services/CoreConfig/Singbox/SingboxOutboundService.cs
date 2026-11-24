@@ -10,6 +10,12 @@ public partial class CoreConfigSingboxService
 
     private List<BaseServer4Sbox> BuildAllProxyOutbounds(string baseTagName = Global.ProxyTag, bool withSelector = true)
     {
+        if (baseTagName == Global.ProxyTag && withSelector
+            && BuildSwitchableOutbounds() is { } switchable)
+        {
+            return switchable;
+        }
+
         var proxyOutboundList = new List<BaseServer4Sbox>();
         if (!_node.ConfigType.IsComplexType())
         {
@@ -29,6 +35,57 @@ public partial class CoreConfigSingboxService
             }
         }
         return proxyOutboundList;
+    }
+
+    /// <summary>
+    /// Every switch candidate as its own outbound behind a manual selector tagged
+    /// <see cref="Global.ProxyTag"/> that points at the selected server. Routing keeps sending
+    /// traffic to <see cref="Global.ProxyTag"/>, so switching servers is a selector change
+    /// through the Clash API and the config stays the same whichever server is selected - apart
+    /// from the selector's <c>default</c>, which only matters when the core starts.
+    /// No urltest: the core must not reach out to servers the user has not chosen.
+    /// </summary>
+    private List<BaseServer4Sbox>? BuildSwitchableOutbounds()
+    {
+        if (context.SwitchCandidates is not { Count: > 1 } candidates || _node.ConfigType.IsComplexType())
+        {
+            return null;
+        }
+
+        var outbounds = new List<BaseServer4Sbox>();
+        var tags = new List<string>();
+        string? selectedTag = null;
+        for (var i = 0; i < candidates.Count; i++)
+        {
+            var candidate = candidates[i];
+            var tag = ServerSwitchCandidates.OutboundTag(i);
+            var outbound = new CoreConfigSingboxService(context with { Node = candidate, SwitchCandidates = null })
+                .BuildProxyOutbound(tag);
+            outbounds.Add(outbound);
+            tags.Add(tag);
+            if (candidate.IndexId == _node.IndexId)
+            {
+                selectedTag = tag;
+            }
+        }
+        if (selectedTag is null)
+        {
+            return null;
+        }
+
+        outbounds.Insert(0, new Outbound4Sbox
+        {
+            type = "selector",
+            tag = Global.ProxyTag,
+            outbounds = tags,
+            @default = selectedTag,
+            // The user switched because they want the other server - another country, or a
+            // working one instead of a stalled one. Connections still open through the old server
+            // are closed so applications reconnect through the new one instead of lingering on
+            // the old exit; new connections never wait either way.
+            interrupt_exist_connections = true,
+        });
+        return outbounds;
     }
 
     private BaseServer4Sbox BuildProxyOutbound(string baseTagName = Global.ProxyTag)

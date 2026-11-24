@@ -57,6 +57,22 @@ public class HttpClientHelper
         await httpClient.PutAsync(url, content);
     }
 
+    /// <summary>PUTs <paramref name="body"/> as JSON; true only for a success status within the timeout.</summary>
+    public async Task<bool> TryPutAsync(string url, Dictionary<string, string> body, TimeSpan timeout)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(timeout);
+            using var content = new StringContent(JsonUtils.Serialize(body), Encoding.UTF8, MediaTypeNames.Application.Json);
+            using var response = await httpClient.PutAsync(url, content, cts.Token);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public async Task PatchAsync(string url, Dictionary<string, string> headers)
     {
         var myContent = JsonUtils.Serialize(headers);
