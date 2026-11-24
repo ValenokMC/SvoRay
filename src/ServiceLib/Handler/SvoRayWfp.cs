@@ -78,6 +78,9 @@ public sealed class SvoRayWfp : IKillSwitchFirewall
 
     public int FilterCount => _filterIds.Count;
 
+    /// <summary>Why the last <see cref="Apply"/> failed; null after a success.</summary>
+    public string? LastError { get; private set; }
+
     public bool Apply(IReadOnlyList<KillSwitchFilter> filters)
     {
         if (!OperatingSystem.IsWindows() || !Environment.Is64BitProcess)
@@ -87,8 +90,10 @@ public sealed class SvoRayWfp : IKillSwitchFirewall
 
         lock (_lock)
         {
+            LastError = null;
             if (_engine == IntPtr.Zero && !Open())
             {
+                LastError ??= "engine not opened";
                 return false;
             }
 
@@ -96,7 +101,8 @@ public sealed class SvoRayWfp : IKillSwitchFirewall
             var rc = FwpmTransactionBegin0(_engine, 0);
             if (rc != 0)
             {
-                Logging.SaveLog($"{_tag}: transaction not started (0x{rc:X8})");
+                LastError = $"transaction not started (0x{rc:X8})";
+                Logging.SaveLog($"{_tag}: {LastError}");
                 return false;
             }
 
@@ -139,6 +145,7 @@ public sealed class SvoRayWfp : IKillSwitchFirewall
             catch (Exception ex)
             {
                 _ = FwpmTransactionAbort0(_engine);
+                LastError = ex.Message;
                 Logging.SaveLog($"{_tag}: {ex.Message}");
                 return false;
             }
@@ -189,7 +196,8 @@ public sealed class SvoRayWfp : IKillSwitchFirewall
         var rc = FwpmEngineOpen0(null, RpcCAuthnWinnt, IntPtr.Zero, session, out var engine);
         if (rc != 0)
         {
-            Logging.SaveLog($"{_tag}: engine not opened (0x{rc:X8})");
+            LastError = $"engine not opened (0x{rc:X8})";
+            Logging.SaveLog($"{_tag}: {LastError}");
             return false;
         }
 
@@ -203,7 +211,8 @@ public sealed class SvoRayWfp : IKillSwitchFirewall
         rc = FwpmSubLayerAdd0(engine, subLayer, IntPtr.Zero);
         if (rc != 0 && rc != FwpEAlreadyExists)
         {
-            Logging.SaveLog($"{_tag}: sublayer not added (0x{rc:X8})");
+            LastError = $"sublayer not added (0x{rc:X8})";
+            Logging.SaveLog($"{_tag}: {LastError}");
             _ = FwpmEngineClose0(engine);
             return false;
         }

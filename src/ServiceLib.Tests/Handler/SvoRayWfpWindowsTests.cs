@@ -36,9 +36,21 @@ public class SvoRayWfpWindowsTests
         adapter.Should().NotBeNull("every Windows PC has at least the loopback adapter");
 
         var plan = SvoRayKillSwitch.Plan([Environment.ProcessPath!], [adapter!.Value]);
-        using var firewall = new SvoRayWfp(enforce: false);
 
-        firewall.Apply(plan).Should().BeTrue();
+        // Each filter alone first, so a refusal names the filter and WFP's error code.
+        var refused = new List<string>();
+        foreach (var filter in plan)
+        {
+            using var single = new SvoRayWfp(enforce: false);
+            if (!single.Apply([filter]))
+            {
+                refused.Add($"{filter.Name} on {filter.Layer}: {single.LastError}");
+            }
+        }
+        refused.Should().BeEmpty();
+
+        using var firewall = new SvoRayWfp(enforce: false);
+        firewall.Apply(plan).Should().BeTrue(firewall.LastError);
         firewall.FilterCount.Should().Be(plan.Count);
 
         // An update replaces every filter in one transaction.
