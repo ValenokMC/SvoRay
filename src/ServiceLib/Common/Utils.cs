@@ -1,4 +1,4 @@
-﻿using System.Collections.Specialized;
+using System.Collections.Specialized;
 using System.Security.Principal;
 using CliWrap;
 using CliWrap.Buffered;
@@ -1082,28 +1082,7 @@ public class Utils
 
     public static string StartupPath()
     {
-        return ResolveStartupPath(
-            Environment.GetEnvironmentVariable(Global.DataDirOverride),
-            Environment.GetEnvironmentVariable(Global.LocalAppData) == "1");
-    }
-
-    /// <summary>
-    /// The data folder: <see cref="Global.DataDirOverride"/> when it names a full path, else
-    /// %LOCALAPPDATA%\SvoRay when <paramref name="useLocalAppData"/>, else the program's folder.
-    /// </summary>
-    public static string ResolveStartupPath(string? dataDirOverride, bool useLocalAppData)
-    {
-        // A folder on this PC only: SvoRay runs elevated, and its data must not live on a share.
-        var usable = !string.IsNullOrWhiteSpace(dataDirOverride)
-            && (OperatingSystem.IsWindows()
-                ? SvoRayPaths.IsLocalPath(dataDirOverride)
-                : Path.IsPathFullyQualified(dataDirOverride));
-        if (usable)
-        {
-            return dataDirOverride!;
-        }
-
-        if (useLocalAppData)
+        if (Environment.GetEnvironmentVariable(Global.LocalAppData) == "1")
         {
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Global.AppName);
         }

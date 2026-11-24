@@ -94,12 +94,6 @@ public class Global
     public const string AutoStartArg = "--autostart";
     public const string AvaAssets = "avares://v2rayN/Assets/";
     public const string LocalAppData = "SVORAY_LOCAL_APPLICATION_DATA";
-
-    /// <summary>
-    /// A folder to keep everything in instead of %LOCALAPPDATA%\SvoRay, so a test copy can run
-    /// without touching the user's subscriptions and settings.
-    /// </summary>
-    public const string DataDirOverride = "SVORAY_DATA_DIR";
     public const string V2RayLocalAsset = "V2RAY_LOCATION_ASSET";
     public const string XrayLocalAsset = "XRAY_LOCATION_ASSET";
     public const string XrayLocalCert = "XRAY_LOCATION_CERT";

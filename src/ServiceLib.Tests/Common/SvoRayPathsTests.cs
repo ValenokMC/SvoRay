@@ -1,4 +1,4 @@
-﻿using AwesomeAssertions;
+using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Handler;
 using Xunit;
@@ -45,24 +45,5 @@ public class SvoRayPathsTests
     {
         SvoRayGames.ExactCase(@"\\attacker\share\Games").Should().BeNull();
         SvoRayGames.BuildFolderEntries([@"\\attacker\share\Games"]).Should().BeEmpty();
-    }
-
-    [Fact]
-    public void ResolveStartupPath_ShouldUseTheTestFolderOnlyWhenItIsALocalFullPath()
-    {
-        var local = Utils.ResolveStartupPath(null, useLocalAppData: true);
-        local.Should().EndWith(Global.AppName);
-
-        // A test copy keeps its data apart from the user's.
-        var folder = Path.Combine(Path.GetTempPath(), "SvoRayTest", "data");
-        Utils.ResolveStartupPath(folder, useLocalAppData: true).Should().Be(folder);
-
-        // Anything else falls back to the usual folder rather than to the current directory.
-        Utils.ResolveStartupPath("", useLocalAppData: true).Should().Be(local);
-        Utils.ResolveStartupPath("data", useLocalAppData: true).Should().Be(local);
-        if (OperatingSystem.IsWindows())
-        {
-            Utils.ResolveStartupPath(@"\\attacker\share\SvoRay", useLocalAppData: true).Should().Be(local);
-        }
     }
 }
