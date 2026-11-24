@@ -193,6 +193,8 @@ public sealed class AppManager
 
             await SysProxyHandler.UpdateSysProxy(_config, true);
             await SvoRayForwarding.RestoreAsync(_config);
+            // Windows would drop the filters with the process anyway; this just does it first.
+            SvoRayKillSwitch.Disengage();
             AppEvents.AppExitRequested.Publish();
             await Task.Delay(50); //Wait for AppExitRequested to be processed
 

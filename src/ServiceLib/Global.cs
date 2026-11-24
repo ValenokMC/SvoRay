@@ -86,6 +86,9 @@ public class Global
     public const int MinFontSize = 8;
     public const int MinFontSizeCount = 13;
     public const string RebootAs = "rebootas";
+
+    /// <summary>Passed by the logon task: start in the tray and connect.</summary>
+    public const string AutoStartArg = "--autostart";
     public const string AvaAssets = "avares://v2rayN/Assets/";
     public const string LocalAppData = "SVORAY_LOCAL_APPLICATION_DATA";
     public const string V2RayLocalAsset = "V2RAY_LOCATION_ASSET";

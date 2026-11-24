@@ -2343,4 +2343,37 @@
   <data name="SvoRayImportFileTab" xml:space="preserve">
     <value>Файл .conf</value>
   </data>
+  <data name="SvoRayKillSwitch" xml:space="preserve">
+    <value>Kill Switch</value>
+  </data>
+  <data name="SvoRayKillSwitchTip" xml:space="preserve">
+    <value>Пока VPN включён, интернет работает только через него: ни во время подключения, ни после обрыва ничего не уйдёт напрямую. Локальная сеть (роутер, принтер) остаётся доступной. Выключение VPN кнопкой возвращает обычный интернет.</value>
+  </data>
+  <data name="SvoRayKillSwitchOn" xml:space="preserve">
+    <value>Kill Switch включён: без VPN интернет заблокирован</value>
+  </data>
+  <data name="SvoRayKillSwitchOff" xml:space="preserve">
+    <value>Kill Switch выключен</value>
+  </data>
+  <data name="SvoRayKillSwitchFailed" xml:space="preserve">
+    <value>Не удалось включить Kill Switch: Windows не приняла фильтры брандмауэра</value>
+  </data>
+  <data name="SvoRayKillSwitchBlockingSuffix" xml:space="preserve">
+    <value> · Kill Switch блокирует интернет, пока VPN не подключится</value>
+  </data>
+  <data name="SvoRayAutoStart" xml:space="preserve">
+    <value>Запуск вместе с Windows</value>
+  </data>
+  <data name="SvoRayAutoStartTip" xml:space="preserve">
+    <value>При входе в Windows SvoRay запускается в трее и сразу подключается к выбранному серверу.</value>
+  </data>
+  <data name="SvoRayAutoStartOn" xml:space="preserve">
+    <value>SvoRay будет запускаться вместе с Windows и подключаться</value>
+  </data>
+  <data name="SvoRayAutoStartOff" xml:space="preserve">
+    <value>SvoRay больше не будет запускаться вместе с Windows</value>
+  </data>
+  <data name="SvoRayAutoStartFailed" xml:space="preserve">
+    <value>Не удалось изменить автозапуск</value>
+  </data>
 </root>

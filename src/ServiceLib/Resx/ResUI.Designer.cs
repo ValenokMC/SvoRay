@@ -6269,5 +6269,71 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("SvoRayRemove", resourceCulture);
             }
         }
+
+        public static string SvoRayKillSwitch {
+            get {
+                return ResourceManager.GetString("SvoRayKillSwitch", resourceCulture);
+            }
+        }
+
+        public static string SvoRayKillSwitchTip {
+            get {
+                return ResourceManager.GetString("SvoRayKillSwitchTip", resourceCulture);
+            }
+        }
+
+        public static string SvoRayKillSwitchOn {
+            get {
+                return ResourceManager.GetString("SvoRayKillSwitchOn", resourceCulture);
+            }
+        }
+
+        public static string SvoRayKillSwitchOff {
+            get {
+                return ResourceManager.GetString("SvoRayKillSwitchOff", resourceCulture);
+            }
+        }
+
+        public static string SvoRayKillSwitchFailed {
+            get {
+                return ResourceManager.GetString("SvoRayKillSwitchFailed", resourceCulture);
+            }
+        }
+
+        public static string SvoRayKillSwitchBlockingSuffix {
+            get {
+                return ResourceManager.GetString("SvoRayKillSwitchBlockingSuffix", resourceCulture);
+            }
+        }
+
+        public static string SvoRayAutoStart {
+            get {
+                return ResourceManager.GetString("SvoRayAutoStart", resourceCulture);
+            }
+        }
+
+        public static string SvoRayAutoStartTip {
+            get {
+                return ResourceManager.GetString("SvoRayAutoStartTip", resourceCulture);
+            }
+        }
+
+        public static string SvoRayAutoStartOn {
+            get {
+                return ResourceManager.GetString("SvoRayAutoStartOn", resourceCulture);
+            }
+        }
+
+        public static string SvoRayAutoStartOff {
+            get {
+                return ResourceManager.GetString("SvoRayAutoStartOff", resourceCulture);
+            }
+        }
+
+        public static string SvoRayAutoStartFailed {
+            get {
+                return ResourceManager.GetString("SvoRayAutoStartFailed", resourceCulture);
+            }
+        }
     }
 }

@@ -2361,4 +2361,37 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="SvoRayImportFileTab" xml:space="preserve">
     <value>File .conf</value>
   </data>
+  <data name="SvoRayKillSwitch" xml:space="preserve">
+    <value>Kill Switch</value>
+  </data>
+  <data name="SvoRayKillSwitchTip" xml:space="preserve">
+    <value>While the VPN is on, the internet works only through it: nothing goes out directly while it connects or after it drops. The local network (router, printer) stays reachable. Turning the VPN off with the button brings the normal internet back.</value>
+  </data>
+  <data name="SvoRayKillSwitchOn" xml:space="preserve">
+    <value>Kill Switch is on: without the VPN the internet is blocked</value>
+  </data>
+  <data name="SvoRayKillSwitchOff" xml:space="preserve">
+    <value>Kill Switch is off</value>
+  </data>
+  <data name="SvoRayKillSwitchFailed" xml:space="preserve">
+    <value>Kill Switch could not be turned on: Windows refused the firewall filters</value>
+  </data>
+  <data name="SvoRayKillSwitchBlockingSuffix" xml:space="preserve">
+    <value> · Kill Switch blocks the internet until the VPN connects</value>
+  </data>
+  <data name="SvoRayAutoStart" xml:space="preserve">
+    <value>Start with Windows</value>
+  </data>
+  <data name="SvoRayAutoStartTip" xml:space="preserve">
+    <value>When you sign in to Windows, SvoRay starts in the tray and connects to the selected server.</value>
+  </data>
+  <data name="SvoRayAutoStartOn" xml:space="preserve">
+    <value>SvoRay will start with Windows and connect</value>
+  </data>
+  <data name="SvoRayAutoStartOff" xml:space="preserve">
+    <value>SvoRay will no longer start with Windows</value>
+  </data>
+  <data name="SvoRayAutoStartFailed" xml:space="preserve">
+    <value>Autostart could not be changed</value>
+  </data>
 </root>

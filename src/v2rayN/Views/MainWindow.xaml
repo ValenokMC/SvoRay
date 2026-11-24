@@ -1048,6 +1048,40 @@
                                     </StackPanel>
                                 </ToggleButton>
 
+                                <ToggleButton
+                                    x:Name="togKillSwitch"
+                                    Margin="0,8,0,0"
+                                    AutomationProperties.HelpText="{x:Static resx:ResUI.SvoRayKillSwitchTip}"
+                                    AutomationProperties.Name="{x:Static resx:ResUI.SvoRayKillSwitch}"
+                                    Style="{StaticResource SvoRay.SwitchRow}">
+                                    <ToggleButton.ToolTip>
+                                        <ToolTip MaxWidth="320">
+                                            <TextBlock Text="{x:Static resx:ResUI.SvoRayKillSwitchTip}" TextWrapping="Wrap" />
+                                        </ToolTip>
+                                    </ToggleButton.ToolTip>
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="ShieldLockOutline" Style="{StaticResource SvoRay.RowIcon}" />
+                                        <TextBlock Style="{StaticResource SvoRay.Body}" Text="{x:Static resx:ResUI.SvoRayKillSwitch}" />
+                                    </StackPanel>
+                                </ToggleButton>
+
+                                <ToggleButton
+                                    x:Name="togAutoStart"
+                                    Margin="0,8,0,0"
+                                    AutomationProperties.HelpText="{x:Static resx:ResUI.SvoRayAutoStartTip}"
+                                    AutomationProperties.Name="{x:Static resx:ResUI.SvoRayAutoStart}"
+                                    Style="{StaticResource SvoRay.SwitchRow}">
+                                    <ToggleButton.ToolTip>
+                                        <ToolTip MaxWidth="320">
+                                            <TextBlock Text="{x:Static resx:ResUI.SvoRayAutoStartTip}" TextWrapping="Wrap" />
+                                        </ToolTip>
+                                    </ToggleButton.ToolTip>
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="RocketLaunchOutline" Style="{StaticResource SvoRay.RowIcon}" />
+                                        <TextBlock Style="{StaticResource SvoRay.Body}" Text="{x:Static resx:ResUI.SvoRayAutoStart}" />
+                                    </StackPanel>
+                                </ToggleButton>
+
                                 <Button
                                     x:Name="btnSimpleRouting"
                                     Margin="0,8,0,0"

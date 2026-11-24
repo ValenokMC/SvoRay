@@ -368,4 +368,11 @@ public class SvoRayItem
     /// null when it changed nothing. See <see cref="SvoRayForwarding"/>.
     /// </summary>
     public int? SuspendedForwardingInterface { get; set; }
+
+    /// <summary>
+    /// Kill switch: from the moment the user connects until they disconnect, nothing reaches the
+    /// internet except through the VPN - not while it connects, not after it drops. Off until the
+    /// user switches it on. See <see cref="SvoRayKillSwitch"/>.
+    /// </summary>
+    public bool KillSwitch { get; set; }
 }

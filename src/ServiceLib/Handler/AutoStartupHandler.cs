@@ -14,7 +14,7 @@ public static class AutoStartupHandler
 
             if (config.GuiItem.AutoRun)
             {
-                await SetTaskWindows();
+                return await SetTaskWindows();
             }
         }
         else if (Utils.IsLinux())
@@ -54,8 +54,14 @@ public static class AutoStartupHandler
         await Task.CompletedTask;
     }
 
+    /// <summary>
+    /// SvoRay requires administrator rights, and Windows silently skips a Run-key entry for such a
+    /// program, so it starts at logon through a scheduled task with the highest run level, which
+    /// raises no UAC prompt. The task passes <see cref="Global.AutoStartArg"/>: start in the tray
+    /// and connect.
+    /// </summary>
     [SupportedOSPlatform("windows")]
-    private static async Task SetTaskWindows()
+    private static Task<bool> SetTaskWindows()
     {
         try
         {
@@ -63,18 +69,19 @@ public static class AutoStartupHandler
             var exePath = Utils.GetExePath();
             if (Utils.IsAdministrator())
             {
-                AutoStartTaskService(autoRunName, exePath, "");
+                AutoStartTaskService(autoRunName, exePath, "SvoRay: start in the tray and connect at logon", Global.AutoStartArg);
             }
             else
             {
-                WindowsUtils.RegWriteValue(Global.AutoRunRegPath, autoRunName, exePath.AppendQuotes());
+                WindowsUtils.RegWriteValue(Global.AutoRunRegPath, autoRunName, $"{exePath.AppendQuotes()} {Global.AutoStartArg}");
             }
+            return Task.FromResult(true);
         }
         catch (Exception ex)
         {
             Logging.SaveLog(_tag, ex);
+            return Task.FromResult(false);
         }
-        await Task.CompletedTask;
     }
 
     /// <summary>
@@ -83,9 +90,10 @@ public static class AutoStartupHandler
     /// <param name="taskName"></param>
     /// <param name="fileName"></param>
     /// <param name="description"></param>
+    /// <param name="arguments">Command line passed to the program, if any.</param>
     /// <exception cref="ArgumentNullException"></exception>
     [SupportedOSPlatform("windows")]
-    public static void AutoStartTaskService(string taskName, string fileName, string description)
+    public static void AutoStartTaskService(string taskName, string fileName, string description, string? arguments = null)
     {
         if (taskName.IsNullOrEmpty())
         {
@@ -114,7 +122,7 @@ public static class AutoStartupHandler
         task.Settings.Priority = ProcessPriorityClass.Normal;
         task.Triggers.Add(new Microsoft.Win32.TaskScheduler.LogonTrigger { UserId = logonUser });
         task.Principal.RunLevel = Microsoft.Win32.TaskScheduler.TaskRunLevel.Highest;
-        task.Actions.Add(new Microsoft.Win32.TaskScheduler.ExecAction(fileName.AppendQuotes(), null, Path.GetDirectoryName(fileName)));
+        task.Actions.Add(new Microsoft.Win32.TaskScheduler.ExecAction(fileName.AppendQuotes(), arguments, Path.GetDirectoryName(fileName)));
 
         taskService.RootFolder.RegisterTaskDefinition(taskName, task);
     }
