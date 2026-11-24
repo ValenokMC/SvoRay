@@ -1117,18 +1117,38 @@
                                             Kind="ChevronRight" />
                                     </Grid>
                                 </Button>
-
-                                <!--  Transient status line: simple mode never shows the shared v2rayN notices.  -->
-                                <TextBlock
-                                    x:Name="txtSimpleStatus"
-                                    Margin="4,12,4,0"
-                                    HorizontalAlignment="Center"
-                                    Style="{StaticResource SvoRay.Caption}"
-                                    TextAlignment="Center"
-                                    Visibility="Collapsed" />
                             </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
+
+                    <!--
+                        Transient status (simple mode never shows the shared v2rayN notices), as a
+                        toast over the footer. It used to be a line in the flow: the content outgrew
+                        the window, a scrollbar came and went, and the whole screen jumped twice
+                        within five seconds. It spans the star row, so it never sizes the footer's
+                        Auto row; clicks pass through it.
+                    -->
+                    <Border
+                        x:Name="bdSimpleStatus"
+                        Grid.Row="1"
+                        Grid.RowSpan="2"
+                        Margin="12,0,12,-2"
+                        Panel.ZIndex="1"
+                        Padding="14,9"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Background="{x:Static common:SvoRayPalette.SurfacePressed}"
+                        BorderBrush="{x:Static common:SvoRayPalette.BorderStrong}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        IsHitTestVisible="False"
+                        Visibility="Collapsed">
+                        <TextBlock
+                            x:Name="txtSimpleStatus"
+                            Style="{StaticResource SvoRay.Caption}"
+                            TextAlignment="Center"
+                            TextWrapping="Wrap" />
+                    </Border>
 
                     <!--  Footer: SvoRay's own update on the left, language on the right  -->
                     <Grid Grid.Row="2" Margin="0,10,0,0">

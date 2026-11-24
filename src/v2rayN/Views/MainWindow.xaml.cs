@@ -542,7 +542,7 @@ public partial class MainWindow
     {
         txtSimpleStatus.Text = message;
         txtSimpleStatus.Foreground = isError ? SvoRayPalette.Danger : SvoRayPalette.TextSecondary;
-        txtSimpleStatus.Visibility = Visibility.Visible;
+        bdSimpleStatus.Visibility = Visibility.Visible;
 
         _simpleStatusTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _simpleStatusTimer.Tick -= HideSimpleStatus;
@@ -554,7 +554,7 @@ public partial class MainWindow
     private void HideSimpleStatus(object? sender, EventArgs e)
     {
         _simpleStatusTimer?.Stop();
-        txtSimpleStatus.Visibility = Visibility.Collapsed;
+        bdSimpleStatus.Visibility = Visibility.Collapsed;
     }
 
     private void BtnShowImport_Click(object sender, RoutedEventArgs e)
