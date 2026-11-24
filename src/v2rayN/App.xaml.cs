@@ -10,6 +10,9 @@ public partial class App
 {
     public static EventWaitHandle ProgramStarted;
 
+    /// <summary>Started by the logon task: stay in the tray and connect.</summary>
+    public static bool StartedAtLogon { get; private set; }
+
     public App()
     {
         DispatcherUnhandledException += App_DispatcherUnhandledException;
@@ -26,6 +29,7 @@ public partial class App
         var exePathKey = Utils.GetMd5(Utils.GetExePath());
 
         var rebootas = e.Args.Any(t => t == Global.RebootAs);
+        StartedAtLogon = e.Args.Any(t => string.Equals(t, Global.AutoStartArg, StringComparison.OrdinalIgnoreCase));
         ProgramStarted = new EventWaitHandle(false, EventResetMode.AutoReset, exePathKey, out var bCreatedNew);
         if (!rebootas && !bCreatedNew)
         {

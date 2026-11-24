@@ -3,6 +3,22 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## Unreleased
+
+### Added
+
+- **Kill Switch.** A switch on the simple screen. From the moment you connect until you turn the
+  VPN off, nothing reaches the internet except through it: not while it connects, not after it
+  drops, not during a switch between proxy and TUN. The tunnel, the cores, SvoRay itself, loopback,
+  DHCP and the local network stay open; DNS to the local network does not, since a router forwards
+  it to the provider. Built on the Windows Filtering Platform in a dynamic session, so Windows
+  removes the filters the moment SvoRay closes, crashes or is updated, and the PC is never left
+  without internet and nothing to explain it. In proxy mode only programs that use the system
+  proxy keep working while the switch holds.
+- **Start with Windows.** A switch on the simple screen. SvoRay registers a logon task with the
+  highest run level (no UAC prompt), starts in the tray, waits for the network and connects. The
+  uninstaller removes the task.
+
 ## 0.6.3 — 10 November 2026
 
 Full notes: [docs/RELEASE_NOTES_0.6.3_RU.md](docs/RELEASE_NOTES_0.6.3_RU.md) (Russian).

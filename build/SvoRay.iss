@@ -110,6 +110,17 @@ begin
   Sleep(1200);
 end;
 
+procedure RemoveAutostart();
+var
+  ResultCode: Integer;
+begin
+  // "Start with Windows" is a scheduled task named SvoRayAutoRun_<hash of the folder>. Remove
+  // it with the program, or Windows would try to start a missing file at every logon.
+  Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+    '-NoProfile -NonInteractive -Command "Get-ScheduledTask -TaskName ''SvoRayAutoRun_*'' -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
 function LaunchAfterSilentUpdate(): Boolean;
 begin
   Result := ExpandConstant('{param:LAUNCH|0}') = '1';
@@ -131,6 +142,9 @@ procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   DataPath: string;
 begin
+  if CurUninstallStep = usUninstall then
+    RemoveAutostart();
+
   if CurUninstallStep <> usPostUninstall then
     Exit;
 
