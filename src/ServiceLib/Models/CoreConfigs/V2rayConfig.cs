@@ -13,7 +13,15 @@ public class V2rayConfig
     public Stats4Ray? stats { get; set; }
     public Observatory4Ray? observatory { get; set; }
     public BurstObservatory4Ray? burstObservatory { get; set; }
+    public Api4Ray? api { get; set; }
     public string? remarks { get; set; }
+}
+
+public class Api4Ray
+{
+    public string tag { get; set; }
+    public string listen { get; set; }
+    public List<string> services { get; set; }
 }
 
 public class Stats4Ray

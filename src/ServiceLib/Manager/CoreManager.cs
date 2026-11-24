@@ -21,6 +21,15 @@ public class CoreManager
     public bool IsCoreRunning => _processService is { HasExited: false };
     private ProcessService? _processPreService;
     private bool _linuxSudo = false;
+
+    /// <summary>The running core and the config it runs, for deciding on a hot switch.</summary>
+    private RunningCoreState? _runningState;
+
+    /// <summary>
+    /// Whether a Wintun adapter from an earlier core may still be around: until the first TUN
+    /// start of this session succeeds, and after a core died on its own.
+    /// </summary>
+    private bool _tunDeviceMayBeStale = true;
     private Func<bool, string, Task>? _updateFunc;
     private const string _tag = "CoreHandler";
 
@@ -77,6 +86,8 @@ public class CoreManager
         }
 
         var node = mainContext.Node;
+        var isTun = mainContext.IsTunEnabled || preContext?.IsTunEnabled == true;
+        SwitchTiming.Mark($"load core: core {mainContext.RunCoreType}{(preContext != null ? $" + pre {preContext.RunCoreType}" : "")}, {(isTun ? "tun" : "proxy")}");
         var fileName = Utils.GetBinConfigPath(Global.CoreConfigFileName);
         // Writing the config starts the AmneziaWG relays it points at; the old core keeps its own until it stops.
         AwgRelayManager.Instance.MarkStale();
@@ -86,30 +97,145 @@ public class CoreManager
             await UpdateFunc(true, result.Msg);
             return;
         }
+        SwitchTiming.Mark("config generated");
+
+        var newShape = mainContext.RunCoreType switch
+        {
+            ECoreType.sing_box => CoreSwitchPlanner.ReadSingboxShape(result.Data?.ToString()),
+            ECoreType.Xray => CoreSwitchPlanner.ReadXrayShape(result.Data?.ToString()),
+            _ => null,
+        };
+        var switchKind = CoreSwitchPlanner.Decide(_runningState, IsCoreRunning && _processPreService is null,
+            mainContext.RunCoreType, preContext != null, newShape);
+        SwitchTiming.Mark($"decision: {switchKind}{(newShape != null ? " (switchable config)" : "")}");
+        if (switchKind == ECoreSwitchKind.HotSwitch && await TryHotSwitchAsync(newShape!))
+        {
+            await UpdateFunc(true, $"{node.GetSummary()}");
+            return;
+        }
 
         await UpdateFunc(false, $"{node.GetSummary()}");
         await UpdateFunc(false, $"{Utils.GetRuntimeInfo()}");
         await UpdateFunc(false, string.Format(ResUI.StartService, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")));
+        SwitchTiming.MarkGapStart("stopping old core");
+        if (_processService is { HasExited: true })
+        {
+            // The core died on its own, so it may have left its adapter behind.
+            _tunDeviceMayBeStale = true;
+        }
         await StopProcesses();
         AwgRelayManager.Instance.StopStale();
-        await Task.Delay(100);
+        SwitchTiming.Mark("old core stopped");
 
-        if (Utils.IsWindows() && (mainContext?.IsTunEnabled == true || preContext?.IsTunEnabled == true))
+        var removedTunDevices = false;
+        if (Utils.IsWindows() && CoreSwitchPlanner.ShouldRemoveTunDevices(isWindows: true, isTun, _tunDeviceMayBeStale))
         {
-            await Task.Delay(100);
             await WindowsUtils.RemoveTunDevice();
+            removedTunDevices = true;
+            SwitchTiming.Mark("tun devices removed (pnputil)");
         }
 
         await CoreStart(mainContext);
-        await WaitForProxyPort(preContext);
-        await CoreStartPreService(preContext);
+        SwitchTiming.Mark("core process started");
+
+        if (preContext is null)
+        {
+            var ready = await WaitForCoreReady(mainContext);
+            if (!ready && !IsCoreRunning && isTun && Utils.IsWindows() && !removedTunDevices)
+            {
+                // A Wintun adapter left from an earlier run can make the new one fail to come up.
+                SwitchTiming.Mark("core exited while starting; removing tun devices and retrying");
+                _tunDeviceMayBeStale = true;
+                await StopProcesses();
+                await WindowsUtils.RemoveTunDevice();
+                await CoreStart(mainContext);
+                ready = await WaitForCoreReady(mainContext);
+            }
+            SwitchTiming.Mark(ready ? "core ready (proxy port answers)" : "core not confirmed ready");
+        }
+        else
+        {
+            await WaitForProxyPort(preContext);
+            if (preContext.IsTunEnabled)
+            {
+                SwitchTiming.Mark("proxy port ready");
+            }
+            await CoreStartPreService(preContext);
+            SwitchTiming.Mark("pre core started");
+        }
 
         AppManager.Instance.RunningCoreType = preContext?.RunCoreType ?? mainContext.RunCoreType;
 
+        if (isTun && IsCoreRunning)
+        {
+            _tunDeviceMayBeStale = false;
+        }
+
         if (_processService != null)
         {
+            if (newShape != null && IsCoreRunning && preContext is null)
+            {
+                _runningState = new RunningCoreState(mainContext.RunCoreType, newShape);
+                if (mainContext.RunCoreType == ECoreType.sing_box && _config.CoreBasicItem.EnableCacheFile4Sbox)
+                {
+                    // The cache file remembers the selector's last choice and sing-box restores
+                    // it over the config's default; the server the user picked must win.
+                    await ClashApiManager.Instance.TrySelectProxyAsync(Global.ProxyTag, newShape.Selection);
+                }
+            }
             await UpdateFunc(true, $"{node.GetSummary()}");
         }
+    }
+
+    /// <summary>
+    /// Moves the running core to the new server: sing-box by pointing its server selector at it,
+    /// Xray by replacing its proxy outbound. False when that did not work; the caller then
+    /// restarts the core as usual, which also repairs a half-done Xray swap.
+    /// </summary>
+    private async Task<bool> TryHotSwitchAsync(CoreConfigShape newShape)
+    {
+        var running = _runningState!;
+        bool ok;
+        if (running.CoreType == ECoreType.sing_box)
+        {
+            SwitchTiming.MarkGapStart("hot switch: selecting the server in the running core");
+            ok = await ClashApiManager.Instance.TrySelectProxyAsync(Global.ProxyTag, newShape.Selection);
+        }
+        else
+        {
+            var xrayExe = CoreInfoManager.Instance.GetCoreExecFile(
+                CoreInfoManager.Instance.GetCoreInfo(ECoreType.Xray), out _);
+            var swap = xrayExe.IsNullOrEmpty()
+                ? EXraySwapResult.Unchanged
+                : await XrayApiService.SwapOutboundAsync(xrayExe, AppManager.Instance.StatePort3,
+                    running.Shape.Selection, newShape.Selection,
+                    phase =>
+                    {
+                        if (phase.StartsWith("removing"))
+                        {
+                            SwitchTiming.MarkGapStart($"hot switch: {phase}");
+                        }
+                        else
+                        {
+                            SwitchTiming.Mark($"hot switch: {phase}");
+                        }
+                    });
+            ok = swap == EXraySwapResult.Swapped;
+            if (!ok)
+            {
+                SwitchTiming.Mark($"hot switch failed ({swap})");
+            }
+        }
+
+        if (!ok)
+        {
+            SwitchTiming.Mark("hot switch refused by the core; restarting it");
+            _runningState = null;
+            return false;
+        }
+        _runningState = running with { Shape = newShape, HotSwitches = running.HotSwitches + 1 };
+        SwitchTiming.Mark("hot switch done");
+        return true;
     }
 
     public async Task<ProcessService?> LoadCoreConfigSpeedtest(List<ServerTestItem> selecteds)
@@ -161,6 +287,7 @@ public class CoreManager
 
     private async Task StopProcesses()
     {
+        _runningState = null;
         try
         {
             if (_linuxSudo)
@@ -242,15 +369,42 @@ public class CoreManager
             return;
         }
 
+        var port = preContext.Node.Port;
+        if (!await WaitForSocksPort(port, timeoutMs, () => false))
+        {
+            Logging.SaveLog($"WaitForProxyPort Timeout waiting for proxy port {port} to be ready.");
+        }
+    }
+
+    /// <summary>
+    /// Waits until the freshly started core answers on its local SOCKS port - the point from
+    /// which traffic can flow - instead of a fixed delay. Returns early, with false, when the
+    /// core exits. Custom configs may not have the port at all and are not waited for.
+    /// </summary>
+    private async Task<bool> WaitForCoreReady(CoreConfigContext context, int timeoutMs = 5000)
+    {
+        if (!IsCoreRunning)
+        {
+            return false;
+        }
+        if (context.Node.ConfigType == EConfigType.Custom)
+        {
+            return true;
+        }
+        var port = AppManager.Instance.GetLocalPort(EInboundProtocol.socks);
+        return await WaitForSocksPort(port, timeoutMs, () => !IsCoreRunning);
+    }
+
+    private static async Task<bool> WaitForSocksPort(int port, int timeoutMs, Func<bool> giveUp)
+    {
         using var rootCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs));
         var rootToken = rootCts.Token;
 
-        var port = preContext.Node.Port;
         // SOCKS5 client greeting: VER=5, NMETHODS=1, METHOD=0x00 (no auth)
         ReadOnlyMemory<byte> greeting = new byte[] { 0x05, 0x01, 0x00 };
         var buf = new byte[2];
 
-        while (!rootToken.IsCancellationRequested)
+        while (!rootToken.IsCancellationRequested && !giveUp())
         {
             using var tcp = new TcpClient();
             using var attemptCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
@@ -265,10 +419,10 @@ public class CoreManager
 
                 var read = await stream.ReadAsync(buf.AsMemory(0, 2), linkedToken);
 
-                // Server selection: VER=5, METHOD=0x00 — proxy is fully ready
+                // Server selection: VER=5 - the proxy is fully ready
                 if (read == 2 && buf[0] == 0x05)
                 {
-                    return;
+                    return true;
                 }
             }
             catch (OperationCanceledException)
@@ -277,8 +431,7 @@ public class CoreManager
                 {
                     continue;
                 }
-                Logging.SaveLog($"WaitForProxyPort Timeout waiting for proxy port {port} to be ready.");
-                return;
+                return false;
             }
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.ConnectionRefused)
             {
@@ -289,8 +442,7 @@ public class CoreManager
                 }
                 catch (OperationCanceledException)
                 {
-                    Logging.SaveLog($"WaitForProxyPort Timeout waiting for proxy port {port} to be ready.");
-                    return;
+                    return false;
                 }
             }
             catch
@@ -298,6 +450,7 @@ public class CoreManager
                 // Ignore other exceptions and continue
             }
         }
+        return false;
     }
 
     #endregion Private

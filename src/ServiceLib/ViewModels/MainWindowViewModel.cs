@@ -816,6 +816,7 @@ public class MainWindowViewModel : MyReactiveObject
 
         try
         {
+            SwitchTiming.Continue("reload started");
             SetReloadEnabled(false);
 
             // A reload is what brings the core up, and plenty of things ask for one that have
@@ -841,16 +842,26 @@ public class MainWindowViewModel : MyReactiveObject
             {
                 return;
             }
+            // A sing-box core is generated with the rest of the subscription behind a selector, so
+            // the next switch within it changes the selector instead of restarting the core.
+            var mainContext = await ServerSwitchCandidates.AttachAsync(allResult.MainResult.Context,
+                allResult.PreSocksResult?.Context);
+            SwitchTiming.Mark("config context built");
 
             await Task.Run(async () =>
             {
-                await LoadCore(allResult.MainResult.Context, allResult.PreSocksResult?.Context);
+                // LoadCore returns once the new core answers on its proxy port (or the running
+                // core has switched server), so no fixed settling delay is needed here.
+                await LoadCore(mainContext, allResult.PreSocksResult?.Context);
+                _ = SwitchTiming.ProbeFirstTrafficAsync(AppManager.Instance.GetLocalPort(EInboundProtocol.socks),
+                    _config.SpeedTestItem.SpeedPingTestUrl);
                 await SysProxyHandler.UpdateSysProxy(_config, false);
-                await Task.Delay(1000);
+                SwitchTiming.Mark("system proxy updated");
             });
             RxSchedulers.MainThreadScheduler.Schedule(async () =>
             {
                 await StatusBarViewModel.TestServerAvailability();
+                SwitchTiming.Mark("availability check finished");
             });
 
             var showClashUI = AppManager.Instance.IsRunningCore(ECoreType.sing_box);
@@ -872,6 +883,7 @@ public class MainWindowViewModel : MyReactiveObject
         {
             SetReloadEnabled(true);
             UpdateSvoRayConnectionState();
+            SwitchTiming.Mark("ui shows state");
             _reloadSemaphore.Release();
             //If there is a next reload job, execute it.
             if (_hasNextReloadJob)

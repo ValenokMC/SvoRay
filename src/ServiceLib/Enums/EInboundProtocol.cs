@@ -9,5 +9,8 @@ public enum EInboundProtocol
     api,
     api2,
     mixed,
+
+    /// <summary>Xray's own gRPC API, used to replace the proxy outbound on a server switch.</summary>
+    api3,
     speedtest = 21
 }
