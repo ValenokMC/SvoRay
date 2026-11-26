@@ -24,6 +24,12 @@ All notable changes to SvoRay. Dates are the release dates of the installer publ
   settings, it now runs once that many hours have passed since the last update, instead of only
   after that many hours without a restart. It stays off by default: about 35 MB a day, and SvoRay
   uses only the private ranges from those files, which come with each release.
+- **Built on v2rayN 7.25.6** (was 7.24.4); Xray 26.11.9 and sing-box 1.14.4 stay as they are.
+  When Xray runs the TUN adapter, IPv6 now goes through the tunnel on a PC with a global IPv6
+  address, instead of staying outside unless IPv6 was turned on in the TUN settings. The advanced mode gains
+  upstream's custom outbounds, HTTP headers per subscription, MASQUE servers and Xray mux settings.
+  The kill switch, server switching without a restart, the simple screen, game mode, the
+  AmneziaWG relay and SvoRay's own updates work as before.
 
 ## 0.6.5 — 26 November 2026
 
