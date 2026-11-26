@@ -1,13 +1,15 @@
-using AwesomeAssertions;
 using ServiceLib.Tests.CoreConfig;
-using Xunit;
 
 namespace ServiceLib.Tests.Services;
+
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
 
 /// <summary>
 /// Runs the relay against a stand-in WireGuard server on loopback. Kept in one class with the
 /// manager tests, because <see cref="AwgRelayManager"/> is a process-wide singleton.
 /// </summary>
+[NotInParallel(nameof(AwgRelayTests))]
 public class AwgRelayTests
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
@@ -36,7 +38,7 @@ public class AwgRelayTests
         return result.Buffer;
     }
 
-    [Fact]
+    [Test]
     public async Task Relay_HandshakeInitiation_ShouldBePrecededByDecoysInOrder()
     {
         using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
@@ -57,7 +59,7 @@ public class AwgRelayTests
         (await ReceiveAsync(server)).Should().Equal(initiation);
     }
 
-    [Fact]
+    [Test]
     public async Task Relay_ShouldPassOtherTrafficUnchangedBothWays()
     {
         using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
@@ -79,7 +81,7 @@ public class AwgRelayTests
         (await ReceiveAsync(core)).Should().Equal(response);
     }
 
-    [Fact]
+    [Test]
     public void Manager_ShouldRelayOnlyProfilesWithDecoysAndReuseRelays()
     {
         var manager = AwgRelayManager.Instance;
@@ -109,7 +111,7 @@ public class AwgRelayTests
         }
     }
 
-    [Fact]
+    [Test]
     public void GenerateConfig_BothCores_ShouldPointWireguardAtTheRelay()
     {
         var manager = AwgRelayManager.Instance;

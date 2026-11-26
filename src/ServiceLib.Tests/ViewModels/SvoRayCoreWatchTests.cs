@@ -1,13 +1,15 @@
-using AwesomeAssertions;
 using ServiceLib.Enums;
 using ServiceLib.ViewModels;
-using Xunit;
 
 namespace ServiceLib.Tests.ViewModels;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRayCoreWatchTests))]
 public class SvoRayCoreWatchTests
 {
-    [Fact]
+    [Test]
     public void ShouldReportCoreStopped_WhenTheCoreIsGoneUnderAGreenScreen()
     {
         MainWindowViewModel.ShouldReportCoreStopped(
@@ -15,12 +17,12 @@ public class SvoRayCoreWatchTests
             .Should().BeTrue();
     }
 
-    [Theory]
-    [InlineData(true, true, false, ESvoRayConnectionState.On)]          // a reload stops it on purpose
-    [InlineData(false, false, false, ESvoRayConnectionState.On)]        // the user turned the VPN off
-    [InlineData(false, true, true, ESvoRayConnectionState.On)]          // the core is running
-    [InlineData(false, true, false, ESvoRayConnectionState.Connecting)] // not up yet
-    [InlineData(false, true, false, ESvoRayConnectionState.Error)]      // already reported
+    [Test]
+    [Arguments(true, true, false, ESvoRayConnectionState.On)]          // a reload stops it on purpose
+    [Arguments(false, false, false, ESvoRayConnectionState.On)]        // the user turned the VPN off
+    [Arguments(false, true, true, ESvoRayConnectionState.On)]          // the core is running
+    [Arguments(false, true, false, ESvoRayConnectionState.Connecting)] // not up yet
+    [Arguments(false, true, false, ESvoRayConnectionState.Error)]      // already reported
     public void ShouldReportCoreStopped_ShouldStayQuietOtherwise(bool reloading, bool requested, bool coreRunning, ESvoRayConnectionState shown)
     {
         MainWindowViewModel.ShouldReportCoreStopped(reloading, requested, coreRunning, shown).Should().BeFalse();

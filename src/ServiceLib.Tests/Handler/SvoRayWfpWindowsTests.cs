@@ -1,8 +1,9 @@
-using AwesomeAssertions;
 using ServiceLib.Handler;
-using Xunit;
 
 namespace ServiceLib.Tests.Handler;
+
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
 
 /// <summary>
 /// The kill switch's filters in the real Windows Filtering Platform. Runs on Windows with
@@ -13,7 +14,7 @@ namespace ServiceLib.Tests.Handler;
 /// so the runner keeps its network. What the filters do is checked with a few enforced filters that
 /// touch only two Cloudflare addresses and one local port.
 /// </remarks>
-[Collection("SvoRayKillSwitch")]
+[NotInParallel("SvoRayKillSwitch")]
 public class SvoRayWfpWindowsTests
 {
     private static readonly IPAddress Blocked = IPAddress.Parse("1.1.1.1");
@@ -21,11 +22,11 @@ public class SvoRayWfpWindowsTests
 
     private static void RequireWindowsAdministrator()
     {
-        Assert.SkipUnless(OperatingSystem.IsWindows(), "The Windows Filtering Platform exists on Windows only.");
-        Assert.SkipUnless(Utils.IsAdministrator(), "Adding WFP filters needs administrator rights.");
+        Skip.Unless(OperatingSystem.IsWindows(), "The Windows Filtering Platform exists on Windows only.");
+        Skip.Unless(Utils.IsAdministrator(), "Adding WFP filters needs administrator rights.");
     }
 
-    [Fact]
+    [Test]
     public void FullPlan_ShouldBeAcceptedByWindows()
     {
         RequireWindowsAdministrator();
@@ -58,11 +59,11 @@ public class SvoRayWfpWindowsTests
         firewall.FilterCount.Should().Be(plan.Count);
     }
 
-    [Fact]
+    [Test]
     public async Task EnforcedFilters_ShouldBlockAndLetProgramsThrough()
     {
         RequireWindowsAdministrator();
-        Assert.SkipUnless(await CanConnect(Blocked, 80) && await CanConnect(Allowed, 80), "No internet on this machine.");
+        Skip.Unless(await CanConnect(Blocked, 80) && await CanConnect(Allowed, 80), "No internet on this machine.");
 
         var filters = new List<KillSwitchFilter>
         {
@@ -93,7 +94,7 @@ public class SvoRayWfpWindowsTests
         (await CanConnect(Blocked, 80)).Should().BeTrue("closing the session removes every filter");
     }
 
-    [Fact]
+    [Test]
     public async Task EnforcedFilters_ShouldLetLoopbackThrough()
     {
         RequireWindowsAdministrator();

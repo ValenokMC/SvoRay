@@ -16,6 +16,8 @@ public class SubItem
 
     public string UserAgent { get; set; } = string.Empty;
 
+    public string? RequestHeaders { get; set; }
+
     public int Sort { get; set; }
 
     public string? Filter { get; set; }
@@ -57,4 +59,6 @@ public class SubItem
     /// See <see cref="SvoRaySubscriptionLabel"/>.
     /// </summary>
     public string? ProfileTitle { get; set; }
+
+    public ECoreType? CustomCoreType { get; set; }
 }

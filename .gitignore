@@ -5,6 +5,8 @@ dist/
 *.user
 *.suo
 .vs/
+# Reports TUnit writes where dotnet test runs
+TestResults/
 
 # Data the client creates for itself. Never publish: it holds the subscription URL
 # and profile credentials in clear text.

@@ -26,11 +26,15 @@ $env:SVORAY_CORE_FIXTURES = '1'
 # dotnet writes progress to stderr, which Windows PowerShell would turn into a terminating error
 # under 'Stop': the exit code decides instead.
 $ErrorActionPreference = 'Continue'
+# From the repository root: dotnet test finds global.json, which selects the Microsoft.Testing.Platform
+# runner TUnit needs, from the current folder. TUnit's report goes to TestResults there (ignored).
+Push-Location $projectRoot
 try {
-    dotnet test (Join-Path $projectRoot 'src\ServiceLib.Tests\ServiceLib.Tests.csproj') --configuration Release --nologo
+    dotnet test --project (Join-Path $projectRoot 'src\ServiceLib.Tests\ServiceLib.Tests.csproj') --configuration Release --nologo
     if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
 }
 finally {
+    Pop-Location
     Remove-Item Env:SVORAY_CORE_FIXTURES -ErrorAction SilentlyContinue
     $ErrorActionPreference = 'Stop'
 }

@@ -1,8 +1,9 @@
-using AwesomeAssertions;
-using Xunit;
-
 namespace ServiceLib.Tests.Common;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRayServerListTests))]
 public class SvoRayServerListTests
 {
     private const string Standalone = "Servers added on their own";
@@ -24,7 +25,7 @@ public class SvoRayServerListTests
         Url = url,
     };
 
-    [Fact]
+    [Test]
     public void Build_ShouldGroupServersUnderTheirSourceAndEndWithAdd()
     {
         var profiles = new List<ProfileItemModel>
@@ -52,7 +53,7 @@ public class SvoRayServerListTests
         grouped.Where(t => t.IsServer).Should().Equal(servers, "both selectors must share the selected object");
     }
 
-    [Fact]
+    [Test]
     public void Build_ClosedSelectorShouldNameTheSourceOnlyWithSeveralSources()
     {
         var subs = new List<SubItem> { Sub("sub-a", "MyVPN") };
@@ -66,7 +67,7 @@ public class SvoRayServerListTests
         several[1].Text.Should().Be("Cloudflare WARP");
     }
 
-    [Fact]
+    [Test]
     public void Build_OnlyHeadingsOfSubscriptionsAndStandaloneServersCanBeRemoved()
     {
         var (_, grouped) = SvoRayServerList.Build(
@@ -79,7 +80,7 @@ public class SvoRayServerListTests
         grouped.Where(t => !t.IsServer).Should().OnlyContain(t => t.ID == null, "nothing but a server may be selected");
     }
 
-    [Fact]
+    [Test]
     public void Build_EmptySubscriptionWithLinkStaysRemovable()
     {
         var (_, grouped) = SvoRayServerList.Build([],
@@ -91,14 +92,15 @@ public class SvoRayServerListTests
     }
 }
 
+[NotInParallel(nameof(SvoRayFlagTests))]
 public class SvoRayFlagTests
 {
-    [Theory]
-    [InlineData("\U0001F1E9\U0001F1EA Germany", "de", "Germany")]
-    [InlineData("Finland \U0001F1EB\U0001F1EE", "fi", "Finland")]
-    [InlineData("Provider · \U0001F1EC\U0001F1EA Tbilisi", "ge", "Provider ·  Tbilisi")]
-    [InlineData("Netherlands", null, "Netherlands")]
-    [InlineData("", null, "")]
+    [Test]
+    [Arguments("\U0001F1E9\U0001F1EA Germany", "de", "Germany")]
+    [Arguments("Finland \U0001F1EB\U0001F1EE", "fi", "Finland")]
+    [Arguments("Provider · \U0001F1EC\U0001F1EA Tbilisi", "ge", "Provider ·  Tbilisi")]
+    [Arguments("Netherlands", null, "Netherlands")]
+    [Arguments("", null, "")]
     public void Split_takes_the_flag_out_of_the_name(string name, string? code, string text)
     {
         SvoRayFlag.Split(name).Should().Be((code, text));

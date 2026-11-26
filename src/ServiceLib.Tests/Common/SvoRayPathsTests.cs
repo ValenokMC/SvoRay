@@ -1,13 +1,15 @@
-using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Handler;
-using Xunit;
 
 namespace ServiceLib.Tests.Common;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRayPathsTests))]
 public class SvoRayPathsTests
 {
-    [Fact]
+    [Test]
     public void IsLocalPath_ShouldAcceptFullyQualifiedPathsOnTheSystemDrive()
     {
         if (!OperatingSystem.IsWindows())
@@ -22,25 +24,25 @@ public class SvoRayPathsTests
         SvoRayPaths.IsLocalPath(Path.GetTempPath()).Should().BeTrue();
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("Games")]
-    [InlineData(@"..\Games")]
-    [InlineData("C:Games")]
-    [InlineData(@"\Games")]
-    [InlineData(@"\\attacker\share\Games")]
-    [InlineData("//attacker/share/Games")]
-    [InlineData(@"\\?\C:\Games")]
-    [InlineData(@"\\.\PhysicalDrive0")]
-    [InlineData(@"\\?\UNC\attacker\share")]
-    [InlineData("C:\\Games\u0000evil")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("")]
+    [Arguments("Games")]
+    [Arguments(@"..\Games")]
+    [Arguments("C:Games")]
+    [Arguments(@"\Games")]
+    [Arguments(@"\\attacker\share\Games")]
+    [Arguments("//attacker/share/Games")]
+    [Arguments(@"\\?\C:\Games")]
+    [Arguments(@"\\.\PhysicalDrive0")]
+    [Arguments(@"\\?\UNC\attacker\share")]
+    [Arguments("C:\\Games\u0000evil")]
     public void IsLocalPath_ShouldRefuseSharesDevicesAndRelativePaths(string? path)
     {
         SvoRayPaths.IsLocalPath(path).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void ExactCase_ShouldNotTouchAShareFromALauncherRecord()
     {
         SvoRayGames.ExactCase(@"\\attacker\share\Games").Should().BeNull();

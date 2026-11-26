@@ -1,11 +1,12 @@
-using AwesomeAssertions;
-using Xunit;
-
 namespace ServiceLib.Tests.Models;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SubItemMigrationTests))]
 public class SubItemMigrationTests
 {
-    [Fact]
+    [Test]
     public void CreateTable_ShouldAddSupportUrlToAnExistingSubscriptionTable()
     {
         var databasePath = Path.Combine(Path.GetTempPath(), $"svoray-subitem-{Guid.NewGuid():N}.db");

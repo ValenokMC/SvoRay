@@ -1,14 +1,16 @@
 using System.Text;
-using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Handler;
-using Xunit;
 
 namespace ServiceLib.Tests.Common;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRaySubscriptionLabelTests))]
 public class SvoRaySubscriptionLabelTests
 {
-    [Fact]
+    [Test]
     public void ParseTitle_ShouldReadPlainAndBase64Titles()
     {
         var encoded = "base64:" + Convert.ToBase64String(Encoding.UTF8.GetBytes("Корвелин VPN"));
@@ -21,7 +23,7 @@ public class SvoRaySubscriptionLabelTests
         SvoRaySubscriptionLabel.ParseTitle(new string('x', 60))!.Length.Should().Be(32);
     }
 
-    [Fact]
+    [Test]
     public void For_ShouldPreferTheUsersNameThenTheProviderTitleThenTheHost()
     {
         var sub = new SubItem { Remarks = "import_sub", Url = "https://cdn.example.com/sub/secret-token" };
@@ -34,7 +36,7 @@ public class SvoRaySubscriptionLabelTests
         SvoRaySubscriptionLabel.For(sub).Should().Be("Work");
     }
 
-    [Fact]
+    [Test]
     public void Compose_ShouldNameTheSourceOnlyWhenThereAreSeveral()
     {
         SvoRaySubscriptionLabel.Compose("Example VPN", "1 · Main", severalSources: true).Should().Be("Example VPN · 1 · Main");
@@ -42,7 +44,7 @@ public class SvoRaySubscriptionLabelTests
         SvoRaySubscriptionLabel.Compose(null, "My server", severalSources: true).Should().Be("My server");
     }
 
-    [Fact]
+    [Test]
     public void FindDuplicates_ShouldMatchTheSameServerWhateverItsName()
     {
         var existing = Vless("a", "server.example.com", 443, "Main");

@@ -388,7 +388,7 @@ public class CoreManager
         await _updateFunc?.Invoke(notify, msg);
     }
 
-    private static async Task WaitForProxyPort(CoreConfigContext? preContext, int timeoutMs = 5000)
+    private static async Task WaitForProxyPort(CoreConfigContext? preContext)
     {
         if (preContext is null)
         {
@@ -400,7 +400,7 @@ public class CoreManager
         }
 
         var port = preContext.Node.Port;
-        if (!await WaitForSocksPort(port, timeoutMs, () => false))
+        if (!await WaitForSocksPort(port, (int)Global.LocalFetch.TotalMilliseconds, () => false))
         {
             Logging.SaveLog($"WaitForProxyPort Timeout waiting for proxy port {port} to be ready.");
         }

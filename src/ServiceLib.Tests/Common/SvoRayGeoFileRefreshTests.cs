@@ -1,8 +1,9 @@
-using AwesomeAssertions;
-using Xunit;
-
 namespace ServiceLib.Tests.Common;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRayGeoFileRefreshTests))]
 public sealed class SvoRayGeoFileRefreshTests : IDisposable
 {
     private const string Url = "https://cdn.example/geosite.dat";
@@ -21,7 +22,7 @@ public sealed class SvoRayGeoFileRefreshTests : IDisposable
         Directory.Delete(_dir, true);
     }
 
-    [Fact]
+    [Test]
     public void IsGeoFileStale_AfterAboutADay()
     {
         var now = new DateTime(2026, 11, 26, 12, 0, 0, DateTimeKind.Utc);
@@ -33,7 +34,7 @@ public sealed class SvoRayGeoFileRefreshTests : IDisposable
         SvoRayServerRouting.IsGeoFileStale(now.AddDays(5), now).Should().BeTrue("written under a wrong clock");
     }
 
-    [Fact]
+    [Test]
     public async Task FreshFile_IsNotDownloadedAgain()
     {
         WriteCurrent(["OLD"], DateTime.UtcNow.AddHours(-2));
@@ -49,7 +50,7 @@ public sealed class SvoRayGeoFileRefreshTests : IDisposable
         downloads.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public async Task StaleFile_IsReplacedInTheBackground()
     {
         WriteCurrent(["OLD"], DateTime.UtcNow.AddDays(-2));
@@ -68,9 +69,9 @@ public sealed class SvoRayGeoFileRefreshTests : IDisposable
         Directory.GetFiles(_dir, "*.tmp").Should().BeEmpty();
     }
 
-    [Theory]
-    [InlineData(false)] // the download failed
-    [InlineData(true)] // the provider answered with something that is not a geo file
+    [Test]
+    [Arguments(false)] // the download failed
+    [Arguments(true)] // the provider answered with something that is not a geo file
     public async Task StaleFile_IsKeptWhenTheNewOneIsUnusable(bool answered)
     {
         WriteCurrent(["OLD"], DateTime.UtcNow.AddDays(-2));
@@ -86,7 +87,7 @@ public sealed class SvoRayGeoFileRefreshTests : IDisposable
         (await SvoRayServerRouting.EnsureGeoFileAsync(Url, _path, _ => Task.FromResult(answer))).Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public async Task MissingFile_IsDownloadedBeforeTheRulesAreBuilt()
     {
         var refresh = await SvoRayServerRouting.EnsureGeoFileAsync(Url, _path, _ => Task.FromResult<byte[]?>(Geo("NEW")));

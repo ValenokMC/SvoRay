@@ -1,11 +1,12 @@
-using AwesomeAssertions;
-using Xunit;
-
 namespace ServiceLib.Tests.Fmt;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(AwgSignatureTests))]
 public class AwgSignatureTests
 {
-    [Fact]
+    [Test]
     public void TryParse_GeneratorPacket_ShouldKeepFixedBytesAndRandomizeTheRest()
     {
         // The shape WARP_Generator writes: fixed QUIC header bytes, then random bytes, alternating.
@@ -23,7 +24,7 @@ public class AwgSignatureTests
         first[14..46].Should().NotEqual(second[14..46], "random parts are drawn anew for every handshake");
     }
 
-    [Fact]
+    [Test]
     public void Build_RandomLettersDigitsAndTimestamp_ShouldFollowTheirAlphabets()
     {
         AwgSignature.TryParse("<rc 20><rd 10><t>", out var signature).Should().BeTrue();
@@ -37,25 +38,25 @@ public class AwgSignatureTests
         ((long)timestamp).Should().BeCloseTo(DateTimeOffset.UtcNow.ToUnixTimeSeconds(), 5);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("no tags at all")]
-    [InlineData("<b 0x0102")]
-    [InlineData("<b 0x010>")]
-    [InlineData("<b 0xzz>")]
-    [InlineData("<r abc>")]
-    [InlineData("<r 0>")]
-    [InlineData("<r 70000>")]
-    [InlineData("<q 4>")]
-    [InlineData("<>")]
-    [InlineData("<d>")]
+    [Test]
+    [Arguments("")]
+    [Arguments("no tags at all")]
+    [Arguments("<b 0x0102")]
+    [Arguments("<b 0x010>")]
+    [Arguments("<b 0xzz>")]
+    [Arguments("<r abc>")]
+    [Arguments("<r 0>")]
+    [Arguments("<r 70000>")]
+    [Arguments("<q 4>")]
+    [Arguments("<>")]
+    [Arguments("<d>")]
     public void TryParse_Malformed_ShouldFail(string spec)
     {
         AwgSignature.TryParse(spec, out var signature).Should().BeFalse();
         signature.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void BuildPrelude_ShouldSendSpecialPacketsFirstThenJunk()
     {
         var extra = new ProtocolExtraItem
@@ -79,14 +80,14 @@ public class AwgSignatureTests
         prelude.Skip(2).Should().OnlyContain(junk => junk.Length >= 40 && junk.Length <= 70);
     }
 
-    [Fact]
+    [Test]
     public void From_ProfileWithoutDecoys_ShouldBeNull()
     {
         AwgDecoys.From(new ProtocolExtraItem()).Should().BeNull();
         AwgDecoys.From(new ProtocolExtraItem { AwgJc = 4, AwgJmin = 0, AwgJmax = 0 }).Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void IsHandshakeInitiation_ShouldLookAtTypeAndLengthOnly()
     {
         var initiation = new byte[148];

@@ -1,14 +1,16 @@
 using System.Collections;
 using System.Globalization;
-using AwesomeAssertions;
 using ServiceLib.Resx;
-using Xunit;
 
 namespace ServiceLib.Tests.Resx;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRayResourceTests))]
 public class SvoRayResourceTests
 {
-    [Fact]
+    [Test]
     public void EverySvoRayResource_ShouldHaveEnglishAndRussianValues()
     {
         var neutral = ResUI.ResourceManager.GetResourceSet(CultureInfo.InvariantCulture, true, false);

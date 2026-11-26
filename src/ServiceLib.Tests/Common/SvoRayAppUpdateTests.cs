@@ -1,25 +1,27 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
-using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Services;
-using Xunit;
 
 namespace ServiceLib.Tests.Common;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRayAppUpdateTests))]
 public class SvoRayAppUpdateTests
 {
     private static readonly DateTimeOffset Now = new(2026, 11, 26, 12, 0, 0, TimeSpan.Zero);
 
-    [Fact]
+    [Test]
     public void ShouldOffer_ShouldAskAboutAVersionNotOfferedBefore()
     {
         SvoRayAppUpdate.ShouldOffer(new Version(0, 6, 5), null, 0, Now).Should().BeTrue();
         SvoRayAppUpdate.ShouldOffer(new Version(0, 6, 6), "0.6.5", Now.ToUnixTimeSeconds(), Now).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ShouldOffer_ShouldHoldBackAVersionPutOffWithLaterForADay()
     {
         var offeredAt = Now.AddHours(-6).ToUnixTimeSeconds();
@@ -60,7 +62,7 @@ public class SvoRayAppUpdateTests
             """;
     }
 
-    [Fact]
+    [Test]
     public void Evaluate_ShouldOfferANewerStableRelease()
     {
         var check = SvoRayAppUpdate.Evaluate(Release("v0.6.0"), Current);
@@ -73,16 +75,16 @@ public class SvoRayAppUpdateTests
         check.Release.NotesUrl.Should().Be("https://github.com/ValenokMC/SvoRay/releases/tag/v0.6.0");
     }
 
-    [Theory]
-    [InlineData("v0.5.0")]
-    [InlineData("v0.4.0")]
-    [InlineData("0.4.9")]
+    [Test]
+    [Arguments("v0.5.0")]
+    [Arguments("v0.4.0")]
+    [Arguments("0.4.9")]
     public void Evaluate_ShouldReportUpToDateForAnEqualOrOlderRelease(string tag)
     {
         SvoRayAppUpdate.Evaluate(Release(tag), Current).Status.Should().Be(ESvoRayUpdateStatus.UpToDate);
     }
 
-    [Fact]
+    [Test]
     public void Evaluate_ShouldCompareVersionsAsNumbersNotStrings()
     {
         // As strings "0.10.0" sorts before "0.9.0".
@@ -90,24 +92,24 @@ public class SvoRayAppUpdateTests
         SvoRayAppUpdate.Evaluate(Release("v0.9.0"), new Version(0, 10, 0)).Status.Should().Be(ESvoRayUpdateStatus.UpToDate);
     }
 
-    [Theory]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
+    [Test]
+    [Arguments(true, false)]
+    [Arguments(false, true)]
     public void Evaluate_ShouldSkipPrereleasesAndDrafts(bool prerelease, bool draft)
     {
         SvoRayAppUpdate.Evaluate(Release("v0.6.0", prerelease, draft), Current).Status.Should().Be(ESvoRayUpdateStatus.Unusable);
     }
 
-    [Theory]
-    [InlineData("v0.6.0-beta")]
-    [InlineData("latest")]
-    [InlineData("")]
+    [Test]
+    [Arguments("v0.6.0-beta")]
+    [Arguments("latest")]
+    [Arguments("")]
     public void Evaluate_ShouldRejectTagsThatAreNotPlainVersions(string tag)
     {
         SvoRayAppUpdate.Evaluate(Release(tag), Current).Status.Should().Be(ESvoRayUpdateStatus.Unusable);
     }
 
-    [Fact]
+    [Test]
     public void Evaluate_ShouldRefuseAReleaseWithoutTheInstallerOrChecksums()
     {
         SvoRayAppUpdate.Evaluate(Release("v0.6.0", setupName: "SvoRay-0.6.0-portable.exe"), Current)
@@ -116,34 +118,34 @@ public class SvoRayAppUpdateTests
             .Status.Should().Be(ESvoRayUpdateStatus.Unusable);
     }
 
-    [Fact]
+    [Test]
     public void Evaluate_ShouldRefuseAssetsServedFromAnotherRepository()
     {
         SvoRayAppUpdate.Evaluate(Release("v0.6.0", repository: "2dust/v2rayN"), Current)
             .Status.Should().Be(ESvoRayUpdateStatus.Unusable);
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("not json")]
-    [InlineData("[]")]
-    [InlineData("""{ "message": "API rate limit exceeded" }""")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("")]
+    [Arguments("not json")]
+    [Arguments("[]")]
+    [Arguments("""{ "message": "API rate limit exceeded" }""")]
     public void Evaluate_ShouldTreatOddAnswersAsUnusable(string? json)
     {
         SvoRayAppUpdate.Evaluate(json, Current).Status.Should().Be(ESvoRayUpdateStatus.Unusable);
     }
 
-    [Theory]
-    [InlineData("v0.5.0", 0, 5, 0)]
-    [InlineData("0.5", 0, 5, 0)]
-    [InlineData("1.2.3.4", 1, 2, 3)]
+    [Test]
+    [Arguments("v0.5.0", 0, 5, 0)]
+    [Arguments("0.5", 0, 5, 0)]
+    [Arguments("1.2.3.4", 1, 2, 3)]
     public void ParseVersion_ShouldReadReleaseTags(string tag, int major, int minor, int build)
     {
         SvoRayAppUpdate.ParseVersion(tag).Should().Be(new Version(major, minor, build));
     }
 
-    [Fact]
+    [Test]
     public void FindExpectedHash_ShouldReadTheSha256SumsFormat()
     {
         var hash = new string('A', 64);
@@ -155,7 +157,7 @@ public class SvoRayAppUpdateTests
         SvoRayAppUpdate.FindExpectedHash("xyz  SvoRay-0.6.0-setup.exe", "SvoRay-0.6.0-setup.exe").Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public async Task DownloadAsync_ShouldReturnTheInstallerWhenItsHashMatches()
     {
         var installer = Encoding.UTF8.GetBytes("installer body");
@@ -171,7 +173,7 @@ public class SvoRayAppUpdateTests
         write.Should().Throw<IOException>();
     }
 
-    [Fact]
+    [Test]
     public async Task DownloadAsync_ShouldRefuseAndDeleteAnInstallerWithAnotherHash()
     {
         using var folder = new TempFolder();
@@ -184,7 +186,7 @@ public class SvoRayAppUpdateTests
         Directory.GetFiles(folder.Path).Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public async Task CheckAsync_ShouldFallBackToTheNextRouteAndReturnNullWhenAllFail()
     {
         var proxy = new WebProxy("socks5://127.0.0.1:1");
