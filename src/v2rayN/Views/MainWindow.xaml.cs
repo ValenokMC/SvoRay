@@ -244,6 +244,21 @@ public partial class MainWindow
                 interaction.SetOutput(RxVoid.Default);
             }).DisposeWith(disposables);
 
+            // Fallback for the notice stream, same reason as the tray interaction above.
+            // MsgView registers the real handler, but it is the content of a tab inside the
+            // collapsed AdvancedPanel: WPF does not create the content of an unselected tab, so
+            // in simple mode nothing is registered. HandleSafe no longer throws for that, but it
+            // logs the UnhandledInteractionException with its stack trace for every batch.
+            // MsgViewModel flushes only while it is activated, which MsgView does, so this should
+            // stay idle; it is here so no activation without the view can fill the log. ReactiveUI
+            // invokes handlers in reverse registration order, so once MsgView appears its handler
+            // runs first and this one never sees the message. Simple mode drops the text on
+            // purpose - the stream carries v2rayN diagnostics including the running server address.
+            ViewModel.MsgViewModel.ShowMsgInteraction.RegisterHandler(interaction =>
+            {
+                interaction.SetOutput(RxVoid.Default);
+            }).DisposeWith(disposables);
+
             ViewModel.ReadTextFromClipboardInteraction.RegisterHandler(interaction =>
             {
                 var clipboardData = WindowsUtils.GetClipboardData();
