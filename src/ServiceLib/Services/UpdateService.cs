@@ -422,6 +422,8 @@ public partial class UpdateService(Config config, Func<bool, string, Task> updat
         [
             .. geoipFiles.Distinct().Select(f => (type: "geoip", file: f))
                 .Concat(geoSiteFiles.Distinct().Select(f => (type: "geosite", file: f)))
+                // SvoRay: a name from a routing rule must not lead out of the srss folder.
+                .Where(item => SvoRayPaths.IsPlainFileName(item.file))
                 .Select(item => GetSrsFileRequest(item.type, item.file)),
         ];
     }

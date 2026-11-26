@@ -1,4 +1,4 @@
-using ServiceLib.Common;
+﻿using ServiceLib.Common;
 using ServiceLib.Handler;
 
 namespace ServiceLib.Tests.Common;
@@ -47,5 +47,30 @@ public class SvoRayPathsTests
     {
         SvoRayGames.ExactCase(@"\\attacker\share\Games").Should().BeNull();
         SvoRayGames.BuildFolderEntries([@"\\attacker\share\Games"]).Should().BeEmpty();
+    }
+
+    [Test]
+    [Arguments("google")]
+    [Arguments("geolocation-!cn")]
+    [Arguments("category-ads-all")]
+    [Arguments("google@cn")]
+    public void IsPlainFileName_ShouldAcceptRuleSetNames(string name)
+    {
+        SvoRayPaths.IsPlainFileName(name).Should().BeTrue();
+    }
+
+    [Test]
+    [Arguments(null)]
+    [Arguments("")]
+    [Arguments("..")]
+    [Arguments(@"google@..\..\..\evil")]
+    [Arguments("google@../../evil")]
+    [Arguments(@"a\b")]
+    [Arguments("a/b")]
+    [Arguments("C:evil")]
+    [Arguments("evil\u0000")]
+    public void IsPlainFileName_ShouldRefuseNamesThatLeaveTheFolder(string? name)
+    {
+        SvoRayPaths.IsPlainFileName(name).Should().BeFalse();
     }
 }

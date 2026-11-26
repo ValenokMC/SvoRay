@@ -1,4 +1,4 @@
-namespace ServiceLib.Common;
+﻿namespace ServiceLib.Common;
 
 /// <summary>
 /// Checks for paths SvoRay reads from data it does not control: launcher records, the registry,
@@ -78,5 +78,18 @@ public static class SvoRayPaths
             }
         }
         return null;
+    }
+
+    /// <summary>
+    /// True for a name that stays a single file inside the folder it is combined with: no
+    /// separators of either kind, no "..", nothing Windows forbids in a file name. Rule-set names
+    /// come from routing rules, which a subscription's routing profile feeds.
+    /// </summary>
+    public static bool IsPlainFileName(string? name)
+    {
+        return !name.IsNullOrEmpty()
+               && !name!.Contains("..", StringComparison.Ordinal)
+               && name.IndexOfAny(['\\', '/', ':']) < 0
+               && name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0;
     }
 }
