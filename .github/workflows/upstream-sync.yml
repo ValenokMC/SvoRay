@@ -9,6 +9,8 @@ name: Upstream v2rayN sync
 #     token (secret CLAUDE_CODE_OAUTH_TOKEN, from `claude setup-token`): Claude Code resolves the
 #     conflicts. It may only read and edit files; this workflow checks that no conflict marker is
 #     left, commits, runs the same gate and CI, and opens an issue with Claude's report.
+#     Claude gets one attempt per upstream version (Sonnet, at most 80 turns and 40 minutes):
+#     the weekly run does not try a version again; a manual run with "retry_claude" can.
 #   - conflicts without a token, or hunks that did not apply at all: an issue lists the files,
 #     with the patch attached to the run.
 # Nothing is merged into main by this workflow: upstream changes the advanced interface and core
@@ -20,6 +22,11 @@ on:
   schedule:
     - cron: '41 5 * * 1'
   workflow_dispatch:
+    inputs:
+      retry_claude:
+        description: 'Let Claude try a version it already had a go at'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -33,7 +40,10 @@ concurrency:
 env:
   # Pinned: a new Claude Code release does not change this bot until it is bumped here.
   CLAUDE_CODE_VERSION: '2.1.326'
-  CLAUDE_MODEL: claude-opus-5-5
+  # Sonnet: enough for merging conflicts, and lighter on the subscription's limits than Opus.
+  CLAUDE_MODEL: claude-sonnet-5-5
+  # Hard stops for one attempt; past them the run ends and an issue says so.
+  CLAUDE_MAX_TURNS: '80'
 
 jobs:
   sync:
@@ -88,6 +98,8 @@ jobs:
         if: steps.check.outputs.newer == 'true'
         shell: pwsh
         env:
+          GH_TOKEN: ${{ github.token }}
+          RETRY_CLAUDE: ${{ inputs.retry_claude }}
           FROM: ${{ steps.check.outputs.from }}
           TO: ${{ steps.check.outputs.to }}
           URL: ${{ steps.check.outputs.url }}
@@ -107,6 +119,16 @@ jobs:
             # Claude gets conflicts only: a hunk that did not apply at all has no markers to
             # resolve and needs a person.
             $forClaude = $env:HAS_CLAUDE -eq 'true' -and $rejected.Count -eq 0
+            # One Claude attempt per upstream version: every attempt leaves an issue titled
+            # "v2rayN <version>: Claude ...", open or closed. The weekly run does not spend the
+            # subscription on the same version again; a manual run with "retry_claude" does.
+            if ($forClaude -and $env:RETRY_CLAUDE -ne 'true') {
+              $tried = gh issue list --state all --limit 1 --search "in:title `"v2rayN $env:TO: Claude`"" --json number --jq '.[0].number'
+              if ($tried) {
+                Write-Host "Claude already had a go at v2rayN $env:TO (issue #$tried); not running it again."
+                $forClaude = $false
+              }
+            }
             "for_claude=$($forClaude.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
             $list = (@($conflicts | ForEach-Object { "- ``$_``" }) + @($rejected | ForEach-Object { "- $_" })) -join "`n"
             "list<<EOF`n$list`nEOF" >> $env:GITHUB_OUTPUT
@@ -215,12 +237,20 @@ jobs:
 
       - name: Replay the upstream diff
         env:
+          FROM: ${{ needs.sync.outputs.from }}
           TO: ${{ needs.sync.outputs.to }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # The three-way merge needs upstream's original files (the blobs the patch names):
+          # without them git falls back to a plain apply, and conflicts become rejected hunks.
+          git fetch --depth 1 --no-tags https://github.com/2dust/v2rayN.git "refs/tags/$FROM:refs/upstream/$FROM" "refs/tags/$TO:refs/upstream/$TO"
           git checkout -B "bot/upstream-$TO"
-          git apply -3 -p2 --directory=src "$RUNNER_TEMP/upstream/upstream.patch" || true
+          git apply -3 -p2 --directory=src "$RUNNER_TEMP/upstream/upstream.patch" 2>&1 | tee "$RUNNER_TEMP/apply.log" || true
+          # The same result as the Windows replay, or nothing for Claude to do here.
+          if grep -E '^error: ' "$RUNNER_TEMP/apply.log"; then
+            echo '::error::hunks did not apply (not conflicts); this needs a person'; exit 1
+          fi
           git diff --name-only --diff-filter=U > "$RUNNER_TEMP/conflicts.txt"
           test -s "$RUNNER_TEMP/conflicts.txt" || { echo 'No conflicts to resolve here.'; exit 1; }
           git status --porcelain | cut -c4- | sort > "$RUNNER_TEMP/before.txt"
@@ -235,7 +265,7 @@ jobs:
         run: npm install --global "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION"
 
       - name: Resolve the conflicts
-        timeout-minutes: 60
+        timeout-minutes: 40
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           FROM: ${{ needs.sync.outputs.from }}
@@ -250,7 +280,7 @@ jobs:
           # to a file for the issue, not to the public log.
           claude -p "$prompt" \
             --model "$CLAUDE_MODEL" \
-            --max-turns 150 \
+            --max-turns "$CLAUDE_MAX_TURNS" \
             --permission-mode acceptEdits \
             --allowedTools "Read,Edit,MultiEdit,Write,Glob,Grep,Bash(git diff *),Bash(git status *),Bash(git log *),Bash(git show *)" \
             --disallowedTools "WebFetch,WebSearch" \
@@ -381,7 +411,8 @@ jobs:
           LIST: ${{ needs.sync.outputs.list }}
           RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          title="v2rayN $TO needs a manual merge"
+          # "v2rayN <version>: Claude ..." marks the attempt, so the weekly run does not repeat it.
+          title="v2rayN $TO: Claude could not resolve the conflicts"
           if [ -z "$(gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number')" ]; then
             gh issue create --title "$title" --body "Claude Code could not finish the conflicts of v2rayN $TO (markers left, files outside src/ touched, or the run failed). Nothing was pushed. Conflicting files:
 
