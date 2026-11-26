@@ -30,8 +30,28 @@ public static class SvoRayAppUpdate
     public const string ReleasesPageUrl = $"https://github.com/{Repository}/releases";
     public const string SumsFileName = "SHA256SUMS.txt";
 
-    /// <summary>A day between automatic checks, as asked; a click checks at any time.</summary>
-    public static readonly TimeSpan CheckInterval = TimeSpan.FromDays(1);
+    /// <summary>
+    /// Time between automatic checks, also while SvoRay keeps running in the tray for days, so a
+    /// release made by the core update bot reaches people within hours. One unauthenticated API
+    /// call each time; a click checks at any time.
+    /// </summary>
+    public static readonly TimeSpan CheckInterval = TimeSpan.FromHours(6);
+
+    /// <summary>How long "Later" keeps the same version from being offered in a window again.</summary>
+    public static readonly TimeSpan OfferSnooze = TimeSpan.FromDays(1);
+
+    /// <summary>
+    /// Whether an automatic check should put <paramref name="version"/> in front of the user: a
+    /// version not offered before, or one put off with "Later" longer than <see cref="OfferSnooze"/> ago.
+    /// </summary>
+    public static bool ShouldOffer(Version version, string? offeredVersion, long offeredAt, DateTimeOffset now)
+    {
+        if (ParseVersion(offeredVersion) is not { } offered || offered != Normalize(version))
+        {
+            return true;
+        }
+        return now - DateTimeOffset.FromUnixTimeSeconds(Math.Max(0, offeredAt)) >= OfferSnooze;
+    }
 
     private const string DownloadPrefix = $"https://github.com/{Repository}/releases/download/";
 

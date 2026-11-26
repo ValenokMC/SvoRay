@@ -1,0 +1,100 @@
+name: Release
+
+# Builds, checks and publishes a SvoRay release from main. Run by hand (Actions > Release >
+# Run workflow), or by the core update bot once a core bump has passed every check.
+# The release is a normal, non-draft one with SvoRay-<version>-setup.exe and SHA256SUMS.txt, which
+# is exactly what the app's own updater looks for: running copies offer it within hours.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version without "v" (empty: the next patch after the latest release)'
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      version:
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Choose the version
+        id: version
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          $version = "$env:REQUESTED".Trim().TrimStart('v')
+          if (-not $version) {
+            $latest = (gh release view --json tagName --jq .tagName).TrimStart('v')
+            $v = [version]$latest
+            $version = "$($v.Major).$($v.Minor).$($v.Build + 1)"
+          }
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Not a release version: $version" }
+          gh release view "v$version" 2>$null
+          if ($LASTEXITCODE -eq 0) { throw "Release v$version already exists." }
+          $global:LASTEXITCODE = 0
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Releasing SvoRay $version from $(git rev-parse --short HEAD)"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup --no-progress -y
+          }
+
+      - name: Tests, publish and core checks
+        shell: powershell
+        run: .\build\Verify-Build.ps1 -Version ${{ steps.version.outputs.version }}
+
+      - name: Build the installer
+        shell: powershell
+        run: .\build\BuildInstaller.ps1 -SkipPublish -Version ${{ steps.version.outputs.version }}
+
+      - name: Release notes
+        shell: powershell
+        run: .\build\Get-ReleaseNotes.ps1 -Version ${{ steps.version.outputs.version }} -OutFile dist\release-notes.md
+
+      - name: Publish the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $files = @(
+            "dist\SvoRay-$env:VERSION-setup.exe",
+            'dist\SvoRay-setup.exe',
+            "dist\SvoRay-$env:VERSION-win-x64.zip",
+            "dist\SvoRay-$env:VERSION-source.zip",
+            'dist\SHA256SUMS.txt'
+          )
+          foreach ($file in $files) { if (-not (Test-Path $file)) { throw "Missing release file: $file" } }
+          gh release create "v$env:VERSION" @files --target (git rev-parse HEAD) --title "SvoRay $env:VERSION" --notes-file dist\release-notes.md --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed.' }

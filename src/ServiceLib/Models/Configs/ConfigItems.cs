@@ -349,6 +349,13 @@ public class SvoRayItem
     public bool TunDefaultMigrated { get; set; }
 
     /// <summary>
+    /// Set once the Hysteria2 bandwidth of a config written by an earlier build has been moved off
+    /// v2rayN's 100/100 Mbps default, which forced Brutal at that speed, to none (BBR).
+    /// A speed the user sets afterwards is kept.
+    /// </summary>
+    public bool HysteriaBbrMigrated { get; set; }
+
+    /// <summary>
     /// Folders the user added to game mode by hand, for games no launcher reports. Checked again
     /// at every connect, so a folder that was removed or turned into something too broad is skipped.
     /// </summary>
@@ -362,6 +369,14 @@ public class SvoRayItem
     /// the next check; null when the running build was the latest.
     /// </summary>
     public string? AvailableUpdateVersion { get; set; }
+
+    /// <summary>
+    /// The release an automatic check last offered in a window or a notification, and when, so
+    /// "Later" is not answered by the same question at the next check.
+    /// </summary>
+    public string? UpdateOfferedVersion { get; set; }
+
+    public long UpdateOfferedAt { get; set; }
 
     /// <summary>
     /// The adapter whose IPv4 forwarding SvoRay turned off for TUN and has to turn back on;

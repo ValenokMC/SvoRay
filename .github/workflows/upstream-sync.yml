@@ -1,0 +1,167 @@
+name: Upstream v2rayN sync
+
+# SvoRay is built on v2rayN. Once a week this looks for a newer stable v2rayN release and replays
+# its changes (old tag -> new tag, v2rayN/ mapped onto src/) on top of main, three-way:
+#   - everything applies: the result goes to branch bot/upstream-<version> with the v2rayN pin in
+#     build/cores.json moved along, the full gate and CI run on it, and an issue links the
+#     branch for a review and merge. It is not merged by itself: upstream changes the advanced
+#     interface and core handling SvoRay has reworked, and no test covers how that looks or feels.
+#   - some files conflict with SvoRay's own changes: an issue lists them, with the patch attached
+#     to the run, and nothing else happens.
+
+on:
+  schedule:
+    - cron: '41 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Replay upstream changes
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Compare with the latest v2rayN
+        id: check
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $pin = (Get-Content build/cores.json -Raw | ConvertFrom-Json).v2rayN
+          $release = gh api repos/2dust/v2rayN/releases/latest | ConvertFrom-Json
+          $latest = $release.tag_name.TrimStart('v')
+          $asset = $release.assets | Where-Object name -eq 'v2rayN-windows-64.zip' | Select-Object -First 1
+          if ($release.prerelease -or $latest -notmatch '^\d+\.\d+\.\d+$' -or [version]$latest -le [version]$pin.version -or
+              "$($asset.digest)" -notmatch '^sha256:([0-9a-f]{64})$') {
+            Write-Host "v2rayN $($pin.version) is current (latest stable: $latest)."
+            "newer=false" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          Write-Host "v2rayN $($pin.version) -> $latest"
+          "newer=true" >> $env:GITHUB_OUTPUT
+          "from=$($pin.version)" >> $env:GITHUB_OUTPUT
+          "to=$latest" >> $env:GITHUB_OUTPUT
+          "url=$($asset.browser_download_url)" >> $env:GITHUB_OUTPUT
+          "sha=$($Matches[1])" >> $env:GITHUB_OUTPUT
+
+      - name: Replay the upstream diff
+        id: apply
+        if: steps.check.outputs.newer == 'true'
+        shell: pwsh
+        env:
+          FROM: ${{ steps.check.outputs.from }}
+          TO: ${{ steps.check.outputs.to }}
+          URL: ${{ steps.check.outputs.url }}
+          SHA: ${{ steps.check.outputs.sha }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --depth 1 --no-tags https://github.com/2dust/v2rayN.git "refs/tags/${env:FROM}:refs/upstream/$env:FROM" "refs/tags/${env:TO}:refs/upstream/$env:TO"
+          git diff --binary "refs/upstream/$env:FROM" "refs/upstream/$env:TO" -- v2rayN/ > upstream.patch
+          git checkout -B "bot/upstream-$env:TO"
+          git apply -3 -p2 --directory=src upstream.patch 2>&1 | Tee-Object -FilePath apply.log
+          $conflicts = @(git diff --name-only --diff-filter=U)
+          $rejected = @(Select-String -Path apply.log -Pattern '^error: (.*)$' | ForEach-Object { $_.Matches[0].Groups[1].Value })
+          if ($conflicts.Count -gt 0 -or $rejected.Count -gt 0) {
+            "clean=false" >> $env:GITHUB_OUTPUT
+            $list = (@($conflicts | ForEach-Object { "- ``$_``" }) + @($rejected | ForEach-Object { "- $_" })) -join "`n"
+            "list<<EOF`n$list`nEOF" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          # The pinned bundle and the version shown in the README follow the code.
+          $manifest = Get-Content build/cores.json -Raw | ConvertFrom-Json
+          $manifest.v2rayN = [pscustomobject]@{ version = $env:TO; url = $env:URL; sha256 = $env:SHA }
+          [IO.File]::WriteAllText("$PWD/build/cores.json", ($manifest | ConvertTo-Json -Depth 5) + "`n", [Text.UTF8Encoding]::new($false))
+          foreach ($readme in 'README.md', 'README_RU.md') {
+            $text = [IO.File]::ReadAllText("$PWD/$readme")
+            # Only the version that follows a mention of v2rayN on the same line (text, badge, link).
+            $text = [regex]::Replace($text, '(?<=v2rayN[^\r\n]{0,80}?)' + [regex]::Escape($env:FROM), $env:TO)
+            [IO.File]::WriteAllText("$PWD/$readme", $text, [Text.UTF8Encoding]::new($false))
+          }
+          git add -A src build/cores.json README.md README_RU.md
+          git commit -m "Bring in upstream v2rayN $env:TO" -m "Replayed $env:FROM..$env:TO from 2dust/v2rayN by the upstream sync bot."
+          "clean=true" >> $env:GITHUB_OUTPUT
+
+      - name: Keep the patch
+        if: steps.check.outputs.newer == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: upstream-${{ steps.check.outputs.to }}
+          path: |
+            upstream.patch
+            apply.log
+
+      - name: Set up .NET 10
+        if: steps.apply.outputs.clean == 'true'
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Tests, publish and core checks
+        if: steps.apply.outputs.clean == 'true'
+        shell: powershell
+        run: .\build\Verify-Build.ps1 -Version 0.0.0
+
+      - name: Push the branch and run CI on it
+        if: steps.apply.outputs.clean == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TO: ${{ steps.check.outputs.to }}
+        run: |
+          git push --force origin "bot/upstream-$env:TO"
+          gh workflow run ci.yml --ref "bot/upstream-$env:TO"
+
+      - name: Open an issue
+        if: steps.check.outputs.newer == 'true' && (steps.apply.outputs.clean == 'true' || steps.apply.outputs.clean == 'false')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FROM: ${{ steps.check.outputs.from }}
+          TO: ${{ steps.check.outputs.to }}
+          CLEAN: ${{ steps.apply.outputs.clean }}
+          LIST: ${{ steps.apply.outputs.list }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          if ($env:CLEAN -eq 'true') {
+            $title = "v2rayN $env:TO is ready to merge"
+            $body = "Upstream v2rayN $env:FROM..$env:TO applied cleanly on main, and the tests, the release publish and every generated config through the pinned cores passed.`n`n" +
+              "Review and merge: $env:REPO/compare/main...bot/upstream-$env:TO`n`nOnce merged, run the Release workflow (or let the next core update do it). Log: $env:RUN"
+          } else {
+            $title = "v2rayN $env:TO needs a manual merge"
+            $body = "Upstream v2rayN $env:FROM..$env:TO touches files SvoRay changed too; these did not merge by themselves:`n`n$env:LIST`n`n" +
+              "Nothing was pushed. The patch (``upstream.patch``) is attached to the run: $env:RUN`n`n" +
+              "To redo it locally: ``git apply -3 -p2 --directory=src upstream.patch`` on a branch from main, then resolve the listed files."
+          }
+          if (-not (gh issue list --state open --search "in:title `"$title`"" --json number --jq '.[0].number')) {
+            gh issue create --title $title --body $body
+          }
+
+      - name: Report a failure
+        if: failure()
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TO: ${{ steps.check.outputs.to }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          $title = "Upstream sync bot: v2rayN $env:TO did not pass"
+          if (-not (gh issue list --state open --search "in:title `"$title`"" --json number --jq '.[0].number')) {
+            gh issue create --title $title --body "The upstream changes applied, but the build or the checks failed; nothing was pushed. Log: $env:RUN"
+          }

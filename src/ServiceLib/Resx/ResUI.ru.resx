@@ -2280,6 +2280,12 @@
   <data name="SvoRayUpdateTitle" xml:space="preserve">
     <value>Обновление SvoRay</value>
   </data>
+  <data name="SvoRayUpdateNotifyTitle" xml:space="preserve">
+    <value>Вышла SvoRay {0}</value>
+  </data>
+  <data name="SvoRayUpdateNotifyText" xml:space="preserve">
+    <value>Нажмите, чтобы установить обновление.</value>
+  </data>
   <data name="SvoRayUpdateQuestion" xml:space="preserve">
     <value>Установить SvoRay {0}? Сейчас установлена версия {1}.</value>
   </data>

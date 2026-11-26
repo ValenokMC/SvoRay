@@ -3,6 +3,32 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## Unreleased
+
+### Changed
+
+- **Hysteria2 uses BBR unless the link names a speed.** v2rayN's default of 100/100 Mbps switched
+  on Brutal at a fixed 100 Mbps for every Hysteria2 server whose link carries no bandwidth: a hard
+  ceiling on faster lines and heavy packet loss on slower ones. The default is now none, which is
+  BBR, as in the official Hysteria2 client and sing-box. A config left on the old 100/100 is moved
+  once; a speed typed in the settings is kept.
+- **Xray 26.11.9** (was 26.7.11) and **sing-box 1.14.4** (was 1.13.15), official releases pinned in
+  `build/cores.json` with their SHA-256. Xray brings the October root certificate fix and the newer
+  Chrome fingerprint by default.
+- **Updates are offered by themselves.** A running SvoRay looks for a new release every 6 hours,
+  not only once a day at start. When one is out, the install window opens; from the tray, a Windows
+  notification does, and a click on it brings the window. "Later" holds the same question back for
+  a day; the footer button stays.
+
+### Build
+
+- Every component is pinned in `build/cores.json`, downloaded and SHA-256 checked by the build.
+  `build/Verify-Build.ps1` runs the tests, a release publish, and every generated config through
+  the shipped cores.
+- Bots: `core-update.yml` releases a new Xray or sing-box by itself once it passes;
+  `upstream-sync.yml` replays new v2rayN releases and opens an issue to merge or resolve them;
+  `release.yml` builds and publishes from `main`.
+
 ## 0.6.4 — 24 November 2026
 
 Full notes: [docs/RELEASE_NOTES_0.6.4_RU.md](docs/RELEASE_NOTES_0.6.4_RU.md) (Russian).

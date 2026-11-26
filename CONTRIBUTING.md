@@ -24,12 +24,15 @@ dotnet restore .\src\ServiceLib.Tests\ServiceLib.Tests.csproj
 dotnet test .\src\ServiceLib.Tests\ServiceLib.Tests.csproj -c Release
 ```
 
-To build the installer, provide a local official v2rayN distribution containing the required core
-binaries:
+To build the installer (the components pinned in `build/cores.json` are downloaded and checked):
 
 ```powershell
-.\build\BuildInstaller.ps1 -CoreSource "C:\path\to\v2rayN-windows-64"
+.\build\BuildInstaller.ps1 -Version 0.6.5
 ```
+
+Before a release, run the gate the release workflow runs: `.\build\Verify-Build.ps1 -Version 0.6.5`.
+To bump a core by hand, change its version, URL and SHA-256 in `build/cores.json`; the core update
+bot does the same on its own.
 
 Do not commit anything from `dist`, local configuration, logs, databases, subscriptions, or
 assistant workspaces.

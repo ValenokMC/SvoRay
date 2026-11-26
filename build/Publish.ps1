@@ -1,5 +1,7 @@
 ﻿param(
-    [string]$CoreSource = "$env:LOCALAPPDATA\Programs\v2rayN\v2rayN-windows-64",
+    # An unpacked official v2rayN-windows-64 release. Empty: the one pinned in build\cores.json is
+    # downloaded and checked (what CI does). Xray and sing-box always come from cores.json.
+    [string]$CoreSource = '',
     [string]$Version = '0.6.4',
     [string]$Runtime = 'win-x64'
 )
@@ -56,9 +58,43 @@ New-Item -ItemType Directory -Path $distRoot -Force | Out-Null
 Reset-Directory $appDirectory
 $clientProject = Join-Path $projectRoot 'src\v2rayN\v2rayN.csproj'
 
-dotnet publish $clientProject -c Release -r $Runtime --self-contained true -o $appDirectory -p:Version=$Version -p:InformationalVersion="$Version+v2rayN.7.24.4"
+# Every core and helper SvoRay ships is pinned in build\cores.json: a version, the official
+# download and its SHA-256. A bump is a reviewed one-line change (by hand or by the core update
+# bot), and a build never ships whatever happens to sit on the machine.
+$coreManifest = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'cores.json') -Raw | ConvertFrom-Json
+$coreCache = Join-Path $distRoot '.cores'
+
+function Get-PinnedArchive {
+    param([string]$Name, $Pin)
+    New-Item -ItemType Directory -Path $coreCache -Force | Out-Null
+    $zip = Join-Path $coreCache "$Name-$($Pin.version).zip"
+    if (-not (Test-Path -LiteralPath $zip -PathType Leaf) -or
+        (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash -ne $Pin.sha256) {
+        $ProgressPreference = 'SilentlyContinue'
+        Invoke-WebRequest -Uri $Pin.url -OutFile $zip -UseBasicParsing
+    }
+    $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash
+    if ($hash -ne $Pin.sha256) {
+        Remove-Item -LiteralPath $zip -Force
+        throw "$Name $($Pin.version) archive does not match the pinned SHA-256 (got $hash)."
+    }
+    $stage = Join-Path $coreCache "$Name-$($Pin.version)"
+    Reset-Directory $stage
+    Expand-Archive -LiteralPath $zip -DestinationPath $stage -Force
+    # Archives that wrap everything in one top folder (v2rayN, sing-box) are unwrapped.
+    $entries = @(Get-ChildItem -LiteralPath $stage -Force)
+    if ($entries.Count -eq 1 -and $entries[0].PSIsContainer) {
+        return $entries[0].FullName
+    }
+    return $stage
+}
+
+dotnet publish $clientProject -c Release -r $Runtime --self-contained true -o $appDirectory -p:Version=$Version -p:InformationalVersion="$Version+v2rayN.$($coreManifest.v2rayN.version)"
 if ($LASTEXITCODE -ne 0) { throw 'SvoRay publish failed.' }
 
+if ([string]::IsNullOrWhiteSpace($CoreSource)) {
+    $CoreSource = Get-PinnedArchive 'v2rayN' $coreManifest.v2rayN
+}
 $coreRoot = [System.IO.Path]::GetFullPath($CoreSource)
 $binSource = Join-Path $coreRoot 'bin'
 if (-not (Test-Path -LiteralPath $binSource -PathType Container)) {
@@ -95,6 +131,26 @@ foreach ($directoryName in @('xray', 'sing_box', 'srss')) {
         throw "Required runtime component is missing: $source"
     }
     Copy-Item -LiteralPath $source -Destination $binDestination -Recurse -Force
+}
+
+# Xray and sing-box over the ones the v2rayN bundle carries, each checked by the version the
+# binary itself reports.
+$overlays = @(
+    @{ Name = 'xray'; Pin = $coreManifest.xray; Folder = 'xray'; Files = @('xray.exe', 'wintun.dll');
+       Exe = 'xray.exe'; VersionArgs = @('version'); Expect = "Xray $($coreManifest.xray.version) *" },
+    @{ Name = 'sing-box'; Pin = $coreManifest.singbox; Folder = 'sing_box'; Files = @('sing-box.exe', 'libcronet.dll');
+       Exe = 'sing-box.exe'; VersionArgs = @('version'); Expect = "sing-box version $($coreManifest.singbox.version)" }
+)
+foreach ($overlay in $overlays) {
+    $source = Get-PinnedArchive $overlay.Name $overlay.Pin
+    $destination = Join-Path $binDestination $overlay.Folder
+    foreach ($name in $overlay.Files) {
+        Copy-Item -LiteralPath (Join-Path $source $name) -Destination (Join-Path $destination $name) -Force
+    }
+    $reported = (& (Join-Path $destination $overlay.Exe) @($overlay.VersionArgs) | Select-Object -First 1)
+    if ($reported -notlike $overlay.Expect) {
+        throw "Bundled $($overlay.Exe) reports '$reported', expected $($overlay.Pin.version)."
+    }
 }
 
 foreach ($document in @('LICENSE', 'README.md', 'README_RU.md', 'THIRD_PARTY_NOTICES.md')) {
