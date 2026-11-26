@@ -3,11 +3,18 @@ name: Upstream v2rayN sync
 # SvoRay is built on v2rayN. Once a week this looks for a newer stable v2rayN release and replays
 # its changes (old tag -> new tag, v2rayN/ mapped onto src/) on top of main, three-way:
 #   - everything applies: the result goes to branch bot/upstream-<version> with the v2rayN pin in
-#     build/cores.json moved along, the full gate and CI run on it, and an issue links the
-#     branch for a review and merge. It is not merged by itself: upstream changes the advanced
-#     interface and core handling SvoRay has reworked, and no test covers how that looks or feels.
-#   - some files conflict with SvoRay's own changes: an issue lists them, with the patch attached
-#     to the run, and nothing else happens.
+#     build/cores.json moved along, the full gate and CI run on it, and an issue links the branch
+#     for a review and merge.
+#   - some files conflict with SvoRay's own changes, and the repository has a Claude subscription
+#     token (secret CLAUDE_CODE_OAUTH_TOKEN, from `claude setup-token`): Claude Code resolves the
+#     conflicts. It may only read and edit files; this workflow checks that no conflict marker is
+#     left, commits, runs the same gate and CI, and opens an issue with Claude's report.
+#   - conflicts without a token, or hunks that did not apply at all: an issue lists the files,
+#     with the patch attached to the run.
+# Nothing is merged into main by this workflow: upstream changes the advanced interface and core
+# handling SvoRay has reworked, and a person reviews that before it ships.
+# Triggers are the schedule and a manual run only. No issue, comment or pull request event can
+# start it, so nobody outside the repository decides when Claude runs.
 
 on:
   schedule:
@@ -23,11 +30,28 @@ concurrency:
   group: upstream-sync
   cancel-in-progress: false
 
+env:
+  # Pinned: a new Claude Code release does not change this bot until it is bumped here.
+  CLAUDE_CODE_VERSION: '2.1.326'
+  CLAUDE_MODEL: claude-opus-5-5
+
 jobs:
   sync:
     name: Replay upstream changes
     runs-on: windows-latest
     timeout-minutes: 90
+    env:
+      HAS_CLAUDE: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+    outputs:
+      newer: ${{ steps.check.outputs.newer }}
+      clean: ${{ steps.apply.outputs.clean }}
+      for_claude: ${{ steps.apply.outputs.for_claude }}
+      base: ${{ steps.apply.outputs.base }}
+      from: ${{ steps.check.outputs.from }}
+      to: ${{ steps.check.outputs.to }}
+      url: ${{ steps.check.outputs.url }}
+      sha: ${{ steps.check.outputs.sha }}
+      list: ${{ steps.apply.outputs.list }}
 
     steps:
       - name: Check out main
@@ -71,6 +95,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          "base=$(git rev-parse HEAD)" >> $env:GITHUB_OUTPUT
           git fetch --depth 1 --no-tags https://github.com/2dust/v2rayN.git "refs/tags/${env:FROM}:refs/upstream/$env:FROM" "refs/tags/${env:TO}:refs/upstream/$env:TO"
           git diff --binary "refs/upstream/$env:FROM" "refs/upstream/$env:TO" -- v2rayN/ > upstream.patch
           git checkout -B "bot/upstream-$env:TO"
@@ -79,29 +104,25 @@ jobs:
           $rejected = @(Select-String -Path apply.log -Pattern '^error: (.*)$' | ForEach-Object { $_.Matches[0].Groups[1].Value })
           if ($conflicts.Count -gt 0 -or $rejected.Count -gt 0) {
             "clean=false" >> $env:GITHUB_OUTPUT
+            # Claude gets conflicts only: a hunk that did not apply at all has no markers to
+            # resolve and needs a person.
+            $forClaude = $env:HAS_CLAUDE -eq 'true' -and $rejected.Count -eq 0
+            "for_claude=$($forClaude.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
             $list = (@($conflicts | ForEach-Object { "- ``$_``" }) + @($rejected | ForEach-Object { "- $_" })) -join "`n"
             "list<<EOF`n$list`nEOF" >> $env:GITHUB_OUTPUT
             exit 0
           }
-          # The pinned bundle and the version shown in the README follow the code.
-          $manifest = Get-Content build/cores.json -Raw | ConvertFrom-Json
-          $manifest.v2rayN = [pscustomobject]@{ version = $env:TO; url = $env:URL; sha256 = $env:SHA }
-          [IO.File]::WriteAllText("$PWD/build/cores.json", ($manifest | ConvertTo-Json -Depth 5) + "`n", [Text.UTF8Encoding]::new($false))
-          foreach ($readme in 'README.md', 'README_RU.md') {
-            $text = [IO.File]::ReadAllText("$PWD/$readme")
-            # Only the version that follows a mention of v2rayN on the same line (text, badge, link).
-            $text = [regex]::Replace($text, '(?<=v2rayN[^\r\n]{0,80}?)' + [regex]::Escape($env:FROM), $env:TO)
-            [IO.File]::WriteAllText("$PWD/$readme", $text, [Text.UTF8Encoding]::new($false))
-          }
+          ./build/Set-UpstreamPin.ps1 -From $env:FROM -To $env:TO -Url $env:URL -Sha256 $env:SHA
           git add -A src build/cores.json README.md README_RU.md
           git commit -m "Bring in upstream v2rayN $env:TO" -m "Replayed $env:FROM..$env:TO from 2dust/v2rayN by the upstream sync bot."
           "clean=true" >> $env:GITHUB_OUTPUT
+          "for_claude=false" >> $env:GITHUB_OUTPUT
 
       - name: Keep the patch
         if: steps.check.outputs.newer == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: upstream-${{ steps.check.outputs.to }}
+          name: upstream-patch
           path: |
             upstream.patch
             apply.log
@@ -128,7 +149,7 @@ jobs:
           gh workflow run ci.yml --ref "bot/upstream-$env:TO"
 
       - name: Open an issue
-        if: steps.check.outputs.newer == 'true' && (steps.apply.outputs.clean == 'true' || steps.apply.outputs.clean == 'false')
+        if: steps.check.outputs.newer == 'true' && (steps.apply.outputs.clean == 'true' || (steps.apply.outputs.clean == 'false' && steps.apply.outputs.for_claude != 'true'))
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -165,3 +186,206 @@ jobs:
           if (-not (gh issue list --state open --search "in:title `"$title`"" --json number --jq '.[0].number')) {
             gh issue create --title $title --body "The upstream changes applied, but the build or the checks failed; nothing was pushed. Log: $env:RUN"
           }
+
+  resolve:
+    name: Resolve conflicts with Claude
+    needs: sync
+    if: needs.sync.outputs.for_claude == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    outputs:
+      pushed: ${{ steps.commit.outputs.pushed }}
+
+    steps:
+      # No credentials in .git/config while Claude runs: only the push step below gets a token.
+      - name: Check out the same main
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.sync.outputs.base }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch the patch
+        uses: actions/download-artifact@v8
+        with:
+          name: upstream-patch
+          path: ${{ runner.temp }}/upstream
+
+      - name: Replay the upstream diff
+        env:
+          TO: ${{ needs.sync.outputs.to }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B "bot/upstream-$TO"
+          git apply -3 -p2 --directory=src "$RUNNER_TEMP/upstream/upstream.patch" || true
+          git diff --name-only --diff-filter=U > "$RUNNER_TEMP/conflicts.txt"
+          test -s "$RUNNER_TEMP/conflicts.txt" || { echo 'No conflicts to resolve here.'; exit 1; }
+          git status --porcelain | cut -c4- | sort > "$RUNNER_TEMP/before.txt"
+          echo "Conflicting files:"; cat "$RUNNER_TEMP/conflicts.txt"
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install Claude Code
+        run: npm install --global "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION"
+
+      - name: Resolve the conflicts
+        timeout-minutes: 60
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          FROM: ${{ needs.sync.outputs.from }}
+          TO: ${{ needs.sync.outputs.to }}
+        run: |
+          prompt="$(cat .github/prompts/upstream-merge.md)
+
+          Upstream: v2rayN $FROM -> $TO.
+          Files with conflicts:
+          $(cat "$RUNNER_TEMP/conflicts.txt")"
+          # Read and edit only: no shell beyond read-only git, no web, no push. The report goes
+          # to a file for the issue, not to the public log.
+          claude -p "$prompt" \
+            --model "$CLAUDE_MODEL" \
+            --max-turns 150 \
+            --permission-mode acceptEdits \
+            --allowedTools "Read,Edit,MultiEdit,Write,Glob,Grep,Bash(git diff *),Bash(git status *),Bash(git log *),Bash(git show *)" \
+            --disallowedTools "WebFetch,WebSearch" \
+            --output-format text > "$RUNNER_TEMP/resolution.md"
+          echo "Claude finished: $(wc -c < "$RUNNER_TEMP/resolution.md") bytes of report."
+
+      - name: Check what Claude left
+        run: |
+          left=0
+          while IFS= read -r file; do
+            if grep -nE '^(<<<<<<<|=======|>>>>>>>)( |$)' "$file"; then
+              echo "::error file=$file::conflict markers left"; left=1
+            fi
+          done < "$RUNNER_TEMP/conflicts.txt"
+          # Anything changed outside src/ that the upstream patch did not already touch.
+          git status --porcelain | cut -c4- | sort > "$RUNNER_TEMP/after.txt"
+          outside=$(comm -13 "$RUNNER_TEMP/before.txt" "$RUNNER_TEMP/after.txt" | grep -v '^src/' || true)
+          if [ -n "$outside" ]; then
+            echo "::error::changed outside src/: $outside"; left=1
+          fi
+          exit $left
+
+      - name: Commit and push the branch
+        id: commit
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FROM: ${{ needs.sync.outputs.from }}
+          TO: ${{ needs.sync.outputs.to }}
+          URL: ${{ needs.sync.outputs.url }}
+          SHA: ${{ needs.sync.outputs.sha }}
+        run: |
+          git add -A src
+          ./build/Set-UpstreamPin.ps1 -From $env:FROM -To $env:TO -Url $env:URL -Sha256 $env:SHA
+          git add build/cores.json README.md README_RU.md
+          git commit -m "Bring in upstream v2rayN $env:TO" -m "Replayed $env:FROM..$env:TO from 2dust/v2rayN; conflicts resolved by Claude Code in the upstream sync bot. Review before merging."
+          $auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$env:GH_TOKEN"))
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push --force origin "bot/upstream-$env:TO"
+          if ($LASTEXITCODE -ne 0) { throw 'Push failed.' }
+          "pushed=true" >> $env:GITHUB_OUTPUT
+
+      - name: Keep Claude's report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: claude-resolution
+          path: ${{ runner.temp }}/resolution.md
+          if-no-files-found: ignore
+
+  verify:
+    name: Check Claude's merge
+    needs: [sync, resolve]
+    if: needs.resolve.outputs.pushed == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out the bot branch
+        uses: actions/checkout@v7
+        with:
+          ref: bot/upstream-${{ needs.sync.outputs.to }}
+          fetch-depth: 0
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Tests, publish and core checks
+        shell: powershell
+        run: .\build\Verify-Build.ps1 -Version 0.0.0
+
+      - name: Run CI on the branch
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TO: ${{ needs.sync.outputs.to }}
+        run: gh workflow run ci.yml --ref "bot/upstream-$env:TO"
+
+      - name: Fetch Claude's report
+        if: always()
+        uses: actions/download-artifact@v8
+        with:
+          name: claude-resolution
+          path: ${{ runner.temp }}/claude
+
+      - name: Open an issue
+        if: always()
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FROM: ${{ needs.sync.outputs.from }}
+          TO: ${{ needs.sync.outputs.to }}
+          LIST: ${{ needs.sync.outputs.list }}
+          PASSED: ${{ job.status == 'success' }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          $reportPath = Join-Path $env:RUNNER_TEMP 'claude/resolution.md'
+          $report = if (Test-Path $reportPath) { Get-Content $reportPath -Raw } else { '(no report)' }
+          if ($report.Length -gt 40000) { $report = $report.Substring(0, 40000) + "`n…(cut; full report in the run's artifacts)" }
+          if ($env:PASSED -eq 'true') {
+            $title = "v2rayN $env:TO: Claude resolved the conflicts, review before merging"
+            $state = 'The tests, the release publish and every generated config through the pinned cores passed on the branch; CI was started on it.'
+          } else {
+            $title = "v2rayN $env:TO: Claude's merge did not pass the checks"
+            $state = 'The branch did not pass the tests or the release gate; see the log. It is kept for a look, not for merging.'
+          }
+          $body = "Upstream v2rayN $env:FROM..$env:TO conflicted in:`n`n$env:LIST`n`nClaude Code resolved them on ``bot/upstream-$env:TO``. $state`n`n" +
+            "Review and merge: $env:REPO/compare/main...bot/upstream-$env:TO`n`nLog: $env:RUN`n`n## Claude's report`n`n$report"
+          if (-not (gh issue list --state open --search "in:title `"$title`"" --json number --jq '.[0].number')) {
+            gh issue create --title $title --body $body
+          }
+
+  report:
+    name: Report a failed Claude run
+    needs: [sync, resolve]
+    if: failure() && needs.sync.outputs.for_claude == 'true' && needs.resolve.outputs.pushed != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open an issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TO: ${{ needs.sync.outputs.to }}
+          LIST: ${{ needs.sync.outputs.list }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="v2rayN $TO needs a manual merge"
+          if [ -z "$(gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number')" ]; then
+            gh issue create --title "$title" --body "Claude Code could not finish the conflicts of v2rayN $TO (markers left, files outside src/ touched, or the run failed). Nothing was pushed. Conflicting files:
+
+          $LIST
+
+          Patch and log: $RUN"
+          fi

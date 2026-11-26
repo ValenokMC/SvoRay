@@ -72,8 +72,9 @@ jobs:
         shell: pwsh
         env:
           SUMMARY: ${{ steps.pins.outputs.summary }}
+          VERSION: ${{ steps.next.outputs.version }}
         run: |
-          $branch = "bot/cores-${{ steps.next.outputs.version }}"
+          $branch = "bot/cores-$env:VERSION"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -B $branch
