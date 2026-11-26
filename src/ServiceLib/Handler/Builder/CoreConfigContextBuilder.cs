@@ -343,23 +343,23 @@ public class CoreConfigContextBuilder
 
         if (node.ConfigType == EConfigType.Outbound)
         {
-            var addressFileName = node.Address;
-            if (!File.Exists(addressFileName))
+            // SvoRay: only a file on a local drive; a share or device path is never opened.
+            var addressFileName = SvoRayPaths.ResolveCustomOutboundFile(node.Address);
+            if (addressFileName is null)
             {
-                addressFileName = Utils.GetConfigPath(addressFileName);
+                nodeValidatorResult.Errors.Add(string.Format(ResUI.MsgCustomOutboundFileNotFound, node.Remarks, node.Address));
             }
-            if (!File.Exists(addressFileName))
+            else
             {
-                nodeValidatorResult.Errors.Add(string.Format(ResUI.MsgCustomOutboundFileNotFound, node.Remarks, addressFileName));
-            }
-            try
-            {
-                var fileContent = await File.ReadAllTextAsync(addressFileName);
-                context.CustomOutboundContent[node.IndexId] = fileContent;
-            }
-            catch
-            {
-                nodeValidatorResult.Errors.Add(string.Format(ResUI.MsgCustomOutboundFileNotFound, node.Remarks, addressFileName));
+                try
+                {
+                    var fileContent = await File.ReadAllTextAsync(addressFileName);
+                    context.CustomOutboundContent[node.IndexId] = fileContent;
+                }
+                catch
+                {
+                    nodeValidatorResult.Errors.Add(string.Format(ResUI.MsgCustomOutboundFileNotFound, node.Remarks, addressFileName));
+                }
             }
         }
 

@@ -232,18 +232,13 @@ public class InnerFmt : BaseFmt
         }
         if (item.ConfigType is EConfigType.Outbound)
         {
-            var customOutboundFilePath = item.Address;
-            if (!File.Exists(customOutboundFilePath))
-            {
-                customOutboundFilePath = Utils.GetConfigPath(customOutboundFilePath);
-            }
-            if (!File.Exists(customOutboundFilePath))
+            // SvoRay: only a file on a local drive; a share or device path is never opened.
+            var customOutboundFilePath = SvoRayPaths.ResolveCustomOutboundFile(item.Address);
+            if (customOutboundFilePath is null)
             {
                 return null;
             }
-            if (!customOutboundFilePath.IsNullOrEmpty()
-                && File.Exists(customOutboundFilePath)
-                && File.ReadAllText(customOutboundFilePath) is { Length: > 0 } customOutboundContent
+            if (File.ReadAllText(customOutboundFilePath) is { Length: > 0 } customOutboundContent
                 && JsonUtils.ParseJson(customOutboundContent) is JsonObject customOutboundObj)
             {
                 jsonObj["CustomOutboundObj"] = customOutboundObj;

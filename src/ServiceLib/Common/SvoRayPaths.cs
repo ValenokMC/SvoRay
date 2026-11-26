@@ -47,4 +47,36 @@ public static class SvoRayPaths
             return false;
         }
     }
+
+    /// <summary>
+    /// The file a custom outbound (<see cref="EConfigType.Outbound"/>) names in its address: the
+    /// name as given (relative to the working folder), else under the config folder, as upstream
+    /// looks it up. Null unless that is an existing file on a local drive. The address can be
+    /// edited by hand or come back with a restored backup, so a share or device path is refused
+    /// before anything touches it - even File.Exists would open the share.
+    /// </summary>
+    public static string? ResolveCustomOutboundFile(string? address)
+    {
+        if (address.IsNullOrEmpty())
+        {
+            return null;
+        }
+        foreach (var candidate in new[] { address!, Utils.GetConfigPath(address!) })
+        {
+            string fullPath;
+            try
+            {
+                fullPath = Path.GetFullPath(candidate);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                continue;
+            }
+            if (IsLocalPath(fullPath) && File.Exists(fullPath))
+            {
+                return fullPath;
+            }
+        }
+        return null;
+    }
 }
