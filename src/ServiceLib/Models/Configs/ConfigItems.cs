@@ -356,6 +356,19 @@ public class SvoRayItem
     public bool HysteriaBbrMigrated { get; set; }
 
     /// <summary>
+    /// Set once the subscriptions of a config written by an earlier build, all at v2rayN's
+    /// "never", have been moved to a refresh every few hours. See <see cref="SvoRayAutoUpdate"/>.
+    /// An interval the user sets afterwards, 0 included, is kept.
+    /// </summary>
+    public bool SubscriptionAutoUpdateMigrated { get; set; }
+
+    /// <summary>
+    /// Unix time of the last update of v2rayN's geo files by the scheduler, for its interval
+    /// in the advanced settings; 0 when it never ran.
+    /// </summary>
+    public long LastGeoUpdate { get; set; }
+
+    /// <summary>
     /// Folders the user added to game mode by hand, for games no launcher reports. Checked again
     /// at every connect, so a folder that was removed or turned into something too broad is skipped.
     /// </summary>

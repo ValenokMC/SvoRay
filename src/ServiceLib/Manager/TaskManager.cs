@@ -62,7 +62,7 @@ public class TaskManager
 
                 try
                 {
-                    await UpdateTaskRunGeo(numOfExecuted / 60);
+                    await UpdateTaskRunGeo();
                 }
                 catch (Exception ex)
                 {
@@ -90,8 +90,7 @@ public class TaskManager
     {
         var updateTime = ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds();
         var lstSubs = (await AppManager.Instance.SubItems())?
-            .Where(t => t.AutoUpdateInterval > 0)
-            .Where(t => updateTime - t.UpdateTime >= t.AutoUpdateInterval * 60)
+            .Where(t => SvoRayAutoUpdate.IsSubscriptionDue(t, updateTime))
             .ToList();
 
         if (lstSubs is not { Count: > 0 })
@@ -103,7 +102,9 @@ public class TaskManager
 
         foreach (var item in lstSubs)
         {
-            await SubscriptionHandler.UpdateProcess(_config, item.Id, true, async (success, msg) =>
+            // The handler reloads the core only when the refreshed list or rules changed its
+            // config: this runs every few hours while the user is in a call or a game.
+            var updated = await SubscriptionHandler.UpdateProcess(_config, item.Id, true, async (success, msg) =>
             {
                 await _updateFunc?.Invoke(success, msg);
                 if (success)
@@ -111,15 +112,22 @@ public class TaskManager
                     Logging.SaveLog($"Update subscription end. {msg}");
                 }
             });
-            item.UpdateTime = updateTime;
+            if (!updated)
+            {
+                Logging.SaveLog($"Update subscription failed, retrying in {SvoRayAutoUpdate.FailedRetryMinutes} min");
+            }
+            item.UpdateTime = SvoRayAutoUpdate.UpdateTimeAfterAttempt(item, updateTime, updated);
             await ConfigHandler.AddSubItem(_config, item);
             await Task.Delay(1000);
         }
     }
 
-    private async Task UpdateTaskRunGeo(int hours)
+    private async Task UpdateTaskRunGeo()
     {
-        if (_config.GuiItem.AutoUpdateInterval > 0 && hours > 0 && hours % _config.GuiItem.AutoUpdateInterval == 0)
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        // No reload follows (the handler is told "not a success"): a running core keeps the
+        // files it loaded, and the new ones are used from the next connect.
+        if (SvoRayAutoUpdate.IsGeoUpdateDue(_config.GuiItem.AutoUpdateInterval, _config.SvoRayItem.LastGeoUpdate, now))
         {
             Logging.SaveLog("Execute update geo files");
 
@@ -127,6 +135,13 @@ public class TaskManager
             {
                 await _updateFunc?.Invoke(false, msg);
             }).UpdateGeoFileAll();
+            // UpdateGeoFileAll reports a file that failed only as a message, and an exception
+            // skips this line: a run that got this far counts, and the next is an interval away.
+            _config.SvoRayItem.LastGeoUpdate = now;
+            await ConfigHandler.SaveConfig(_config);
+            // The simple profile names only categories the files had; rebuilt so a category that
+            // is gone does not stop the core at its next start. No reload: see above.
+            await SvoRayRoutingHandler.RefreshIfActiveAsync(_config);
         }
     }
 

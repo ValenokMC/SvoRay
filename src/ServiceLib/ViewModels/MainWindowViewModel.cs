@@ -345,6 +345,7 @@ public class MainWindowViewModel : MyReactiveObject
         await ProfileExManager.Instance.Init();
         await CoreManager.Instance.Init(_config, UpdateHandler);
         await CertPemManager.Instance.Init(_config);
+        await ConfigHandler.MigrateSvoRaySubscriptions(_config);
         TaskManager.Instance.RegUpdateTask(_config, UpdateTaskHandler);
 
         if (_config.GuiItem.EnableStatistics || _config.GuiItem.DisplayRealTimeSpeed)
@@ -375,23 +376,15 @@ public class MainWindowViewModel : MyReactiveObject
         NoticeManager.Instance.SendMessageEx(msg);
         if (success)
         {
-            var indexIdOld = _config.IndexId;
             await RefreshServersDispatcherAsync();
 
-            // If indexId changed or subIndexId is empty, directly reload.
-            if (indexIdOld != _config.IndexId || _config.SubIndexId.IsNullOrEmpty())
-            {
-                await Reload();
-            }
-            else
-            {
-                // The activity config belongs to the current group.
-                var profile = await AppManager.Instance.GetProfileItem(_config.IndexId);
-                if (profile != null && profile.Subid == _config.SubIndexId)
-                {
-                    await Reload();
-                }
-            }
+            // The subscription may have brought other rules with it (or a selected server from
+            // another provider): the simple profile is rebuilt before the config is compared.
+            await SvoRayRoutingHandler.RefreshIfActiveAsync(_config);
+            // A refresh runs every few hours by itself. The same list and rules again must not
+            // restart the core and drop every call and game; a changed server set, selected
+            // server or routing still reloads.
+            await ReloadIfChanged();
 
             if (_config.UiItem.EnableAutoAdjustMainLvColWidth)
             {
@@ -693,11 +686,14 @@ public class MainWindowViewModel : MyReactiveObject
         return true;
     }
 
-    public async Task RefreshSimpleUiAsync()
+    public Task RefreshSimpleUiAsync() => RefreshSimpleUiAsync(keepCoreIfUnchanged: false);
+
+    /// <param name="keepCoreIfUnchanged">True after a subscription refresh: the core restarts only when its config changed.</param>
+    public async Task RefreshSimpleUiAsync(bool keepCoreIfUnchanged)
     {
         await RefreshSubscriptions();
         await RefreshServersDispatcherAsync();
-        await Reload();
+        await Reload(keepCoreIfUnchanged);
     }
 
     private async Task SubSettingAsync()
@@ -797,14 +793,27 @@ public class MainWindowViewModel : MyReactiveObject
     #region core job
 
     private bool _hasNextReloadJob = false;
+
+    /// <summary>Whether a queued reload was asked for as a full one, not only "if changed".</summary>
+    private bool _nextReloadForced = false;
     private readonly SemaphoreSlim _reloadSemaphore = new(1, 1);
 
-    public async Task Reload()
+    public Task Reload() => Reload(keepIfUnchanged: false);
+
+    /// <summary>
+    /// A reload nobody asked for by hand, after a subscription refresh: the running core is left
+    /// alone when the config it would get is the one it runs, so calls and games are not dropped
+    /// every few hours for nothing. A changed server list, server or routing still reloads.
+    /// </summary>
+    public Task ReloadIfChanged() => Reload(keepIfUnchanged: true);
+
+    private async Task Reload(bool keepIfUnchanged)
     {
         //If there are unfinished reload job, marked with next job.
         if (!await _reloadSemaphore.WaitAsync(0))
         {
             _hasNextReloadJob = true;
+            _nextReloadForced |= !keepIfUnchanged;
             return;
         }
 
@@ -848,16 +857,25 @@ public class MainWindowViewModel : MyReactiveObject
                 allResult.PreSocksResult?.Context);
             SwitchTiming.Mark("config context built");
 
+            var kept = false;
             await Task.Run(async () =>
             {
                 // LoadCore returns once the new core answers on its proxy port (or the running
                 // core has switched server), so no fixed settling delay is needed here.
-                await LoadCore(mainContext, allResult.PreSocksResult?.Context);
+                kept = await CoreManager.Instance.LoadCore(mainContext, allResult.PreSocksResult?.Context, keepIfUnchanged);
+                if (kept)
+                {
+                    return;
+                }
                 _ = SwitchTiming.ProbeFirstTrafficAsync(AppManager.Instance.GetLocalPort(EInboundProtocol.socks),
                     _config.SpeedTestItem.SpeedPingTestUrl);
                 await SysProxyHandler.UpdateSysProxy(_config, false);
                 SwitchTiming.Mark("system proxy updated");
             });
+            if (kept)
+            {
+                return;
+            }
             RxSchedulers.MainThreadScheduler.Schedule(async () =>
             {
                 await StatusBarViewModel.TestServerAvailability();
@@ -888,8 +906,10 @@ public class MainWindowViewModel : MyReactiveObject
             //If there is a next reload job, execute it.
             if (_hasNextReloadJob)
             {
+                var forced = _nextReloadForced;
                 _hasNextReloadJob = false;
-                await Reload();
+                _nextReloadForced = false;
+                await Reload(keepIfUnchanged: !forced);
             }
         }
     }
@@ -974,11 +994,6 @@ public class MainWindowViewModel : MyReactiveObject
     private void SetReloadEnabled(bool enabled)
     {
         RxSchedulers.MainThreadScheduler.Schedule(() => BlReloadEnabled = enabled);
-    }
-
-    private async Task LoadCore(CoreConfigContext? mainContext, CoreConfigContext? preContext)
-    {
-        await CoreManager.Instance.LoadCore(mainContext, preContext);
     }
 
     #endregion core job
