@@ -13,11 +13,16 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $distRoot = Join-Path $projectRoot 'dist'
 $fixtures = Join-Path $distRoot '.fixtures'
+$testBin = Join-Path $projectRoot 'src\ServiceLib.Tests\bin\Release'
 
+# The tests write the configs to core-fixtures next to their assembly (CoreFixtureConfigTests).
+# Old ones go first, so a protocol that was dropped cannot pass with a stale file.
+foreach ($stale in @(Get-ChildItem -LiteralPath $testBin -Directory -Filter 'core-fixtures' -Recurse -ErrorAction SilentlyContinue)) {
+    Remove-Item -LiteralPath $stale.FullName -Recurse -Force
+}
 if (Test-Path -LiteralPath $fixtures) { Remove-Item -LiteralPath $fixtures -Recurse -Force }
-New-Item -ItemType Directory -Path $fixtures -Force | Out-Null
 
-$env:SVORAY_CORE_FIXTURES = $fixtures
+$env:SVORAY_CORE_FIXTURES = '1'
 # dotnet writes progress to stderr, which Windows PowerShell would turn into a terminating error
 # under 'Stop': the exit code decides instead.
 $ErrorActionPreference = 'Continue'
@@ -29,6 +34,12 @@ finally {
     Remove-Item Env:SVORAY_CORE_FIXTURES -ErrorAction SilentlyContinue
     $ErrorActionPreference = 'Stop'
 }
+
+$written = @(Get-ChildItem -LiteralPath $testBin -Directory -Filter 'core-fixtures' -Recurse)
+if ($written.Count -ne 1) {
+    throw "Expected one core-fixtures folder under $testBin, found $($written.Count)."
+}
+Copy-Item -LiteralPath $written[0].FullName -Destination $fixtures -Recurse
 
 & (Join-Path $PSScriptRoot 'Publish.ps1') -Version $Version -Runtime $Runtime | Out-Null
 

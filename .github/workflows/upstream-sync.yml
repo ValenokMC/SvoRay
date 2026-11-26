@@ -89,7 +89,9 @@ jobs:
           [IO.File]::WriteAllText("$PWD/build/cores.json", ($manifest | ConvertTo-Json -Depth 5) + "`n", [Text.UTF8Encoding]::new($false))
           foreach ($readme in 'README.md', 'README_RU.md') {
             $text = [IO.File]::ReadAllText("$PWD/$readme")
-            [IO.File]::WriteAllText("$PWD/$readme", $text.Replace("v2rayN $env:FROM", "v2rayN $env:TO").Replace("v2rayN_$env:FROM", "v2rayN_$env:TO"), [Text.UTF8Encoding]::new($false))
+            # Only the version that follows a mention of v2rayN on the same line (text, badge, link).
+            $text = [regex]::Replace($text, '(?<=v2rayN[^\r\n]{0,80}?)' + [regex]::Escape($env:FROM), $env:TO)
+            [IO.File]::WriteAllText("$PWD/$readme", $text, [Text.UTF8Encoding]::new($false))
           }
           git add -A src build/cores.json README.md README_RU.md
           git commit -m "Bring in upstream v2rayN $env:TO" -m "Replayed $env:FROM..$env:TO from 2dust/v2rayN by the upstream sync bot."

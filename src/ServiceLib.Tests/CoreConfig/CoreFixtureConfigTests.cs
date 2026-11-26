@@ -10,7 +10,8 @@ namespace ServiceLib.Tests.CoreConfig;
 
 /// <summary>
 /// The configs SvoRay generates for every protocol it ships, with TUN off and on. Each one must
-/// generate here; when SVORAY_CORE_FIXTURES names a folder, they are also written there so the
+/// generate here; with SVORAY_CORE_FIXTURES=1 they are also written to core-fixtures next to the
+/// test assembly (Verify-Build.ps1 picks them up from there) so the
 /// core update bot can run them through a new xray.exe / sing-box.exe ("xray run -test",
 /// "sing-box check") before a release is made with it. See .github/workflows/core-update.yml.
 /// All addresses and keys are made up.
@@ -21,6 +22,9 @@ namespace ServiceLib.Tests.CoreConfig;
 public class CoreFixtureConfigTests
 {
     public const string FixturesVariable = "SVORAY_CORE_FIXTURES";
+
+    /// <summary>Folder next to the test assembly the configs go to when the variable is "1".</summary>
+    public const string FixturesFolder = "core-fixtures";
 
     private const string Uuid = "11111111-2222-3333-4444-555555555555";
     private const string RealityKey = "iAhl0UhVWHvBUuVGyTPbsvaSuzN9cgqFKSyP8hfuZ2k";
@@ -90,13 +94,15 @@ public class CoreFixtureConfigTests
 
     private static void Write(string fileName, string content)
     {
-        var folder = Environment.GetEnvironmentVariable(FixturesVariable);
-        if (folder.IsNullOrEmpty())
+        // The variable only switches writing on; the folder is fixed next to the test assembly,
+        // so no outside value decides where files are written.
+        if (Environment.GetEnvironmentVariable(FixturesVariable) != "1")
         {
             return;
         }
-        Directory.CreateDirectory(folder!);
-        File.WriteAllText(Path.Combine(folder!, fileName), content);
+        var folder = Path.Combine(AppContext.BaseDirectory, FixturesFolder);
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, fileName), content);
     }
 }
 

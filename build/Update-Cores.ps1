@@ -27,7 +27,8 @@ function Get-LatestPin {
     if ($release.draft -or $release.prerelease) { return $null }
     $version = $release.tag_name.TrimStart('v')
     if ($version -notmatch '^\d+\.\d+\.\d+$') { return $null }
-    $age = [DateTimeOffset]::UtcNow - [DateTimeOffset]::Parse($release.published_at)
+    # pwsh turns ISO dates in JSON into DateTime, Windows PowerShell keeps the string: a cast takes both.
+    $age = [DateTimeOffset]::UtcNow - [DateTimeOffset]$release.published_at
     if ($age.TotalHours -lt $MinAgeHours) {
         Write-Host "$Repo $version is $([int]$age.TotalHours)h old; waiting for $MinAgeHours h."
         return $null

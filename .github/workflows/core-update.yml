@@ -139,3 +139,21 @@ jobs:
       version: ${{ needs.bump.outputs.version }}
     permissions:
       contents: write
+
+  report:
+    name: Report a failed release
+    needs: [bump, release]
+    if: failure() && needs.bump.outputs.landed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open an issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.bump.outputs.version }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue create --title "Core update bot: release $VERSION failed" \
+            --body "The new cores passed and are on main, but the release did not go out. Re-run the Release workflow (version $VERSION) after looking at the log: $RUN"

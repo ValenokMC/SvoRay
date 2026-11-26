@@ -1,7 +1,7 @@
 ﻿param(
     # Folder holding xray\xray.exe, sing_box\sing-box.exe and the geodata (a publish "bin" folder).
     [Parameter(Mandatory)][string]$BinDir,
-    # Folder of configs written by CoreFixtureConfigTests (SVORAY_CORE_FIXTURES).
+    # Folder of configs written by CoreFixtureConfigTests (Verify-Build.ps1 collects them).
     [Parameter(Mandatory)][string]$Fixtures
 )
 
@@ -18,7 +18,7 @@ foreach ($exe in @($xray, $singbox)) {
 }
 $files = Get-ChildItem -LiteralPath $Fixtures -Filter '*.json' -File
 if (-not ($files | Where-Object Name -like 'xray-*') -or -not ($files | Where-Object Name -like 'singbox-*')) {
-    throw "No generated configs in $Fixtures. Run the tests with SVORAY_CORE_FIXTURES set first."
+    throw "No generated configs in $Fixtures. Run build\Verify-Build.ps1, which writes them first."
 }
 
 $env:XRAY_LOCATION_ASSET = $BinDir
