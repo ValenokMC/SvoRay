@@ -49,6 +49,12 @@ public partial class MainWindow
 
     private bool _appUpdateBusy;
 
+    /// <summary>Rechecks for a SvoRay release while the app keeps running.</summary>
+    private DispatcherTimer? _appUpdateTimer;
+
+    /// <summary>An automatic check found a release the user has not been asked about yet.</summary>
+    private bool _appUpdateOfferPending;
+
     /// <summary>Re-checks forwarding on the physical adapter while TUN is connected.</summary>
     private DispatcherTimer? _forwardingTimer;
 
@@ -1315,19 +1321,93 @@ public partial class MainWindow
         SvoRayAppUpdate.Normalize(typeof(MainWindow).Assembly.GetName().Version ?? new Version(0, 0, 0));
 
     /// <summary>
-    /// Once a day at most, a few seconds after start so it never competes with connecting.
-    /// Failures stay in the log: an unreachable GitHub is no reason to bother anyone.
+    /// A few seconds after start, so it never competes with connecting, and then every hour the
+    /// app keeps running: whenever <see cref="SvoRayAppUpdate.CheckInterval"/> has passed since the
+    /// last look, GitHub is asked again. A newer release is then offered by itself (see
+    /// <see cref="OfferAppUpdate"/>). Failures stay in the log: an unreachable GitHub is no
+    /// reason to bother anyone.
     /// </summary>
     private async Task CheckAppUpdateOnStartupAsync()
     {
+        await Task.Delay(TimeSpan.FromSeconds(8));
+        await CheckAppUpdateIfDueAsync();
+
+        _appUpdateTimer ??= new DispatcherTimer { Interval = TimeSpan.FromHours(1) };
+        _appUpdateTimer.Tick += async (_, _) => await CheckAppUpdateIfDueAsync();
+        _appUpdateTimer.Start();
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible && _appUpdateOfferPending)
+            {
+                // Shown after the window has finished appearing, so the dialog has an owner on screen.
+                Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, ShowPendingAppUpdateOffer);
+            }
+        };
+        tbNotify.TrayBalloonTipClicked += (_, _) => ShowHideWindow(true);
+    }
+
+    private async Task CheckAppUpdateIfDueAsync()
+    {
         var last = DateTimeOffset.FromUnixTimeSeconds(Math.Max(0, _config.SvoRayItem.LastUpdateCheck));
-        if (DateTimeOffset.UtcNow - last < SvoRayAppUpdate.CheckInterval)
+        if (DateTimeOffset.UtcNow - last >= SvoRayAppUpdate.CheckInterval
+            && await CheckAppUpdateAsync(manual: false))
+        {
+            OfferAppUpdate();
+        }
+    }
+
+    /// <summary>
+    /// Puts a newer release found by an automatic check in front of the user once: the install
+    /// window when SvoRay is on screen, a Windows notification when it sits in the tray (a click
+    /// opens SvoRay, and the window follows). "Later" keeps the footer button and holds the same
+    /// question back for <see cref="SvoRayAppUpdate.OfferSnooze"/>.
+    /// </summary>
+    private void OfferAppUpdate()
+    {
+        if (_availableRelease is not { } release
+            || !SvoRayAppUpdate.ShouldOffer(release.Version, _config.SvoRayItem.UpdateOfferedVersion,
+                _config.SvoRayItem.UpdateOfferedAt, DateTimeOffset.UtcNow))
         {
             return;
         }
 
-        await Task.Delay(TimeSpan.FromSeconds(8));
-        await CheckAppUpdateAsync(manual: false);
+        _appUpdateOfferPending = true;
+        if (IsVisible && WindowState != WindowState.Minimized)
+        {
+            ShowPendingAppUpdateOffer();
+            return;
+        }
+
+        try
+        {
+            tbNotify.ShowNotification(
+                string.Format(ResUI.SvoRayUpdateNotifyTitle, release.Version.ToString(3)),
+                ResUI.SvoRayUpdateNotifyText);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog($"SvoRay update notification failed: {ex.GetType().Name}");
+        }
+    }
+
+    private async void ShowPendingAppUpdateOffer()
+    {
+        if (!_appUpdateOfferPending || _appUpdateBusy || _availableRelease is not { } release
+            || OwnedWindows.OfType<SvoRayUpdateWindow>().Any())
+        {
+            return;
+        }
+
+        _appUpdateOfferPending = false;
+        _config.SvoRayItem.UpdateOfferedVersion = release.Version.ToString(3);
+        _config.SvoRayItem.UpdateOfferedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        await ConfigHandler.SaveConfig(_config);
+
+        var dialog = new SvoRayUpdateWindow(release, CurrentVersion) { Owner = this };
+        if (dialog.ShowDialog() == true)
+        {
+            await InstallAppUpdateAsync(release);
+        }
     }
 
     /// <summary>Asks GitHub for the latest release and updates the footer button.</summary>

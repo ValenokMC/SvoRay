@@ -170,10 +170,13 @@ public static class ConfigHandler
             MaxConnections = 8
         };
 
+        // No bandwidth means BBR, as in the official Hysteria2 client and sing-box. v2rayN's
+        // 100/100 turned on Brutal at a fixed 100 Mbps for every server whose link names no speed:
+        // a ceiling on faster lines and a flood of lost packets on slower ones.
         config.HysteriaItem ??= new()
         {
-            UpMbps = 100,
-            DownMbps = 100
+            UpMbps = 0,
+            DownMbps = 0
         };
         config.ClashUIItem ??= new();
         config.ClashUIItem.ConnectionsColumnItem ??= [];
@@ -231,6 +234,16 @@ public static class ConfigHandler
         {
             config.SvoRayItem.Mode = ESvoRayMode.Tun;
             config.SvoRayItem.TunDefaultMigrated = true;
+        }
+        if (!config.SvoRayItem.HysteriaBbrMigrated)
+        {
+            // Only v2rayN's untouched default is cleared; any other speed was typed by the user.
+            if (config.HysteriaItem is { UpMbps: 100, DownMbps: 100 })
+            {
+                config.HysteriaItem.UpMbps = 0;
+                config.HysteriaItem.DownMbps = 0;
+            }
+            config.SvoRayItem.HysteriaBbrMigrated = true;
         }
     }
 

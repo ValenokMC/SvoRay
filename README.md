@@ -135,7 +135,15 @@ Requires the .NET 10 SDK and Inno Setup 6 (`winget install --id JRSoftware.InnoS
 
 The script publishes a self-contained build, adds the v2rayN/Xray/sing-box/geodata components, and produces the installer, a portable ZIP, a source ZIP and `SHA256SUMS.txt` in `dist`.
 
-Core binaries (`xray.exe`, `sing-box.exe`, `wintun.dll`) are copied from a local official v2rayN installation; the path is the `-CoreSource` parameter.
+Every component is pinned in [`build/cores.json`](build/cores.json): the official v2rayN bundle (geodata, rule sets, helpers), Xray and sing-box, each with its download and SHA-256. The build downloads them, checks the hashes and the versions the binaries report, and caches them in `dist\.cores`. `-CoreSource` still takes an unpacked v2rayN release instead of the pinned bundle.
+
+`.\build\Verify-Build.ps1 -Version <x.y.z>` is the gate every release goes through: all tests, a release publish, and every config SvoRay generates for each protocol run through the cores that publish ships (`xray run -test`, `sing-box check`).
+
+### Automatic updates
+
+- **Core update** (`.github/workflows/core-update.yml`, every 6 hours): a stable Xray or sing-box release that has stood for 48 hours is pinned, checked by the gate and CI on a bot branch, landed on `main` and released as the next patch version. Running copies of SvoRay check for releases every 6 hours and offer the update in a window (or a Windows notification from the tray). A core that fails opens an issue and ships nowhere.
+- **Upstream v2rayN** (`.github/workflows/upstream-sync.yml`, weekly): the changes of a new v2rayN release are replayed onto `src/`. A clean result is checked and pushed to `bot/upstream-<version>` with an issue to review and merge it; files that conflict with SvoRay's own changes are listed in an issue.
+- **Release** (`.github/workflows/release.yml`): builds, checks and publishes a release from `main`; run it by hand for a release with your own changes.
 
 ## Status
 

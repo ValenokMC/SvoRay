@@ -1,0 +1,17 @@
+{
+  "v2rayN": {
+    "version": "7.24.4",
+    "url": "https://github.com/2dust/v2rayN/releases/download/7.24.4/v2rayN-windows-64.zip",
+    "sha256": "20fc30526fe5a0164ae7b9a1f8b807bf724e87759ad0fb642bd008276a4239e7"
+  },
+  "xray": {
+    "version": "26.11.9",
+    "url": "https://github.com/XTLS/Xray-core/releases/download/v26.11.9/Xray-windows-64.zip",
+    "sha256": "1262522266337b824f07beb8e1375786b437683b3890105469088f8e17e0a69d"
+  },
+  "singbox": {
+    "version": "1.14.4",
+    "url": "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/sing-box-1.14.4-windows-amd64.zip",
+    "sha256": "99185d75d314a07dbba4a130c8ad986cbeb629a07927975636b341ca61f991df"
+  }
+}

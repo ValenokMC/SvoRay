@@ -10,6 +10,24 @@ namespace ServiceLib.Tests.Common;
 
 public class SvoRayAppUpdateTests
 {
+    private static readonly DateTimeOffset Now = new(2026, 11, 26, 12, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public void ShouldOffer_ShouldAskAboutAVersionNotOfferedBefore()
+    {
+        SvoRayAppUpdate.ShouldOffer(new Version(0, 6, 5), null, 0, Now).Should().BeTrue();
+        SvoRayAppUpdate.ShouldOffer(new Version(0, 6, 6), "0.6.5", Now.ToUnixTimeSeconds(), Now).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ShouldOffer_ShouldHoldBackAVersionPutOffWithLaterForADay()
+    {
+        var offeredAt = Now.AddHours(-6).ToUnixTimeSeconds();
+
+        SvoRayAppUpdate.ShouldOffer(new Version(0, 6, 5), "0.6.5", offeredAt, Now).Should().BeFalse();
+        SvoRayAppUpdate.ShouldOffer(new Version(0, 6, 5), "0.6.5", offeredAt, Now.AddHours(19)).Should().BeTrue();
+    }
+
     private static readonly Version Current = new(0, 5, 0, 0);
 
     /// <summary>The shape of a real <c>/releases/latest</c> answer (v0.4.0), trimmed to what is read.</summary>

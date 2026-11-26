@@ -6192,6 +6192,18 @@ namespace ServiceLib.Resx {
             }
         }
 
+        public static string SvoRayUpdateNotifyTitle {
+            get {
+                return ResourceManager.GetString("SvoRayUpdateNotifyTitle", resourceCulture);
+            }
+        }
+
+        public static string SvoRayUpdateNotifyText {
+            get {
+                return ResourceManager.GetString("SvoRayUpdateNotifyText", resourceCulture);
+            }
+        }
+
         public static string SvoRayUpdateQuestion {
             get {
                 return ResourceManager.GetString("SvoRayUpdateQuestion", resourceCulture);

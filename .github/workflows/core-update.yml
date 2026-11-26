@@ -1,0 +1,141 @@
+name: Core update
+
+# Keeps Xray and sing-box current without anyone pressing a button:
+#   1. every six hours, look for a stable Xray / sing-box release older than 48 hours;
+#   2. pin it in build/cores.json on a bot branch, with a CHANGELOG entry for the next version;
+#   3. on that branch: the full gate (all tests, release publish, every generated config through
+#      the new cores) and the regular CI, which main's protection requires;
+#   4. green: move main to that commit and run the Release workflow, so running copies of SvoRay
+#      offer the update. Red: nothing reaches main, and an issue says what failed.
+# No pull request is needed: main accepts a commit whose required checks passed.
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
+concurrency:
+  group: core-update
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Pin, check and land new cores
+    runs-on: windows-latest
+    timeout-minutes: 90
+    outputs:
+      landed: ${{ steps.land.outputs.landed }}
+      version: ${{ steps.next.outputs.version }}
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Next SvoRay version
+        id: next
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = [version]((gh release view --json tagName --jq .tagName).TrimStart('v'))
+          "version=$($v.Major).$($v.Minor).$($v.Build + 1)" >> $env:GITHUB_OUTPUT
+
+      - name: Look for newer cores
+        id: pins
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./build/Update-Cores.ps1 -ReleaseVersion ${{ steps.next.outputs.version }}
+
+      - name: Set up .NET 10
+        if: steps.pins.outputs.changed == 'true'
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Tests, publish and core checks
+        if: steps.pins.outputs.changed == 'true'
+        shell: powershell
+        run: .\build\Verify-Build.ps1 -Version ${{ steps.next.outputs.version }}
+
+      - name: Commit to a bot branch
+        id: branch
+        if: steps.pins.outputs.changed == 'true'
+        shell: pwsh
+        env:
+          SUMMARY: ${{ steps.pins.outputs.summary }}
+        run: |
+          $branch = "bot/cores-${{ steps.next.outputs.version }}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B $branch
+          git add build/cores.json CHANGELOG.md
+          git commit -m "Update cores: $env:SUMMARY" -m "Pinned by the core update bot after every generated config passed the new cores."
+          git push --force origin $branch
+          "name=$branch" >> $env:GITHUB_OUTPUT
+          "sha=$(git rev-parse HEAD)" >> $env:GITHUB_OUTPUT
+
+      - name: Run CI on the bot branch
+        if: steps.pins.outputs.changed == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.branch.outputs.name }}
+          SHA: ${{ steps.branch.outputs.sha }}
+        run: |
+          # Pushes made with this token start no workflows; a dispatch does, and its check on this
+          # commit is the one main's protection asks for.
+          gh workflow run ci.yml --ref $env:BRANCH
+          $run = $null
+          for ($i = 0; $i -lt 30 -and -not $run; $i++) {
+            Start-Sleep -Seconds 10
+            $run = gh run list --workflow ci.yml --branch $env:BRANCH --event workflow_dispatch --json databaseId,headSha --jq ".[] | select(.headSha == `"$env:SHA`") | .databaseId" | Select-Object -First 1
+          }
+          if (-not $run) { throw 'CI run did not start.' }
+          gh run watch $run --exit-status --interval 30
+          if ($LASTEXITCODE -ne 0) { throw 'CI failed on the bot branch.' }
+
+      - name: Move main to the checked commit
+        id: land
+        if: steps.pins.outputs.changed == 'true'
+        shell: pwsh
+        env:
+          SHA: ${{ steps.branch.outputs.sha }}
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          # Fast-forward only: if main moved meanwhile, the next run starts over from it.
+          git push origin "${env:SHA}:refs/heads/main"
+          if ($LASTEXITCODE -ne 0) { throw 'main did not accept the commit (it moved, or a check is missing).' }
+          git push origin --delete $env:BRANCH
+          "landed=true" >> $env:GITHUB_OUTPUT
+
+      - name: Report a failure
+        if: failure()
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUMMARY: ${{ steps.pins.outputs.summary }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          $title = 'Core update bot: a new core did not pass'
+          $body = "Wanted: $env:SUMMARY`n`nNothing was released; main is unchanged. Log: $env:RUN"
+          $open = gh issue list --state open --search "in:title `"$title`"" --json number --jq '.[0].number'
+          if ($open) { gh issue comment $open --body $body } else { gh issue create --title $title --body $body }
+
+  release:
+    name: Release
+    needs: bump
+    if: needs.bump.outputs.landed == 'true'
+    uses: ./.github/workflows/release.yml
+    with:
+      version: ${{ needs.bump.outputs.version }}
+    permissions:
+      contents: write

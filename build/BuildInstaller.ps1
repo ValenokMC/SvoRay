@@ -1,5 +1,6 @@
 ﻿param(
-    [string]$CoreSource = "$env:LOCALAPPDATA\Programs\v2rayN\v2rayN-windows-64",
+    # Empty: the v2rayN bundle pinned in build\cores.json (see Publish.ps1).
+    [string]$CoreSource = '',
     [string]$Version = '0.6.4',
     [string]$Runtime = 'win-x64',
     [switch]$SkipPublish,

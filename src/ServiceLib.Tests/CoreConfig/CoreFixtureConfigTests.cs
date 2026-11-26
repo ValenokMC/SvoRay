@@ -1,0 +1,104 @@
+using AwesomeAssertions;
+using ServiceLib.Common;
+using ServiceLib.Enums;
+using ServiceLib.Handler.Fmt;
+using ServiceLib.Models;
+using ServiceLib.Services.CoreConfig;
+using Xunit;
+
+namespace ServiceLib.Tests.CoreConfig;
+
+/// <summary>
+/// The configs SvoRay generates for every protocol it ships, with TUN off and on. Each one must
+/// generate here; when SVORAY_CORE_FIXTURES names a folder, they are also written there so the
+/// core update bot can run them through a new xray.exe / sing-box.exe ("xray run -test",
+/// "sing-box check") before a release is made with it. See .github/workflows/core-update.yml.
+/// All addresses and keys are made up.
+/// Runs on its own: it binds TUN and non-TUN configs to the shared AppManager, which would
+/// change what the other core config tests generate if they ran at the same time.
+/// </summary>
+[Collection(nameof(CoreFixtureConfigTests))]
+public class CoreFixtureConfigTests
+{
+    public const string FixturesVariable = "SVORAY_CORE_FIXTURES";
+
+    private const string Uuid = "11111111-2222-3333-4444-555555555555";
+    private const string RealityKey = "iAhl0UhVWHvBUuVGyTPbsvaSuzN9cgqFKSyP8hfuZ2k";
+
+    // name, share link, generated for Xray, generated for sing-box
+    public static TheoryData<string, string, bool, bool> Links => new()
+    {
+        { "vless-reality-xhttp", $"vless://{Uuid}@example.com:443?encryption=none&security=reality&sni=www.example.com&fp=chrome&pbk={RealityKey}&sid=ab&type=xhttp&path=%2F&mode=auto&extra=%7B%22xPaddingBytes%22%3A%22100-1000%22%7D#x", true, false },
+        { "vless-reality-vision", $"vless://{Uuid}@example.com:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.example.com&fp=firefox&pbk={RealityKey}&sid=ab&type=tcp#x", true, true },
+        { "vless-tls-ws", $"vless://{Uuid}@example.com:443?encryption=none&security=tls&sni=example.com&fp=chrome&alpn=http%2F1.1&type=ws&host=example.com&path=%2Fws#x", true, true },
+        { "vless-tls-grpc", $"vless://{Uuid}@example.com:443?encryption=none&security=tls&sni=example.com&type=grpc&serviceName=svc&mode=gun#x", true, true },
+        { "trojan-tls", "trojan://secret@example.com:443?security=tls&sni=example.com&type=tcp#x", true, true },
+        { "shadowsocks", "ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206WXpJd09HTXhNamd4WldReU5XRTFOZz09@example.com:8388#x", true, true },
+        { "hysteria2-salamander", "hysteria2://secret@example.com:443?sni=example.com&obfs=salamander&obfs-password=pass#x", true, true },
+        { "hysteria2-hop", "hysteria2://secret@example.com:443?sni=example.com&mport=20000-30000#x", true, true },
+        { "tuic", $"tuic://{Uuid}:secret@example.com:443?sni=example.com&congestion_control=bbr&alpn=h3#x", false, true },
+    };
+
+    [Theory]
+    [MemberData(nameof(Links))]
+    public void GeneratedConfigs_ShouldBuildForEveryShippedProtocol(string name, string link, bool xray, bool singbox)
+    {
+        var node = FmtHandler.ResolveConfig(link, out var msg);
+        node.Should().NotBeNull(msg);
+        node!.IndexId = name;
+        // Import does this for the QUIC protocols (ConfigHandler.AddHysteria2Server/AddTuicServer):
+        // they always run over TLS, and their links do not say so.
+        if (node.ConfigType is EConfigType.Hysteria2 or EConfigType.TUIC && node.StreamSecurity.IsNullOrEmpty())
+        {
+            node.StreamSecurity = Global.StreamSecurity;
+        }
+
+        foreach (var tun in new[] { false, true })
+        {
+            if (xray)
+            {
+                Write($"xray-{name}{(tun ? "-tun" : "")}.json", Generate(node, ECoreType.Xray, tun));
+            }
+            if (singbox)
+            {
+                Write($"singbox-{name}{(tun ? "-tun" : "")}.json", Generate(node, ECoreType.sing_box, tun));
+            }
+        }
+    }
+
+    private static string Generate(ProfileItem node, ECoreType core, bool tun)
+    {
+        var config = CoreConfigTestFactory.CreateConfig(core);
+        config.HysteriaItem = new HysteriaItem { UpMbps = 0, DownMbps = 0, HopInterval = 30 };
+        config.TunModeItem.EnableTun = tun;
+        config.TunModeItem.Mtu = 1500;
+        config.TunModeItem.Stack = "gvisor";
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        node.CoreType = core;
+        var context = CoreConfigTestFactory.CreateContext(config, node, core);
+
+        var result = core == ECoreType.Xray
+            ? new CoreConfigV2rayService(context).GenerateClientConfigContent()
+            : new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        result.Success.Should().BeTrue(result.Msg);
+        var content = result.Data?.ToString();
+        content.Should().NotBeNullOrWhiteSpace();
+        JsonUtils.ParseJson(content!).Should().NotBeNull();
+        return content!;
+    }
+
+    private static void Write(string fileName, string content)
+    {
+        var folder = Environment.GetEnvironmentVariable(FixturesVariable);
+        if (folder.IsNullOrEmpty())
+        {
+            return;
+        }
+        Directory.CreateDirectory(folder!);
+        File.WriteAllText(Path.Combine(folder!, fileName), content);
+    }
+}
+
+[CollectionDefinition(nameof(CoreFixtureConfigTests), DisableParallelization = true)]
+public class CoreFixtureConfigCollection;
