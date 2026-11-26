@@ -98,6 +98,11 @@ public class SvoRayCustomOutboundPathTests
     {
         var name = $"svoray-test-{Guid.NewGuid():N}.json";
         var fullPath = Path.GetFullPath(Utils.GetConfigPath(name));
+        // The same rule the code under test applies: only a local file is written.
+        if (!SvoRayPaths.IsLocalPath(fullPath))
+        {
+            throw new InvalidOperationException($"The config folder is not on a local drive: {fullPath}");
+        }
         File.WriteAllText(fullPath, Outbound);
         return new TempConfigFile(name, fullPath);
     }
