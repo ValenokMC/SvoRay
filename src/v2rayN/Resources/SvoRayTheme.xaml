@@ -769,4 +769,331 @@
             </Setter.Value>
         </Setter>
     </Style>
+
+    <!--
+        The advanced interface (the screens v2rayN brought along) in SvoRay's look.
+
+        Those screens follow the app's Light / Dark / System theme, so their brushes are not the
+        frozen SvoRayPalette ones above: each colour is bound to SvoRayAdaptivePalette, which
+        switches with the theme, and the brushes recolour in place. Screens opt in by merging
+        SvoRayAdvanced.xaml, which points MaterialDesign's colour keys and the shared Def* styles
+        at what is defined here. Accent elements use MaterialDesign's primary colour: it is
+        SvoRay's mint unless the user picked another colour in the theme settings.
+    -->
+    <SolidColorBrush x:Key="SvoRay.Brush.Background" Color="{Binding Background, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="SvoRay.Brush.Surface" Color="{Binding Surface, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="SvoRay.Brush.SurfaceHover" Color="{Binding SurfaceHover, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="SvoRay.Brush.SurfacePressed" Color="{Binding SurfacePressed, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="SvoRay.Brush.Border" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="SvoRay.Brush.BorderStrong" Color="{Binding BorderStrong, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="SvoRay.Brush.Text" Color="{Binding Text, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="SvoRay.Brush.TextSecondary" Color="{Binding TextSecondary, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="SvoRay.Brush.TextMuted" Color="{Binding TextMuted, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="SvoRay.Brush.Track" Color="{Binding Track, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="SvoRay.Brush.Knob" Color="{Binding Knob, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="SvoRay.Brush.KnobOn" Color="{Binding KnobOn, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="SvoRay.Brush.Danger" Color="{Binding Danger, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+
+    <!--
+        A button of the advanced screens. Neutral by default; the dialog's default button
+        (IsDefault, the one Enter presses) takes the accent fill, so "Confirm" stands out from
+        "Cancel" without either line changing. Hover and press lay a faint wash of the text colour
+        over whichever fill the button has, so both kinds react the same way.
+    -->
+    <Style x:Key="SvoRay.Adv.Button" TargetType="{x:Type ButtonBase}">
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="14,0" />
+        <Setter Property="FontSize" Value="{DynamicResource StdFontSize}" />
+        <Setter Property="Foreground" Value="{DynamicResource SvoRay.Brush.Text}" />
+        <Setter Property="Background" Value="{DynamicResource SvoRay.Brush.Surface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SvoRay.Brush.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ButtonBase}">
+                    <Border
+                        x:Name="Frame"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="10"
+                        SnapsToDevicePixels="True">
+                        <Grid>
+                            <Border
+                                x:Name="Wash"
+                                Background="{DynamicResource SvoRay.Brush.Text}"
+                                CornerRadius="9"
+                                Opacity="0" />
+                            <ContentPresenter
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                RecognizesAccessKey="True" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Wash" Property="Opacity" Value="0.06" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Wash" Property="Opacity" Value="0.11" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource SvoRay.Brush.BorderStrong}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Button.IsDefault" Value="True">
+                <Setter Property="Background" Value="{DynamicResource MaterialDesign.Brush.Primary}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesign.Brush.Primary}" />
+                <Setter Property="Foreground" Value="{DynamicResource MaterialDesign.Brush.Primary.Foreground}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!--  A small square icon button, flat until pointed at: the tool buttons above a list  -->
+    <Style x:Key="SvoRay.Adv.IconButton" TargetType="{x:Type ButtonBase}">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Foreground" Value="{DynamicResource SvoRay.Brush.TextSecondary}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ButtonBase}">
+                    <Border x:Name="Frame" Background="Transparent" CornerRadius="8">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Frame" Property="Background" Value="{DynamicResource SvoRay.Brush.SurfaceHover}" />
+                            <Setter Property="Foreground" Value="{DynamicResource SvoRay.Brush.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Frame" Property="Background" Value="{DynamicResource SvoRay.Brush.SurfacePressed}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="Background" Value="{DynamicResource SvoRay.Brush.SurfaceHover}" />
+                            <Setter Property="Foreground" Value="{DynamicResource SvoRay.Brush.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--  The switch of SvoRay.SwitchRow on its own, for a setting that sits next to its label  -->
+    <Style x:Key="SvoRay.Adv.Switch" TargetType="{x:Type ToggleButton}">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                    <Border
+                        x:Name="Track"
+                        Width="36"
+                        Height="20"
+                        Background="{DynamicResource SvoRay.Brush.Track}"
+                        BorderBrush="Transparent"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        SnapsToDevicePixels="True">
+                        <Ellipse
+                            x:Name="Knob"
+                            Width="14"
+                            Height="14"
+                            Margin="2,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Fill="{DynamicResource SvoRay.Brush.Knob}">
+                            <Ellipse.RenderTransform>
+                                <TranslateTransform X="0" />
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            EasingFunction="{StaticResource SvoRay.Ease}"
+                                            Storyboard.TargetName="Knob"
+                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                                            To="16"
+                                            Duration="{StaticResource SvoRay.Fast}" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            EasingFunction="{StaticResource SvoRay.Ease}"
+                                            Storyboard.TargetName="Knob"
+                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                                            To="0"
+                                            Duration="{StaticResource SvoRay.Fast}" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                            <Setter TargetName="Track" Property="Background" Value="{DynamicResource MaterialDesign.Brush.Primary}" />
+                            <Setter TargetName="Knob" Property="Fill" Value="{DynamicResource SvoRay.Brush.KnobOn}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource SvoRay.Brush.BorderStrong}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource SvoRay.Brush.TextSecondary}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        Tabs as a segmented strip, like the simple screen's mode switch: a quiet host, the open
+        tab raised. Only the strip changes; WPF still creates just the open tab's content.
+    -->
+    <Style x:Key="SvoRay.Adv.TabItem" TargetType="{x:Type TabItem}">
+        <Setter Property="MinHeight" Value="30" />
+        <Setter Property="Padding" Value="14,0" />
+        <Setter Property="FontSize" Value="{DynamicResource StdFontSize}" />
+        <Setter Property="Foreground" Value="{DynamicResource SvoRay.Brush.TextSecondary}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TabItem}">
+                    <Border
+                        x:Name="Segment"
+                        Padding="{TemplateBinding Padding}"
+                        Background="Transparent"
+                        CornerRadius="9">
+                        <ContentPresenter
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            ContentSource="Header"
+                            RecognizesAccessKey="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource SvoRay.Brush.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Segment" Property="Background" Value="{DynamicResource SvoRay.Brush.SurfaceHover}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Segment" Property="Background" Value="{DynamicResource SvoRay.Brush.SurfacePressed}" />
+                            <Setter Property="Foreground" Value="{DynamicResource SvoRay.Brush.Text}" />
+                            <Setter Property="Panel.ZIndex" Value="1" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="SvoRay.Adv.TabControl" TargetType="{x:Type TabControl}">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource SvoRay.Adv.TabItem}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TabControl}">
+                    <DockPanel KeyboardNavigation.TabNavigation="Local">
+                        <Border
+                            Margin="0,0,0,8"
+                            Padding="3"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            Background="{DynamicResource SvoRay.Brush.Surface}"
+                            BorderBrush="{DynamicResource SvoRay.Brush.Border}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            DockPanel.Dock="Top">
+                            <TabPanel IsItemsHost="True" KeyboardNavigation.TabIndex="1" />
+                        </Border>
+                        <ContentPresenter
+                            x:Name="PART_SelectedContentHost"
+                            Margin="{TemplateBinding Padding}"
+                            ContentSource="SelectedContent" />
+                    </DockPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--  A filter chip: the subscription groups above the server table  -->
+    <Style x:Key="SvoRay.Adv.ChipItem" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="Margin" Value="0,2,6,2" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="FontSize" Value="{DynamicResource StdFontSize}" />
+        <Setter Property="Foreground" Value="{DynamicResource SvoRay.Brush.TextSecondary}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border
+                        x:Name="Chip"
+                        Padding="{TemplateBinding Padding}"
+                        Background="Transparent"
+                        BorderBrush="{DynamicResource SvoRay.Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="9"
+                        SnapsToDevicePixels="True">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chip" Property="Background" Value="{DynamicResource SvoRay.Brush.SurfaceHover}" />
+                            <Setter Property="Foreground" Value="{DynamicResource SvoRay.Brush.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Chip" Property="BorderBrush" Value="{DynamicResource SvoRay.Brush.BorderStrong}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Chip" Property="Background" Value="{DynamicResource SvoRay.Brush.SurfacePressed}" />
+                            <Setter TargetName="Chip" Property="BorderBrush" Value="{DynamicResource SvoRay.Brush.BorderStrong}" />
+                            <Setter Property="Foreground" Value="{DynamicResource SvoRay.Brush.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--  SvoRay.ToolTip in the advanced screens' colours  -->
+    <Style
+        x:Key="SvoRay.Adv.ToolTip"
+        BasedOn="{StaticResource SvoRay.ToolTip}"
+        TargetType="{x:Type ToolTip}">
+        <Setter Property="Foreground" Value="{DynamicResource SvoRay.Brush.Text}" />
+        <Setter Property="Background" Value="{DynamicResource SvoRay.Brush.Surface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SvoRay.Brush.BorderStrong}" />
+    </Style>
 </ResourceDictionary>

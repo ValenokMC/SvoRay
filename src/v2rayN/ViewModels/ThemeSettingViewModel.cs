@@ -135,6 +135,9 @@ public class ThemeSettingViewModel : MyReactiveObject
         var theme = _paletteHelper.GetTheme();
         theme.SetBaseTheme(baseTheme);
         _paletteHelper.SetTheme(theme);
+        // The restyled advanced screens take SvoRay's colours for the theme just resolved
+        // (System resolves to light or dark above).
+        SvoRayAdaptivePalette.Current.SetDark(theme.GetBaseTheme() == BaseTheme.Dark);
 
         WindowsUtils.SetDarkBorder(Application.Current.MainWindow, CurrentTheme);
     }

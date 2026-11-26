@@ -1,0 +1,177 @@
+<!--
+    Brings one advanced screen (a view v2rayN brought along) into SvoRay's look. A screen opts in
+    by merging this dictionary into its own resources; nothing else in it changes, so its
+    bindings, names and handlers stay as upstream wrote them and upstream merges stay small.
+
+    It works in three layers, all scoped to the screen that merges it:
+    1. MaterialDesign's colour keys get brushes bound to SvoRayAdaptivePalette - the colours of
+       SvoRay.Brush.* in SvoRayTheme.xaml - so every MaterialDesign control inside takes SvoRay's
+       surfaces, borders and text in both the light and the dark theme. (Bound brushes rather
+       than StaticResource aliases: the markup compiler rejects an alias here, MC2000.) The
+       primary colour stays MaterialDesign's own: SvoRay's mint unless the user picked another.
+    2. The shared Def* styles of App.xaml, and the MaterialDesign styles those screens name
+       directly, are redefined under the same keys. A StaticResource finds the nearest key, so
+       the screen's own lines need no change.
+    3. Implicit styles give switches, tabs and tooltips SvoRay's controls.
+
+    Controls whose templates carry behaviour - the data grid, combo boxes and text fields with
+    their hints and clear buttons, menus with submenus and shortcuts - keep MaterialDesign's
+    templates and only take the colours, corners and spacing.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:common="clr-namespace:v2rayN.Common"
+    xmlns:conv="clr-namespace:v2rayN.Converters"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+
+    <!--  1. MaterialDesign's colours  -->
+    <SolidColorBrush x:Key="MaterialDesign.Brush.Background" Color="{Binding Background, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignPaper" Color="{Binding Background, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ToolBar.Background" Color="{Binding Background, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignToolBarBackground" Color="{Binding Background, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.StatusBar.Background" Color="{Binding Background, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.GridSplitter.Background" Color="{Binding Background, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+
+    <SolidColorBrush x:Key="MaterialDesign.Brush.Card.Background" Color="{Binding Surface, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignCardBackground" Color="{Binding Surface, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignBackground" Color="{Binding Surface, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ComboBox.Popup.DarkBackground" Color="{Binding Surface, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ComboBox.Popup.LightBackground" Color="{Binding Surface, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ToolTip.Background" Color="{Binding Surface, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignToolTipBackground" Color="{Binding Surface, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+
+    <SolidColorBrush x:Key="MaterialDesign.Brush.DataGrid.RowHoverBackground" Color="{Binding SurfaceHover, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignDataGridRowHoverBackground" Color="{Binding SurfaceHover, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.DataGrid.ComboBoxHover" Color="{Binding SurfaceHover, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ListView.Hover" Color="{Binding SurfaceHover, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+
+    <SolidColorBrush x:Key="MaterialDesign.Brush.DataGrid.Selected" Color="{Binding SurfacePressed, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.DataGrid.ButtonPressed" Color="{Binding SurfacePressed, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.DataGrid.ComboBoxSelected" Color="{Binding SurfacePressed, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ListView.Selected" Color="{Binding SurfacePressed, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+
+    <SolidColorBrush x:Key="MaterialDesign.Brush.Card.Border" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.DataGrid.Border" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.DataGrid.PopupBorder" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.TabControl.Divider" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ToolBar.Separator" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ToolBar.Overflow.Border" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ListView.Separator" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.Separator.Background" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignDivider" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.TextBox.OutlineBorder" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.TextBox.OutlineInactiveBorder" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignTextAreaBorder" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignTextAreaInactiveBorder" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ComboBox.OutlineBorder" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ComboBox.OutlineInactiveBorder" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.PasswordBox.OutlineBorder" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.PasswordBox.OutlineInactiveBorder" Color="{Binding Border, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+
+    <SolidColorBrush x:Key="MaterialDesign.Brush.TextBox.Border" Color="{Binding BorderStrong, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignTextBoxBorder" Color="{Binding BorderStrong, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.TextBox.HoverBorder" Color="{Binding BorderStrong, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ComboBox.Border" Color="{Binding BorderStrong, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ComboBox.HoverBorder" Color="{Binding BorderStrong, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.PasswordBox.Border" Color="{Binding BorderStrong, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.PasswordBox.HoverBorder" Color="{Binding BorderStrong, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.GridSplitter.PreviewBackground" Color="{Binding BorderStrong, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ScrollBar.Foreground" Color="{Binding BorderStrong, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ScrollBar.RepeatButtonBackground" Color="{Binding BorderStrong, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+
+    <SolidColorBrush x:Key="MaterialDesign.Brush.Foreground" Color="{Binding Text, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignBody" Color="{Binding Text, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.StatusBar.Foreground" Color="{Binding Text, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ComboBox.Popup.DarkForeground" Color="{Binding Text, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ComboBox.Popup.LightForeground" Color="{Binding Text, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ForegroundLight" Color="{Binding TextSecondary, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignBodyLight" Color="{Binding TextSecondary, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.Header.Foreground" Color="{Binding TextSecondary, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.DataGrid.ColumnHeaderForeground" Color="{Binding TextSecondary, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignColumnHeader" Color="{Binding TextSecondary, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ToggleButton.Switch.TrackOffBackground" Color="{Binding Track, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesign.Brush.ValidationError" Color="{Binding Danger, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+    <SolidColorBrush x:Key="MaterialDesignValidationErrorBrush" Color="{Binding Danger, Source={x:Static common:SvoRayAdaptivePalette.Current}}" />
+
+    <!--  2. The shared styles, under the keys the screens already use  -->
+    <Style
+        x:Key="DefButton"
+        BasedOn="{StaticResource SvoRay.Adv.Button}"
+        TargetType="{x:Type ButtonBase}" />
+
+    <!--  The round, raised mini buttons above the lists become flat icon buttons  -->
+    <Style
+        x:Key="MaterialDesignFloatingActionMiniLightButton"
+        BasedOn="{StaticResource SvoRay.Adv.IconButton}"
+        TargetType="{x:Type ButtonBase}" />
+
+    <Style
+        x:Key="MyChipListBoxItem"
+        BasedOn="{StaticResource SvoRay.Adv.ChipItem}"
+        TargetType="{x:Type ListBoxItem}" />
+
+    <!--  Fields: a rounded, filled frame instead of an underline; the hint sits inside while empty  -->
+    <Style
+        x:Key="DefTextBox"
+        BasedOn="{StaticResource MaterialDesignOutlinedTextBox}"
+        TargetType="{x:Type TextBox}">
+        <Setter Property="FontSize" Value="{DynamicResource StdFontSize}" />
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Background" Value="{DynamicResource SvoRay.Brush.Surface}" />
+        <Setter Property="materialDesign:TextFieldAssist.TextFieldCornerRadius" Value="10" />
+        <Setter Property="materialDesign:HintAssist.IsFloating" Value="False" />
+    </Style>
+    <Style
+        x:Key="DefComboBox"
+        BasedOn="{StaticResource MaterialDesignOutlinedComboBox}"
+        TargetType="{x:Type ComboBox}">
+        <Setter Property="FontSize" Value="{DynamicResource StdFontSize}" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Background" Value="{DynamicResource SvoRay.Brush.Surface}" />
+        <Setter Property="materialDesign:TextFieldAssist.TextFieldCornerRadius" Value="10" />
+        <Setter Property="materialDesign:HintAssist.IsFloating" Value="False" />
+    </Style>
+
+    <!--  The server table: one surface card, hairline grid lines  -->
+    <Style
+        x:Key="DefDataGrid"
+        BasedOn="{StaticResource MaterialDesignDataGrid}"
+        TargetType="{x:Type DataGrid}">
+        <Setter Property="FontSize" Value="{DynamicResource StdFontSize}" />
+        <Setter Property="Background" Value="{DynamicResource SvoRay.Brush.Surface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SvoRay.Brush.Border}" />
+        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource SvoRay.Brush.Border}" />
+        <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource SvoRay.Brush.Border}" />
+    </Style>
+
+    <!--
+        A context menu is not in its owner's tree, so it may not find the keys above by itself:
+        its colours are set here directly, from the same brushes.
+    -->
+    <Style
+        x:Key="DefContextMenu"
+        BasedOn="{StaticResource MaterialDesignContextMenu}"
+        TargetType="{x:Type ContextMenu}">
+        <Setter Property="FontSize" Value="{DynamicResource StdFontSize}" />
+        <Setter Property="FontFamily" Value="{x:Static conv:MaterialDesignFonts.MyFont}" />
+        <Setter Property="Background" Value="{StaticResource SvoRay.Brush.Surface}" />
+        <Setter Property="Foreground" Value="{StaticResource SvoRay.Brush.Text}" />
+        <Setter Property="BorderBrush" Value="{StaticResource SvoRay.Brush.BorderStrong}" />
+    </Style>
+
+    <!--  The status bar's readouts are secondary text, like the simple screen's captions  -->
+    <Style x:Key="StatusbarItem" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="{DynamicResource StdFontSize}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Foreground" Value="{DynamicResource SvoRay.Brush.TextSecondary}" />
+    </Style>
+
+    <!--  3. SvoRay's own controls  -->
+    <Style BasedOn="{StaticResource SvoRay.Adv.Switch}" TargetType="{x:Type ToggleButton}" />
+    <Style BasedOn="{StaticResource SvoRay.Adv.TabControl}" TargetType="{x:Type TabControl}" />
+    <Style BasedOn="{StaticResource SvoRay.Adv.ToolTip}" TargetType="{x:Type ToolTip}" />
+</ResourceDictionary>

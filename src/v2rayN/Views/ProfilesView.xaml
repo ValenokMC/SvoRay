@@ -16,8 +16,13 @@
     Style="{StaticResource ViewGlobal}"
     mc:Ignorable="d">
     <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVisConverter" />
-        <conv:DelayColorConverter x:Key="DelayColorConverter" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Resources/SvoRayAdvanced.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="BoolToVisConverter" />
+            <conv:DelayColorConverter x:Key="DelayColorConverter" />
+        </ResourceDictionary>
     </UserControl.Resources>
     <Grid>
         <DockPanel>
