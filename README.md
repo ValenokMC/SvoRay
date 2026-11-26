@@ -143,7 +143,7 @@ Every component is pinned in [`build/cores.json`](build/cores.json): the officia
 
 - **Core update** (`.github/workflows/core-update.yml`, every 6 hours): a stable Xray or sing-box release that has stood for 48 hours is pinned, checked by the gate and CI on a bot branch, landed on `main` and released as the next patch version. Running copies of SvoRay check for releases every 6 hours and offer the update in a window (or a Windows notification from the tray). A core that fails opens an issue and ships nowhere.
 - **Upstream v2rayN** (`.github/workflows/upstream-sync.yml`, weekly): the changes of a new v2rayN release are replayed onto `src/`. A clean result is checked and pushed to `bot/upstream-<version>` with an issue to review and merge it; files that conflict with SvoRay's own changes are listed in an issue.
-- **Release** (`.github/workflows/release.yml`): builds, checks and publishes a release from `main`; run it by hand for a release with your own changes.
+- **Release** (`.github/workflows/release.yml`): builds, checks and publishes a release from `main`; run it by hand for a release with your own changes, once `CHANGELOG.md` has a `## <version>` section for it (the core update bot writes its own).
 
 ## Status
 

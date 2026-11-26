@@ -63,6 +63,11 @@ jobs:
           "version=$version" >> $env:GITHUB_OUTPUT
           Write-Host "Releasing SvoRay $version from $(git rev-parse --short HEAD)"
 
+      # First, so a missing CHANGELOG section stops the run before a long build.
+      - name: Release notes
+        shell: powershell
+        run: .\build\Get-ReleaseNotes.ps1 -Version ${{ steps.version.outputs.version }} -OutFile "$env:RUNNER_TEMP\release-notes.md"
+
       - name: Install Inno Setup
         shell: pwsh
         run: |
@@ -78,10 +83,6 @@ jobs:
         shell: powershell
         run: .\build\BuildInstaller.ps1 -SkipPublish -Version ${{ steps.version.outputs.version }}
 
-      - name: Release notes
-        shell: powershell
-        run: .\build\Get-ReleaseNotes.ps1 -Version ${{ steps.version.outputs.version }} -OutFile dist\release-notes.md
-
       - name: Publish the release
         shell: pwsh
         env:
@@ -96,5 +97,5 @@ jobs:
             'dist\SHA256SUMS.txt'
           )
           foreach ($file in $files) { if (-not (Test-Path $file)) { throw "Missing release file: $file" } }
-          gh release create "v$env:VERSION" @files --target (git rev-parse HEAD) --title "SvoRay $env:VERSION" --notes-file dist\release-notes.md --latest
+          gh release create "v$env:VERSION" @files --target (git rev-parse HEAD) --title "SvoRay $env:VERSION" --notes-file "$env:RUNNER_TEMP\release-notes.md" --latest
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed.' }
