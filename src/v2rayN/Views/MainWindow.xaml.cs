@@ -718,9 +718,10 @@ public partial class MainWindow
         try
         {
             // A failed download does not throw; the handler reports it through the result.
+            // A successful update has rebuilt the routing already. The connection is restarted
+            // only when the list or the rules really changed, so a refresh does not drop calls.
             var updated = await ViewModel.UpdateSubscriptionProcess(string.Empty, false);
-            await SvoRayRoutingHandler.RefreshIfActiveAsync(_config);
-            await ViewModel.RefreshSimpleUiAsync();
+            await ViewModel.RefreshSimpleUiAsync(keepCoreIfUnchanged: true);
             await RefreshServerRoutingFlagAsync();
             ShowSimpleStatus(updated ? ResUI.SvoRayServerListUpdated : ResUI.SvoRaySubscriptionDownloadFailed, !updated);
         }

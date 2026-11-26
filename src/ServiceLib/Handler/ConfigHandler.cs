@@ -225,6 +225,7 @@ public static class ConfigHandler
         config.SvoRayItem ??= new();
         config.SvoRayItem.RuleDomains ??= [];
         config.SvoRayItem.CustomGameFolders ??= [];
+        SvoRayAutoUpdate.MigrateGeoFiles(config);
         if (!config.SvoRayItem.HardwareRenderingMigrated)
         {
             config.GuiItem.EnableHWA = true;
@@ -244,6 +245,36 @@ public static class ConfigHandler
                 config.HysteriaItem.DownMbps = 0;
             }
             config.SvoRayItem.HysteriaBbrMigrated = true;
+        }
+    }
+
+    /// <summary>
+    /// The subscription half of the SvoRay upgrades: subscriptions live in the database, not in
+    /// the config, so they are moved once the database is open. See
+    /// <see cref="SvoRayAutoUpdate.MigrateSubscriptions"/>.
+    /// </summary>
+    public static async Task MigrateSvoRaySubscriptions(Config config)
+    {
+        if (config.SvoRayItem.SubscriptionAutoUpdateMigrated)
+        {
+            return;
+        }
+
+        try
+        {
+            var changed = SvoRayAutoUpdate.MigrateSubscriptions(config.SvoRayItem, await AppManager.Instance.SubItems() ?? []);
+            if (changed.Count > 0)
+            {
+                await SQLiteHelper.Instance.UpdateAllAsync(changed);
+                Logging.SaveLog($"SvoRay: {changed.Count} subscription(s) now refresh every {SvoRayAutoUpdate.SubscriptionIntervalMinutes} min");
+            }
+            // Saved now: a 0 the user sets before the next save must not be migrated again.
+            await SaveConfig(config);
+        }
+        catch (Exception ex)
+        {
+            config.SvoRayItem.SubscriptionAutoUpdateMigrated = false;
+            Logging.SaveLog("SvoRay subscription migration", ex);
         }
     }
 

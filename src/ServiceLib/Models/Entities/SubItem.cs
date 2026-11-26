@@ -20,7 +20,11 @@ public class SubItem
 
     public string? Filter { get; set; }
 
-    public int AutoUpdateInterval { get; set; }
+    /// <summary>
+    /// Minutes between automatic refreshes; 0 is never. A new subscription refreshes every
+    /// few hours, so the server list and the provider's routing stay current without a click.
+    /// </summary>
+    public int AutoUpdateInterval { get; set; } = SvoRayAutoUpdate.SubscriptionIntervalMinutes;
 
     public long UpdateTime { get; set; }
 

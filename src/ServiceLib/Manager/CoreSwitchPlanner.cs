@@ -134,6 +134,42 @@ public static class CoreSwitchPlanner
     }
 
     /// <summary>
+    /// A digest of everything the core would run: the main config and the pre core's, if there
+    /// is one. The dated log file names are left out - they change at midnight while nothing a
+    /// connection depends on does, and a running core keeps writing where it started anyway.
+    /// Null when there is nothing to compare (a custom config, a config that is not JSON).
+    /// </summary>
+    public static string? ReadConfigDigest(string? mainConfigJson, string? preConfigJson = null)
+    {
+        if (ParseObject(mainConfigJson) is not { } main)
+        {
+            return null;
+        }
+        var text = WithoutLogFiles(main).ToJsonString();
+        if (preConfigJson is not null)
+        {
+            if (ParseObject(preConfigJson) is not { } pre)
+            {
+                return null;
+            }
+            text += "\n" + WithoutLogFiles(pre).ToJsonString();
+        }
+        return Hash(text);
+    }
+
+    /// <summary>
+    /// For a reload nobody asked for by hand - a background subscription refresh, a routing list
+    /// rebuilt after it: whether the running core can be left as it is because the config it
+    /// would get is the one it already runs. Restarting it would drop every call and game for
+    /// nothing. Anything else - another config, a core that died, nothing running - reloads.
+    /// <see cref="Decide"/> still restarts for the same config when the user reloads on purpose.
+    /// </summary>
+    public static bool CanKeepRunningCore(string? runningDigest, bool coreAlive, string? newDigest)
+    {
+        return coreAlive && runningDigest.IsNotEmpty() && runningDigest == newDigest;
+    }
+
+    /// <summary>
     /// Whether the stale Wintun adapters must be removed before a TUN core starts. Removing them
     /// takes two pnputil runs, about a second each, and a core that was stopped normally leaves
     /// nothing behind: the adapter goes away with the process. It is still done for the first
@@ -161,8 +197,25 @@ public static class CoreSwitchPlanner
         }
     }
 
+    private static JsonObject WithoutLogFiles(JsonObject root)
+    {
+        if (root["log"] is JsonObject log)
+        {
+            // Xray: access/error; sing-box: output.
+            log.Remove("access");
+            log.Remove("error");
+            log.Remove("output");
+        }
+        return root;
+    }
+
     private static string Hash(JsonNode root)
     {
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(root.ToJsonString())));
+        return Hash(root.ToJsonString());
+    }
+
+    private static string Hash(string text)
+    {
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     }
 }

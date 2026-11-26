@@ -7,6 +7,26 @@ All notable changes to SvoRay. Dates are the release dates of the installer publ
 
 ### Changed
 
+- **Subscriptions refresh by themselves.** Every 6 hours SvoRay downloads each subscription again,
+  so a new server list and the routing the provider sends with it arrive without pressing refresh.
+  A refresh that fails (offline, provider down) is tried again after 30 minutes. Subscriptions left
+  at v2rayN's "never" are moved to 6 hours once; an interval set in the advanced settings, "never"
+  included, is kept from then on.
+- **A refresh no longer drops the connection.** After a subscription refresh, automatic or by the
+  button, the routing is rebuilt and the config the core would get is compared with the one it
+  runs. Only a changed server list, selected server or routing reconnects; the same list again
+  leaves calls and games alone. "Reload" and switching modes still restart the core as before.
+- **Geo files stay current.** v2rayN's own `geoip.dat` and `geosite.dat` (and the sing-box rule
+  sets) are updated once their file is a day old, instead of never; turning it off in the advanced
+  settings is kept. The provider's own geo files, which it can update behind the same URL, are
+  downloaded again once they are 20 hours old, in the background, so connecting never waits for
+  it. A failed download or a file without categories keeps the old one; the new rules apply from
+  the next reconnect.
+
+## 0.6.5 — 26 November 2026
+
+### Changed
+
 - **Hysteria2 uses BBR unless the link names a speed.** v2rayN's default of 100/100 Mbps switched
   on Brutal at a fixed 100 Mbps for every Hysteria2 server whose link carries no bandwidth: a hard
   ceiling on faster lines and heavy packet loss on slower ones. The default is now none, which is

@@ -54,6 +54,19 @@ public static class SvoRayServerRouting
     private const int MaxEntryLength = 256;
     private const long MaxGeoFileBytes = 64L * 1024 * 1024;
 
+    /// <summary>
+    /// A provider's geo file this old is downloaded again: providers update the file behind the
+    /// same URL. A little under a day, so a PC that connects at the same hour every day still
+    /// gets each day's file.
+    /// </summary>
+    public static readonly TimeSpan MaxGeoFileAge = TimeSpan.FromHours(20);
+
+    /// <summary>How soon a background refresh that failed (offline, provider down) is tried again.</summary>
+    public static readonly TimeSpan GeoFileRetryDelay = TimeSpan.FromHours(1);
+
+    private static readonly Lock _geoRefreshLock = new();
+    private static readonly Dictionary<string, DateTime> _geoRefreshAttempts = new(StringComparer.OrdinalIgnoreCase);
+
     private static readonly string[] Schemes = ["happ://routing/onadd/", "happ://routing/add/"];
     private static readonly string[] Groups = ["block", "proxy", "direct"];
 
@@ -235,65 +248,147 @@ public static class SvoRayServerRouting
 
     /// <summary>
     /// Downloads the profile's geo files when they are missing or the server switched to other
-    /// ones. A failed download keeps whatever was there before; the rules then fall back to the
+    /// ones, and starts a background refresh of those older than <see cref="MaxGeoFileAge"/>.
+    /// A failed download keeps whatever was there before; the rules then fall back to the
     /// categories that file has, or lose the geo entries altogether.
     /// </summary>
-    public static async Task EnsureGeoFilesAsync(SvoRayServerRoutingProfile profile)
+    /// <returns>The background refreshes it started; connecting does not wait for them.</returns>
+    public static async Task<IReadOnlyList<Task>> EnsureGeoFilesAsync(SvoRayServerRoutingProfile profile)
     {
-        await EnsureGeoFileAsync(profile.GeositeUrl, Utils.GetBinPath(GeoSiteFileName));
-        await EnsureGeoFileAsync(profile.GeoipUrl, Utils.GetBinPath(GeoIpFileName));
+        var site = await EnsureGeoFileAsync(profile.GeositeUrl, Utils.GetBinPath(GeoSiteFileName), DownloadGeoFileAsync);
+        var ip = await EnsureGeoFileAsync(profile.GeoipUrl, Utils.GetBinPath(GeoIpFileName), DownloadGeoFileAsync);
+        return new[] { site, ip }.OfType<Task>().ToList();
     }
 
-    private static async Task EnsureGeoFileAsync(string? url, string path)
+    /// <summary>
+    /// Whether a provider's geo file written at <paramref name="lastWriteUtc"/> is due for a
+    /// refresh. A file dated far in the future (the clock was wrong when it was written) is too,
+    /// or it would not be refreshed again for as long.
+    /// </summary>
+    public static bool IsGeoFileStale(DateTime lastWriteUtc, DateTime nowUtc)
+    {
+        var age = nowUtc - lastWriteUtc;
+        return age >= MaxGeoFileAge || age <= -MaxGeoFileAge;
+    }
+
+    /// <summary><see cref="EnsureGeoFilesAsync"/> for one file, with the download passed in.</summary>
+    /// <returns>
+    /// The background refresh it started for a stale file, so a test can wait for it; null when
+    /// it started none. Connecting never waits for it: the refreshed file is used from the next
+    /// reload on.
+    /// </returns>
+    public static async Task<Task?> EnsureGeoFileAsync(string? url, string path, Func<string, Task<byte[]?>> download)
     {
         // The files live in SvoRay's own bin folder; anything else is refused before it is written.
         if (url.IsNullOrEmpty() || !SvoRayPaths.IsLocalPath(path))
         {
-            return;
+            return null;
         }
 
-        var marker = path + ".url";
+        var current = false;
         try
         {
-            if (File.Exists(path) && File.Exists(marker)
+            var marker = path + ".url";
+            current = File.Exists(path) && File.Exists(marker)
                 && (await File.ReadAllTextAsync(marker)).Trim() == url
-                && ReadGeoTags(path).Count > 0)
-            {
-                return;
-            }
+                && ReadGeoTags(path).Count > 0;
         }
         catch (IOException)
         {
         }
 
+        if (!current)
+        {
+            // Missing, broken or another URL: the rules are built from this file, so wait for it.
+            await ReplaceGeoFileAsync(url!, path, download);
+            return null;
+        }
+
+        if (!IsGeoFileStale(File.GetLastWriteTimeUtc(path), DateTime.UtcNow))
+        {
+            return null;
+        }
+
+        lock (_geoRefreshLock)
+        {
+            // One refresh at a time per file, and not again soon after one that failed.
+            var now = DateTime.UtcNow;
+            if (_geoRefreshAttempts.TryGetValue(path, out var last) && now >= last && now - last < GeoFileRetryDelay)
+            {
+                return null;
+            }
+            _geoRefreshAttempts[path] = now;
+        }
+        return Task.Run(async () =>
+        {
+            if (await ReplaceGeoFileAsync(url!, path, download))
+            {
+                Logging.SaveLog($"SvoRay: {Path.GetFileName(path)} refreshed in the background, used from the next reload");
+            }
+        });
+    }
+
+    /// <summary>
+    /// Downloads <paramref name="url"/> over <paramref name="path"/>. The file is replaced only by
+    /// one that downloaded completely and has categories in it; anything else keeps the old one.
+    /// </summary>
+    private static async Task<bool> ReplaceGeoFileAsync(string url, string path, Func<string, Task<byte[]?>> download)
+    {
+        // A name of its own, so a background refresh and a connect never write the same file.
+        var temp = $"{path}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            var data = await download(url);
+            if (data is null)
+            {
+                return false;
+            }
+
+            await File.WriteAllBytesAsync(temp, data);
+            if (ReadGeoTags(temp).Count == 0)
+            {
+                return false;
+            }
+            File.Move(temp, path, true);
+            await File.WriteAllTextAsync(path + ".url", url);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay geo file", ex);
+            return false;
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(temp);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    private static async Task<byte[]?> DownloadGeoFileAsync(string url)
+    {
         // Direct first: at connect time the tunnel is usually not up yet. Through the local
         // proxy second, for a host that is blocked where the user is.
         foreach (var viaProxy in new[] { false, true })
         {
             try
             {
-                var data = await DownloadAsync(url!, viaProxy);
-                if (data is null)
+                if (await DownloadAsync(url, viaProxy) is { } data)
                 {
-                    continue;
+                    return data;
                 }
-
-                var temp = path + ".tmp";
-                await File.WriteAllBytesAsync(temp, data);
-                if (ReadGeoTags(temp).Count == 0)
-                {
-                    File.Delete(temp);
-                    continue;
-                }
-                File.Move(temp, path, true);
-                await File.WriteAllTextAsync(marker, url);
-                return;
             }
             catch (Exception ex)
             {
                 Logging.SaveLog("SvoRay geo file", ex);
             }
         }
+        return null;
     }
 
     private static async Task<byte[]?> DownloadAsync(string url, bool viaProxy)

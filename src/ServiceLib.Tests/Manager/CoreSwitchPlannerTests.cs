@@ -141,6 +141,47 @@ public class CoreSwitchPlannerTests
     }
 
     [Fact]
+    public void CanKeepRunningCore_OnlyForTheConfigItRuns()
+    {
+        var running = CoreSwitchPlanner.ReadConfigDigest(Config("proxy-1", "8.8.8.8"));
+        var same = CoreSwitchPlanner.ReadConfigDigest(Config("proxy-1", "8.8.8.8"));
+        var otherServer = CoreSwitchPlanner.ReadConfigDigest(Config("proxy-2", "8.8.8.8"));
+
+        CoreSwitchPlanner.CanKeepRunningCore(running, coreAlive: true, same).Should().BeTrue();
+        CoreSwitchPlanner.CanKeepRunningCore(running, coreAlive: true, otherServer).Should().BeFalse();
+        CoreSwitchPlanner.CanKeepRunningCore(running, coreAlive: false, same).Should().BeFalse("a dead core is restarted");
+        CoreSwitchPlanner.CanKeepRunningCore(null, coreAlive: false, same).Should().BeFalse("nothing runs yet");
+        CoreSwitchPlanner.CanKeepRunningCore(null, coreAlive: true, null).Should().BeFalse("a custom config is not compared");
+    }
+
+    [Fact]
+    public void ReadConfigDigest_IgnoresDatedLogFilesOnly()
+    {
+        const string today = """{"log":{"loglevel":"warning","access":"C:\\logs\\Vaccess_2026-11-26.txt","error":"C:\\logs\\Verror_2026-11-26.txt"},"outbounds":[{"tag":"proxy"}]}""";
+        const string tomorrow = """{"log":{"loglevel":"warning","access":"C:\\logs\\Vaccess_2026-11-27.txt","error":"C:\\logs\\Verror_2026-11-27.txt"},"outbounds":[{"tag":"proxy"}]}""";
+        const string singbox = """{"log":{"level":"warning","output":"C:\\logs\\sbox_2026-11-26.txt"},"outbounds":[{"tag":"proxy"}]}""";
+        const string singboxTomorrow = """{"log":{"level":"warning","output":"C:\\logs\\sbox_2026-11-27.txt"},"outbounds":[{"tag":"proxy"}]}""";
+        const string otherLevel = """{"log":{"loglevel":"debug","access":"C:\\logs\\Vaccess_2026-11-26.txt"},"outbounds":[{"tag":"proxy"}]}""";
+
+        CoreSwitchPlanner.ReadConfigDigest(tomorrow).Should().Be(CoreSwitchPlanner.ReadConfigDigest(today));
+        CoreSwitchPlanner.ReadConfigDigest(singboxTomorrow).Should().Be(CoreSwitchPlanner.ReadConfigDigest(singbox));
+        CoreSwitchPlanner.ReadConfigDigest(otherLevel).Should().NotBe(CoreSwitchPlanner.ReadConfigDigest(today));
+    }
+
+    [Fact]
+    public void ReadConfigDigest_CoversThePreCore()
+    {
+        var main = Config("proxy-1", "8.8.8.8");
+
+        var withPre = CoreSwitchPlanner.ReadConfigDigest(main, """{"inbounds":[{"type":"tun"}]}""");
+
+        withPre.Should().NotBe(CoreSwitchPlanner.ReadConfigDigest(main));
+        CoreSwitchPlanner.ReadConfigDigest(main, """{"inbounds":[{"type":"mixed"}]}""").Should().NotBe(withPre);
+        CoreSwitchPlanner.ReadConfigDigest(main, "").Should().BeNull("a pre config that failed is never the running one");
+        CoreSwitchPlanner.ReadConfigDigest("not json").Should().BeNull();
+    }
+
+    [Fact]
     public void ReadSingboxShape_IgnoresOnlyTheSelectorDefault()
     {
         var a = CoreSwitchPlanner.ReadSingboxShape(Config("proxy-1", "8.8.8.8"));

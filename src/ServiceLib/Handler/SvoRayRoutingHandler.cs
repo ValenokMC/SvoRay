@@ -243,7 +243,11 @@ public static class SvoRayRoutingHandler
             profile = await FindServerProfileAsync(config);
             if (profile is not null)
             {
-                await SvoRayServerRouting.EnsureGeoFilesAsync(profile);
+                var refreshes = await SvoRayServerRouting.EnsureGeoFilesAsync(profile);
+                if (refreshes.Count > 0)
+                {
+                    _ = RebuildAfterGeoRefreshAsync(config, refreshes);
+                }
                 siteTags = ReadTags(profile.GeositeUrl is null ? "geosite.dat" : SvoRayServerRouting.GeoSiteFileName);
                 ipTags = ReadTags(profile.GeoipUrl is null ? "geoip.dat" : SvoRayServerRouting.GeoIpFileName);
             }
@@ -261,6 +265,25 @@ public static class SvoRayRoutingHandler
         {
             var tags = SvoRayServerRouting.ReadGeoTags(Utils.GetBinPath(fileName));
             return tags.Count > 0 ? tags : null;
+        }
+    }
+
+    /// <summary>
+    /// Rebuilds the simple profile once the provider's geo files were refreshed in the
+    /// background, without reconnecting. The rules name only the categories the file had when
+    /// they were built; a new file without one of them would make Xray refuse to start at the
+    /// next reload. The running core keeps its rules until then.
+    /// </summary>
+    private static async Task RebuildAfterGeoRefreshAsync(Config config, IReadOnlyList<Task> refreshes)
+    {
+        try
+        {
+            await Task.WhenAll(refreshes);
+            await RefreshIfActiveAsync(config);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SvoRay geo file rebuild", ex);
         }
     }
 

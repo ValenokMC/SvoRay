@@ -26,6 +26,12 @@ public class CoreManager
     private RunningCoreState? _runningState;
 
     /// <summary>
+    /// <see cref="CoreSwitchPlanner.ReadConfigDigest"/> of the config the running core (and its
+    /// pre core) runs, so a background reload can tell nothing changed; null while none runs.
+    /// </summary>
+    private string? _runningConfigDigest;
+
+    /// <summary>
     /// Whether a Wintun adapter from an earlier core may still be around: until the first TUN
     /// start of this session succeeds, and after a core died on its own.
     /// </summary>
@@ -77,12 +83,18 @@ public class CoreManager
 
     /// <param name="mainContext">Resolved main context (with pre-socks ports already merged if applicable).</param>
     /// <param name="preContext">Optional pre-socks context passed to <see cref="CoreStartPreService"/>.</param>
-    public async Task LoadCore(CoreConfigContext? mainContext, CoreConfigContext? preContext)
+    /// <param name="keepIfUnchanged">
+    /// True for a reload nobody asked for by hand: when the new config is the one the core
+    /// already runs, the core is left alone instead of being restarted.
+    /// </param>
+    /// <returns>True when the running core was left as it was.</returns>
+    public async Task<bool> LoadCore(CoreConfigContext? mainContext, CoreConfigContext? preContext,
+        bool keepIfUnchanged = false)
     {
         if (mainContext == null)
         {
             await UpdateFunc(false, ResUI.CheckServerSettings);
-            return;
+            return false;
         }
 
         var node = mainContext.Node;
@@ -95,9 +107,23 @@ public class CoreManager
         if (result.Success != true)
         {
             await UpdateFunc(true, result.Msg);
-            return;
+            return false;
         }
         SwitchTiming.Mark("config generated");
+
+        // The pre core's config is generated again when it starts; this copy is only compared.
+        var preConfig = preContext is null ? null : (await CoreConfigHandler.GenerateClientConfig(preContext, null)).Data?.ToString();
+        var newDigest = CoreSwitchPlanner.ReadConfigDigest(result.Data?.ToString(),
+            preContext is null ? null : preConfig ?? string.Empty);
+        var coresAlive = IsCoreRunning && (preContext is null
+            ? _processPreService is null
+            : _processPreService is { HasExited: false });
+        if (keepIfUnchanged && CoreSwitchPlanner.CanKeepRunningCore(_runningConfigDigest, coresAlive, newDigest))
+        {
+            SwitchTiming.End("decision: Keep (config unchanged)");
+            Logging.SaveLog("SvoRay: the config is unchanged, the running core is left alone");
+            return true;
+        }
 
         var newShape = mainContext.RunCoreType switch
         {
@@ -110,8 +136,9 @@ public class CoreManager
         SwitchTiming.Mark($"decision: {switchKind}{(newShape != null ? " (switchable config)" : "")}");
         if (switchKind == ECoreSwitchKind.HotSwitch && await TryHotSwitchAsync(newShape!))
         {
+            _runningConfigDigest = newDigest;
             await UpdateFunc(true, $"{node.GetSummary()}");
-            return;
+            return false;
         }
 
         await UpdateFunc(false, $"{node.GetSummary()}");
@@ -173,6 +200,7 @@ public class CoreManager
 
         if (_processService != null)
         {
+            _runningConfigDigest = IsCoreRunning ? newDigest : null;
             if (newShape != null && IsCoreRunning && preContext is null)
             {
                 _runningState = new RunningCoreState(mainContext.RunCoreType, newShape);
@@ -185,6 +213,7 @@ public class CoreManager
             }
             await UpdateFunc(true, $"{node.GetSummary()}");
         }
+        return false;
     }
 
     /// <summary>
@@ -288,6 +317,7 @@ public class CoreManager
     private async Task StopProcesses()
     {
         _runningState = null;
+        _runningConfigDigest = null;
         try
         {
             if (_linuxSudo)
