@@ -38,10 +38,10 @@ public class SvoRayAutoUpdateTests
     public void MigrateSubscriptions_FlagSurvivesTheConfigFile()
     {
         var settings = JsonUtils.Deserialize<SvoRayItem>(
-            JsonUtils.Serialize(new SvoRayItem { SubscriptionAutoUpdateMigrated = true, GeoAutoUpdateMigrated = true }))!;
+            JsonUtils.Serialize(new SvoRayItem { SubscriptionAutoUpdateMigrated = true, LastGeoUpdate = Now }))!;
 
         settings.SubscriptionAutoUpdateMigrated.Should().BeTrue();
-        settings.GeoAutoUpdateMigrated.Should().BeTrue();
+        settings.LastGeoUpdate.Should().Be(Now);
     }
 
     [Fact]
@@ -51,29 +51,16 @@ public class SvoRayAutoUpdateTests
         SvoRayAutoUpdate.SubscriptionIntervalMinutes.Should().Be(360);
     }
 
-    [Fact]
-    public void MigrateSvoRayItem_MovesGeoFileUpdatesOffNeverOnce()
+    [Theory]
+    [InlineData(0)] // off, v2rayN's default: about 35 MB a day is not turned on for anyone
+    [InlineData(72)]
+    public void MigrateSvoRayItem_LeavesTheGeoFileIntervalAsTheUserSetIt(int interval)
     {
-        var config = JsonUtils.Deserialize<Config>("""{ "GuiItem": { "AutoUpdateInterval": 0 }, "SvoRayItem": {} }""")!;
+        var config = JsonUtils.Deserialize<Config>($$"""{ "GuiItem": { "AutoUpdateInterval": {{interval}} }, "SvoRayItem": {} }""")!;
 
         ConfigHandler.MigrateSvoRayItem(config);
 
-        config.GuiItem.AutoUpdateInterval.Should().Be(SvoRayAutoUpdate.GeoFilesIntervalHours);
-        config.SvoRayItem.GeoAutoUpdateMigrated.Should().BeTrue();
-
-        config.GuiItem.AutoUpdateInterval = 0;
-        ConfigHandler.MigrateSvoRayItem(config);
-        config.GuiItem.AutoUpdateInterval.Should().Be(0, "turned off by the user after the migration");
-    }
-
-    [Fact]
-    public void MigrateSvoRayItem_KeepsAGeoIntervalTheUserSet()
-    {
-        var config = JsonUtils.Deserialize<Config>("""{ "GuiItem": { "AutoUpdateInterval": 72 }, "SvoRayItem": {} }""")!;
-
-        ConfigHandler.MigrateSvoRayItem(config);
-
-        config.GuiItem.AutoUpdateInterval.Should().Be(72);
+        config.GuiItem.AutoUpdateInterval.Should().Be(interval);
     }
 
     [Theory]
@@ -105,14 +92,14 @@ public class SvoRayAutoUpdateTests
     }
 
     [Fact]
-    public void IsGeoUpdateDue_GoesByTheAgeOfTheFile()
+    public void IsGeoUpdateDue_GoesByTheLastUpdateNotTheUptime()
     {
-        var now = new DateTime(2026, 11, 26, 12, 0, 0, DateTimeKind.Utc);
+        const long hour = 3600;
 
-        SvoRayAutoUpdate.IsGeoUpdateDue(24, null, now).Should().BeTrue("no file yet");
-        SvoRayAutoUpdate.IsGeoUpdateDue(24, now.AddHours(-25), now).Should().BeTrue();
-        SvoRayAutoUpdate.IsGeoUpdateDue(24, now.AddHours(-23), now).Should().BeFalse();
-        SvoRayAutoUpdate.IsGeoUpdateDue(24, now.AddDays(30), now).Should().BeTrue("a file dated by a wrong clock");
-        SvoRayAutoUpdate.IsGeoUpdateDue(0, now.AddDays(-300), now).Should().BeFalse("never");
+        SvoRayAutoUpdate.IsGeoUpdateDue(24, 0, Now).Should().BeTrue("never updated yet");
+        SvoRayAutoUpdate.IsGeoUpdateDue(24, Now - 25 * hour, Now).Should().BeTrue();
+        SvoRayAutoUpdate.IsGeoUpdateDue(24, Now - 23 * hour, Now).Should().BeFalse();
+        SvoRayAutoUpdate.IsGeoUpdateDue(24, Now + 30 * 24 * hour, Now).Should().BeTrue("written under a wrong clock");
+        SvoRayAutoUpdate.IsGeoUpdateDue(0, Now - 300 * 24 * hour, Now).Should().BeFalse("off");
     }
 }

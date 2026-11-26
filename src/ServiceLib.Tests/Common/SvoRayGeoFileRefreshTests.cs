@@ -6,7 +6,8 @@ namespace ServiceLib.Tests.Common;
 public sealed class SvoRayGeoFileRefreshTests : IDisposable
 {
     private const string Url = "https://cdn.example/geosite.dat";
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), $"svoray-geo-{Guid.NewGuid():N}");
+    // Under the test's own folder: a fixed subfolder per test instance, removed afterwards.
+    private readonly string _dir = Path.Combine(AppContext.BaseDirectory, "geo-refresh-tests", Guid.NewGuid().ToString("N"));
     private readonly string _path;
 
     public SvoRayGeoFileRefreshTests()

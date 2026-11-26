@@ -124,11 +124,10 @@ public class TaskManager
 
     private async Task UpdateTaskRunGeo()
     {
-        var geosite = Utils.GetBinPath("geosite.dat");
-        DateTime? lastWrite = File.Exists(geosite) ? File.GetLastWriteTimeUtc(geosite) : null;
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         // No reload follows (the handler is told "not a success"): a running core keeps the
         // files it loaded, and the new ones are used from the next connect.
-        if (SvoRayAutoUpdate.IsGeoUpdateDue(_config.GuiItem.AutoUpdateInterval, lastWrite, DateTime.UtcNow))
+        if (SvoRayAutoUpdate.IsGeoUpdateDue(_config.GuiItem.AutoUpdateInterval, _config.SvoRayItem.LastGeoUpdate, now))
         {
             Logging.SaveLog("Execute update geo files");
 
@@ -136,6 +135,10 @@ public class TaskManager
             {
                 await _updateFunc?.Invoke(false, msg);
             }).UpdateGeoFileAll();
+            // UpdateGeoFileAll reports a file that failed only as a message, and an exception
+            // skips this line: a run that got this far counts, and the next is an interval away.
+            _config.SvoRayItem.LastGeoUpdate = now;
+            await ConfigHandler.SaveConfig(_config);
             // The simple profile names only categories the files had; rebuilt so a category that
             // is gone does not stop the core at its next start. No reload: see above.
             await SvoRayRoutingHandler.RefreshIfActiveAsync(_config);

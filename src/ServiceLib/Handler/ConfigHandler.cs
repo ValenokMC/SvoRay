@@ -225,7 +225,6 @@ public static class ConfigHandler
         config.SvoRayItem ??= new();
         config.SvoRayItem.RuleDomains ??= [];
         config.SvoRayItem.CustomGameFolders ??= [];
-        SvoRayAutoUpdate.MigrateGeoFiles(config);
         if (!config.SvoRayItem.HardwareRenderingMigrated)
         {
             config.GuiItem.EnableHWA = true;

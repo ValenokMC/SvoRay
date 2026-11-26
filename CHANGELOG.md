@@ -16,12 +16,14 @@ All notable changes to SvoRay. Dates are the release dates of the installer publ
   button, the routing is rebuilt and the config the core would get is compared with the one it
   runs. Only a changed server list, selected server or routing reconnects; the same list again
   leaves calls and games alone. "Reload" and switching modes still restart the core as before.
-- **Geo files stay current.** v2rayN's own `geoip.dat` and `geosite.dat` (and the sing-box rule
-  sets) are updated once their file is a day old, instead of never; turning it off in the advanced
-  settings is kept. The provider's own geo files, which it can update behind the same URL, are
-  downloaded again once they are 20 hours old, in the background, so connecting never waits for
-  it. A failed download or a file without categories keeps the old one; the new rules apply from
-  the next reconnect.
+- **The provider's geo files stay current.** The geo files a provider's routing comes with, which
+  it can update behind the same URL, are downloaded again once they are 20 hours old, in the
+  background, so connecting never waits for it. A failed download or a file without categories
+  keeps the old one; the new rules apply from the next reconnect.
+- **v2rayN's geo file update follows its interval.** When it is turned on in the advanced
+  settings, it now runs once that many hours have passed since the last update, instead of only
+  after that many hours without a restart. It stays off by default: about 35 MB a day, and SvoRay
+  uses only the private ranges from those files, which come with each release.
 
 ## 0.6.5 — 26 November 2026
 

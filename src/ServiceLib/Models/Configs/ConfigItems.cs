@@ -362,8 +362,11 @@ public class SvoRayItem
     /// </summary>
     public bool SubscriptionAutoUpdateMigrated { get; set; }
 
-    /// <summary>Set once v2rayN's geo file update has been moved off "never" to daily; later choices stay.</summary>
-    public bool GeoAutoUpdateMigrated { get; set; }
+    /// <summary>
+    /// Unix time of the last update of v2rayN's geo files by the scheduler, for its interval
+    /// in the advanced settings; 0 when it never ran.
+    /// </summary>
+    public long LastGeoUpdate { get; set; }
 
     /// <summary>
     /// Folders the user added to game mode by hand, for games no launcher reports. Checked again
