@@ -414,6 +414,11 @@ public partial class CoreConfigSingboxService
                 case EConfigType.WireGuard:
                     {
                         endpoint.address = Utils.String2List(protocolExtra.WgInterfaceAddress)?.Select(s => s.Trim()).ToList() ?? ["172.16.0.2/32"];
+                        // server/server_port came with the outbound template (they live on the base class since
+                        // upstream 7.25 added MASQUE): a WireGuard endpoint names its server in the peer, and
+                        // sing-box refuses the config with them ("unknown field").
+                        endpoint.server = null;
+                        endpoint.server_port = null;
                         var (address, port) = AwgRelayManager.Instance.ResolveEndpoint(_node, _config.CoreBasicItem.SendThrough);
                         var peer = new Peer4Sbox
                         {
