@@ -2426,6 +2426,28 @@ public static class ConfigHandler
     /// <param name="config">Current configuration</param>
     /// <param name="id">Subscription ID to delete</param>
     /// <returns>0 if successful</returns>
+    /// <summary>
+    /// Removes a subscription that brought no servers, and only then. The simple screen calls it
+    /// for a subscription its import just added when the first download gave nothing (no network,
+    /// a blocked host, a wrong link): left behind, the empty entry is refreshed by the scheduler
+    /// later and, once its link answers, shows the same servers a second time next to the
+    /// subscription the user added after it.
+    /// </summary>
+    /// <returns>True when the subscription was removed.</returns>
+    public static async Task<bool> RemoveSubscriptionIfEmpty(Config config, string? subId)
+    {
+        if (subId.IsNullOrEmpty() || await AppManager.Instance.GetSubItem(subId!) is null)
+        {
+            return false;
+        }
+        if ((await AppManager.Instance.ProfileItems(subId!))?.Count > 0)
+        {
+            return false;
+        }
+        await DeleteSubItem(config, subId!);
+        return true;
+    }
+
     public static async Task<int> DeleteSubItem(Config config, string id)
     {
         var item = await AppManager.Instance.GetSubItem(id);
