@@ -147,7 +147,8 @@ foreach ($overlay in $overlays) {
     foreach ($name in $overlay.Files) {
         Copy-Item -LiteralPath (Join-Path $source $name) -Destination (Join-Path $destination $name) -Force
     }
-    $reported = (& (Join-Path $destination $overlay.Exe) @($overlay.VersionArgs) | Select-Object -First 1)
+    # Whole output, then the first line: cutting the pipe short can leave $LASTEXITCODE at -1.
+    $reported = @(& (Join-Path $destination $overlay.Exe) @($overlay.VersionArgs))[0]
     if ($reported -notlike $overlay.Expect) {
         throw "Bundled $($overlay.Exe) reports '$reported', expected $($overlay.Pin.version)."
     }
