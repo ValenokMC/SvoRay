@@ -5,6 +5,14 @@ All notable changes to SvoRay. Dates are the release dates of the installer publ
 
 ## Unreleased
 
+### Changed
+
+- **Switching to advanced mode and back is smooth.** The old screen fades out, the window takes
+  its new size and place in one move, and the new screen fades in. Before, the advanced screen
+  first showed squeezed into the phone-sized window, which then grew right, grew down and jumped
+  to the centre. The advanced screen is also built once while the app is idle after start, so
+  its first opening no longer stalls. With animations turned off in Windows the switch is instant.
+
 ### Fixed
 
 - **No empty subscription is left behind.** When a subscription pasted on the simple screen

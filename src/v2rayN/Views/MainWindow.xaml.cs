@@ -15,18 +15,17 @@ namespace v2rayN.Views;
 
 public partial class MainWindow
 {
-    private const double SimpleWidth = 420;
-    private const double SimpleHeight = 780;
-    private const double SimpleMinWidth = 360;
-    private const double SimpleMinHeight = 560;
+    // The two window shapes live in SvoRayWindowLayout (ServiceLib), where their arithmetic is tested.
+    private const double SimpleMaxWidth = SvoRayWindowLayout.SimpleMaxWidth;
 
-    /// <summary>Past this the phone layout stops looking like one; the card stretches, nothing else.</summary>
-    private const double SimpleMaxWidth = 560;
+    /// <summary>
+    /// How long the old screen takes to fade out and the new one to fade in on a mode switch.
+    /// Short on purpose: long enough to hide the resize, short enough not to feel like a wait.
+    /// </summary>
+    private static readonly Duration ModeFadeOut = new(TimeSpan.FromMilliseconds(110));
 
-    private const double AdvancedWidth = 1180;
-    private const double AdvancedHeight = 760;
-    private const double AdvancedMinWidth = 860;
-    private const double AdvancedMinHeight = 620;
+    private static readonly Duration ModeFadeIn = new(TimeSpan.FromMilliseconds(160));
+
     private const long MaxConfigFileBytes = 256 * 1024;
 
     private static Config _config;
@@ -448,70 +447,149 @@ public partial class MainWindow
 
     #region Event
 
-    private void ShowAdvancedMode()
+    private void ShowAdvancedMode() => _ = SwitchModeAsync(simple: false);
+
+    private void ShowSimpleMode() => _ = SwitchModeAsync(simple: true);
+
+    /// <summary>Set while a mode switch runs, so a second click does not start another one.</summary>
+    private bool _modeSwitching;
+
+    /// <summary>
+    /// Switches between the simple and the advanced screen without the jerk the plain swap had:
+    /// the old screen fades out, the window takes its new size and place in one move while
+    /// nothing is drawn on it, and the new screen fades in. Before, the advanced screen first
+    /// showed squeezed into the phone-sized window, which then grew right, grew down and jumped
+    /// to the centre, each step drawn on its own. Without client-area animations (a Windows
+    /// setting) or with the window hidden or minimised, the switch is instant, still in one move.
+    /// </summary>
+    private async Task SwitchModeAsync(bool simple)
     {
-        if (SimplePanel.Visibility == Visibility.Visible && WindowState == WindowState.Normal)
+        FrameworkElement from = simple ? AdvancedPanel : SimplePanel;
+        FrameworkElement to = simple ? SimplePanel : AdvancedPanel;
+        if (_modeSwitching || to.Visibility == Visibility.Visible)
         {
-            _simpleSize = new Size(Width, Height);
+            return;
         }
 
-        SimplePanel.Visibility = Visibility.Collapsed;
-        AdvancedPanel.Visibility = Visibility.Visible;
-        ApplyWindowSize(false);
+        _modeSwitching = true;
+        try
+        {
+            // Each mode keeps the size the user last left it at, for the session.
+            if (WindowState == WindowState.Normal)
+            {
+                if (simple)
+                {
+                    _advancedSize = new Size(Width, Height);
+                }
+                else
+                {
+                    _simpleSize = new Size(Width, Height);
+                }
+            }
+
+            var animate = IsVisible && WindowState != WindowState.Minimized && SystemParameters.ClientAreaAnimation;
+            if (animate)
+            {
+                await FadeAsync(from, 0, ModeFadeOut);
+            }
+
+            from.Visibility = Visibility.Collapsed;
+            ResetOpacity(from);
+            // The window shows through while the screens fade, so it takes the colour of the
+            // screen that comes next: the advanced one can be light.
+            Background = simple ? SvoRayPalette.Background : (Brush)FindResource("SvoRay.Brush.Background");
+            to.Opacity = animate ? 0 : 1;
+            to.Visibility = Visibility.Visible;
+            ApplyWindowSize(simple);
+
+            if (animate)
+            {
+                // The new screen is laid out at its final size before it starts to appear.
+                await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Loaded);
+                await FadeAsync(to, 1, ModeFadeIn);
+            }
+            ResetOpacity(to);
+        }
+        finally
+        {
+            _modeSwitching = false;
+        }
     }
 
-    private void ShowSimpleMode()
+    private static Task FadeAsync(UIElement element, double to, Duration duration)
     {
-        if (AdvancedPanel.Visibility == Visibility.Visible && WindowState == WindowState.Normal)
-        {
-            _advancedSize = new Size(Width, Height);
-        }
+        var done = new TaskCompletionSource();
+        var fade = new DoubleAnimation(to, duration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+        fade.Completed += (_, _) => done.TrySetResult();
+        element.BeginAnimation(OpacityProperty, fade);
+        return done.Task;
+    }
 
-        AdvancedPanel.Visibility = Visibility.Collapsed;
-        SimplePanel.Visibility = Visibility.Visible;
-        ApplyWindowSize(true);
+    /// <summary>Drops the animation that holds the opacity and leaves the element fully opaque.</summary>
+    private static void ResetOpacity(UIElement element)
+    {
+        element.BeginAnimation(OpacityProperty, null);
+        element.Opacity = 1;
     }
 
     /// <summary>
-    /// Simple mode is a phone-shaped window, advanced mode a desktop one, and they cannot share
-    /// a size or a minimum. Each keeps what the user last resized it to for the session, so
-    /// switching back and forth does not undo their adjustment.
+    /// Gives the window the shape of a mode (see <see cref="SvoRayWindowLayout"/>). The limits are
+    /// loosened first, because the old mode's limits would clamp the new size on the way (the
+    /// phone width cap on a desktop window). Then a normal window gets its new size and place in
+    /// a single SetWindowPos, so Windows draws no in-between frame: no growing right, then down,
+    /// then a jump to the centre. Last come the new mode's limits, which the new size already
+    /// meets. A maximised or not yet shown window only gets the size it restores to.
     /// </summary>
     private void ApplyWindowSize(bool simple)
     {
         var work = SystemParameters.WorkArea;
+        var saved = simple ? _simpleSize : _advancedSize;
+        var bounds = SvoRayWindowLayout.For(simple, saved?.Width, saved?.Height,
+            work.Left, work.Top, work.Width, work.Height);
 
-        // MaxWidth is assigned before Width in both branches: while the phone limit is still in
-        // force, a wider assignment would be clamped down to it and silently ignored.
-        if (simple)
-        {
-            MinWidth = SimpleMinWidth;
-            MinHeight = SimpleMinHeight;
-            MaxWidth = SimpleMaxWidth;
+        MaxWidth = double.PositiveInfinity;
+        MinWidth = SvoRayWindowLayout.RelaxedMinWidth;
+        MinHeight = SvoRayWindowLayout.RelaxedMinHeight;
 
-            var size = _simpleSize ?? new Size(SimpleWidth, SimpleHeight);
-            Width = Math.Min(size.Width, work.Width);
-            Height = Math.Min(size.Height, work.Height);
-        }
-        else
-        {
-            MaxWidth = double.PositiveInfinity;
-            MinWidth = AdvancedMinWidth;
-            MinHeight = AdvancedMinHeight;
-
-            var size = _advancedSize ?? new Size(AdvancedWidth, AdvancedHeight);
-            Width = Math.Min(Math.Max(size.Width, AdvancedMinWidth), work.Width);
-            Height = Math.Min(Math.Max(size.Height, AdvancedMinHeight), work.Height);
-        }
-
-        // The window keeps its top-left corner through a resize, so a switch between the two
-        // shapes would push it towards the edge of the screen and eventually off it.
         if (WindowState == WindowState.Normal)
         {
-            Left = work.Left + ((work.Width - Width) / 2);
-            Top = work.Top + ((work.Height - Height) / 2);
+            MoveWindowAtOnce(bounds);
+            // WPF's own properties are set to the same rectangle afterwards, which keeps them in
+            // step; with the window already there they move nothing.
+            Left = bounds.Left;
+            Top = bounds.Top;
         }
+        Width = bounds.Width;
+        Height = bounds.Height;
+
+        MinWidth = bounds.MinWidth;
+        MinHeight = bounds.MinHeight;
+        MaxWidth = bounds.MaxWidth;
     }
+
+    private void MoveWindowAtOnce(SvoRayWindowBounds bounds)
+    {
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd == IntPtr.Zero || PresentationSource.FromVisual(this)?.CompositionTarget is not { } target)
+        {
+            return;
+        }
+
+        // WPF works in device-independent units, SetWindowPos in pixels of this monitor.
+        var toDevice = target.TransformToDevice;
+        SetWindowPos(hwnd, IntPtr.Zero,
+            (int)Math.Round(bounds.Left * toDevice.M11), (int)Math.Round(bounds.Top * toDevice.M22),
+            (int)Math.Round(bounds.Width * toDevice.M11), (int)Math.Round(bounds.Height * toDevice.M22),
+            SwpNoZOrder | SwpNoActivate | SwpNoOwnerZOrder);
+    }
+
+    private const uint SwpNoZOrder = 0x0004;
+    private const uint SwpNoActivate = 0x0010;
+    private const uint SwpNoOwnerZOrder = 0x0200;
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint flags);
 
     private void UpdateSimpleImportState(bool hasProfiles)
     {
@@ -2018,6 +2096,24 @@ public partial class MainWindow
             ShowHideWindow(false);
         }
         RestoreUI();
+        Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, PrebuildAdvancedPanel);
+    }
+
+    /// <summary>
+    /// Builds the advanced screen once, while the app is idle after start: its first showing
+    /// used to apply every template (server table, tabs, toolbar) at the moment of the switch and
+    /// stall the fade. Hidden takes part in layout without being drawn or clickable; the panel is
+    /// collapsed again right after, so nothing on screen changes.
+    /// </summary>
+    private void PrebuildAdvancedPanel()
+    {
+        if (AdvancedPanel.Visibility != Visibility.Collapsed || _modeSwitching)
+        {
+            return;
+        }
+        AdvancedPanel.Visibility = Visibility.Hidden;
+        AdvancedPanel.UpdateLayout();
+        AdvancedPanel.Visibility = Visibility.Collapsed;
     }
 
     private void RestoreUI()
