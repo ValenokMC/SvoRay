@@ -3,7 +3,9 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
-## Unreleased
+## 0.6.6 — 27 November 2026
+
+Full notes: [docs/RELEASE_NOTES_0.6.6_RU.md](docs/RELEASE_NOTES_0.6.6_RU.md) (Russian).
 
 ### Changed
 
@@ -24,6 +26,9 @@ All notable changes to SvoRay. Dates are the release dates of the installer publ
   settings, it now runs once that many hours have passed since the last update, instead of only
   after that many hours without a restart. It stays off by default: about 35 MB a day, and SvoRay
   uses only the private ranges from those files, which come with each release.
+- **The advanced mode looks like SvoRay.** Its main window (menu, toolbar, tabs, server table,
+  status bar) and the settings window take SvoRay's graphite-and-mint palette and type, in both
+  the light and the dark theme; the simple screen is unchanged. Only colours and styles changed.
 - **Built on v2rayN 7.25.6** (was 7.24.4); Xray 26.11.9 and sing-box 1.14.4 stay as they are.
   When Xray runs the TUN adapter, IPv6 now goes through the tunnel on a PC with a global IPv6
   address, instead of staying outside unless IPv6 was turned on in the TUN settings. The advanced mode gains

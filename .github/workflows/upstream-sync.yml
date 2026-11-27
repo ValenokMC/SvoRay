@@ -27,6 +27,10 @@ on:
         description: 'Let Claude try a version it already had a go at'
         type: boolean
         default: false
+      check_claude_token:
+        description: 'Only check that the Claude token works (one tiny request; no upstream sync)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -46,8 +50,39 @@ env:
   CLAUDE_MAX_TURNS: '80'
 
 jobs:
+  # After the token is added or renewed: one one-word request, so a bad token shows now rather
+  # than at the next upstream release.
+  token-check:
+    name: Check the Claude token
+    if: inputs.check_claude_token == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install Claude Code
+        run: npm install --global "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION"
+
+      - name: Ask for one word
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          test -n "$CLAUDE_CODE_OAUTH_TOKEN" || { echo '::error::CLAUDE_CODE_OAUTH_TOKEN is not set'; exit 1; }
+          answer=$(claude -p 'Reply with the single word OK and nothing else.' --model "$CLAUDE_MODEL" --max-turns 1 --output-format text 2>&1) || true
+          echo "Claude answered: $answer"
+          case "$answer" in
+            *OK*) echo 'The token works.' ;;
+            *) echo '::error::The token did not work; see the answer above.'; exit 1 ;;
+          esac
+
   sync:
     name: Replay upstream changes
+    if: inputs.check_claude_token != true
     runs-on: windows-latest
     timeout-minutes: 90
     env:
