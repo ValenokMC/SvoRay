@@ -98,7 +98,7 @@ jobs:
           $run = $null
           for ($i = 0; $i -lt 30 -and -not $run; $i++) {
             Start-Sleep -Seconds 10
-            $run = gh run list --workflow ci.yml --branch $env:BRANCH --event workflow_dispatch --json databaseId,headSha --jq ".[] | select(.headSha == `"$env:SHA`") | .databaseId" | Select-Object -First 1
+            $run = @(gh run list --workflow ci.yml --branch $env:BRANCH --event workflow_dispatch --json databaseId,headSha --jq ".[] | select(.headSha == `"$env:SHA`") | .databaseId")[0]
           }
           if (-not $run) { throw 'CI run did not start.' }
           gh run watch $run --exit-status --interval 30

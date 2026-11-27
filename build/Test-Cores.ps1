@@ -47,8 +47,11 @@ foreach ($file in $files) {
 
 $ErrorActionPreference = 'Stop'
 Write-Host ''
-Write-Host (& $xray version | Select-Object -First 1)
-Write-Host (& $singbox version | Select-Object -First 1)
+# The whole output first, then its first line: "| Select-Object -First 1" stops the pipe while the
+# core still writes, and Windows PowerShell then leaves $LASTEXITCODE at -1 now and then, which
+# failed a release whose checks had all passed.
+Write-Host @(& $xray version)[0]
+Write-Host @(& $singbox version)[0]
 if ($failed.Count -gt 0) {
     throw "$($failed.Count) of $($files.Count) generated configs were rejected: $($failed -join ', ')"
 }
