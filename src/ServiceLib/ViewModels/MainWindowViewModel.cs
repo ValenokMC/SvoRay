@@ -622,6 +622,7 @@ public partial class MainWindowViewModel : MyReactiveObject
         var subscription = subscriptions.FirstOrDefault(item =>
             string.Equals(item.Url.TrimEx(), value, StringComparison.OrdinalIgnoreCase));
 
+        var addedNow = subscription is null;
         if (subscription is null && await ConfigHandler.AddSubItem(_config, value) != 0)
         {
             NoticeManager.Instance.Enqueue(ResUI.OperationFailed);
@@ -649,6 +650,12 @@ public partial class MainWindowViewModel : MyReactiveObject
                 await ConfigHandler.SetDefaultServerIndex(_config, firstUsableProfile?.IndexId);
             }
             await RemovePreviousSourceAsync(previous, keepSubid: subscription.Id, keepIndexId: null);
+        }
+        else if (addedNow)
+        {
+            // Nothing came down for a link added just now: it is not kept as an empty entry,
+            // which the scheduler would fill in later next to the one the user adds instead.
+            await ConfigHandler.RemoveSubscriptionIfEmpty(_config, subscription.Id);
         }
 
         await RefreshSubscriptions();

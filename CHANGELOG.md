@@ -3,6 +3,15 @@
 All notable changes to SvoRay. Dates are the release dates of the installer published under
 [Releases](../../releases). Detailed Russian notes live in [`docs/`](docs).
 
+## Unreleased
+
+### Fixed
+
+- **No empty subscription is left behind.** When a subscription pasted on the simple screen
+  gives no servers on its first download (no network, a blocked host, a wrong link), it is
+  removed again. Left in place, the automatic refresh from 0.6.6 later filled it in, and the
+  same servers showed up twice next to the subscription added after it.
+
 ## 0.6.6 — 27 November 2026
 
 Full notes: [docs/RELEASE_NOTES_0.6.6_RU.md](docs/RELEASE_NOTES_0.6.6_RU.md) (Russian).
