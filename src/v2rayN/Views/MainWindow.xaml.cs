@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Reactive.Disposables;
 using System.Windows.Controls;
 using System.Windows.Automation;
 using System.Windows.Controls.Primitives;
@@ -31,7 +30,7 @@ public partial class MainWindow
     private const long MaxConfigFileBytes = 256 * 1024;
 
     private static Config _config;
-    private readonly SerialDisposable _layoutBindingsDisposable = new();
+    private readonly SingleReplaceableDisposable _layoutBindingsDisposable = new();
     private CheckUpdateView? _checkUpdateView;
     private BackupAndRestoreView? _backupAndRestoreView;
 
@@ -160,7 +159,9 @@ public partial class MainWindow
             this.BindCommand(ViewModel, vm => vm.AddWireguardServerCmd, v => v.menuAddWireguardServer).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.AddAnytlsServerCmd, v => v.menuAddAnytlsServer).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.AddNaiveServerCmd, v => v.menuAddNaiveServer).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.AddMasqueServerCmd, v => v.menuAddMasqueServer).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.AddCustomServerCmd, v => v.menuAddCustomServer).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.AddCustomOutboundServerCmd, v => v.menuAddCustomOutboundServer).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.AddPolicyGroupServerCmd, v => v.menuAddPolicyGroupServer).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.AddProxyChainServerCmd, v => v.menuAddProxyChainServer).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.AddServerViaClipboardCmd, v => v.menuAddServerViaClipboard).DisposeWith(disposables);
@@ -240,20 +241,22 @@ public partial class MainWindow
             ViewModel.StatusBarViewModel.DispatcherRefreshIconInteraction.RegisterHandler(interaction =>
             {
                 Application.Current?.Dispatcher.Invoke(() => ApplyTrayState(_trayState), DispatcherPriority.Normal);
-                interaction.SetOutput(Unit.Default);
+                interaction.SetOutput(RxVoid.Default);
             }).DisposeWith(disposables);
 
             // Fallback for the notice stream, same reason as the tray interaction above.
             // MsgView registers the real handler, but it is the content of a tab inside the
-            // collapsed AdvancedPanel: WPF does not create the content of an unselected tab,
-            // so in simple mode nothing was registered and every batch of messages threw
-            // UnhandledInteractionException. ReactiveUI invokes handlers in reverse
-            // registration order, so once MsgView appears its handler runs first and this one
-            // never sees the message. Simple mode drops the text on purpose - the stream
-            // carries v2rayN diagnostics including the running server address.
-            ViewModel.MsgViewModel.DispatcherShowMsgInteraction.RegisterHandler(interaction =>
+            // collapsed AdvancedPanel: WPF does not create the content of an unselected tab, so
+            // in simple mode nothing is registered. HandleSafe no longer throws for that, but it
+            // logs the UnhandledInteractionException with its stack trace for every batch.
+            // MsgViewModel flushes only while it is activated, which MsgView does, so this should
+            // stay idle; it is here so no activation without the view can fill the log. ReactiveUI
+            // invokes handlers in reverse registration order, so once MsgView appears its handler
+            // runs first and this one never sees the message. Simple mode drops the text on
+            // purpose - the stream carries v2rayN diagnostics including the running server address.
+            ViewModel.MsgViewModel.ShowMsgInteraction.RegisterHandler(interaction =>
             {
-                interaction.SetOutput(Unit.Default);
+                interaction.SetOutput(RxVoid.Default);
             }).DisposeWith(disposables);
 
             ViewModel.ReadTextFromClipboardInteraction.RegisterHandler(interaction =>
@@ -286,7 +289,7 @@ public partial class MainWindow
             ViewModel.ShowHideWindowInteraction.RegisterHandler(interaction =>
             {
                 ShowHideWindow(interaction.Input);
-                interaction.SetOutput(Unit.Default);
+                interaction.SetOutput(RxVoid.Default);
             }).DisposeWith(disposables);
 
             AppEvents.SendSnackMsgRequested
@@ -1625,7 +1628,7 @@ public partial class MainWindow
             Application.Current?.Dispatcher.InvokeAsync(() => OnPingResult(result));
             return Task.CompletedTask;
         });
-        service.RunLoop(ESpeedActionType.Realping, [profile]);
+        _ = Task.Run(() => service.RunLoop(ESpeedActionType.Realping, [profile]));
     }
 
     /// <summary>
@@ -2050,8 +2053,8 @@ public partial class MainWindow
 
     private void UpdateLayout(EGirdOrientation orientation)
     {
-        var currentLayoutDisposables = new CompositeDisposable();
-        _layoutBindingsDisposable.Disposable = currentLayoutDisposables;
+        var currentLayoutDisposables = new MultipleDisposable();
+        _layoutBindingsDisposable.Create(currentLayoutDisposables);
 
         gridMain.Visibility = orientation == EGirdOrientation.Horizontal ? Visibility.Visible : Visibility.Collapsed;
         gridMain1.Visibility = orientation == EGirdOrientation.Vertical ? Visibility.Visible : Visibility.Collapsed;

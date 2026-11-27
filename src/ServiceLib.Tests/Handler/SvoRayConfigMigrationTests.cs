@@ -1,12 +1,14 @@
-using AwesomeAssertions;
 using ServiceLib.Handler;
-using Xunit;
 
 namespace ServiceLib.Tests.Handler;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRayConfigMigrationTests))]
 public class SvoRayConfigMigrationTests
 {
-    [Fact]
+    [Test]
     public void MigrateSvoRayItem_ShouldSwitchAnOlderConfigToTunOnce()
     {
         // A 0.4.x config: the user was on the system proxy, and the flag did not exist yet.
@@ -21,7 +23,7 @@ public class SvoRayConfigMigrationTests
         config.SvoRayItem.TunDefaultMigrated.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void MigrateSvoRayItem_ShouldKeepProxyChosenAfterTheMigration()
     {
         var config = new Config
@@ -35,7 +37,7 @@ public class SvoRayConfigMigrationTests
         config.SvoRayItem.Mode.Should().Be(ESvoRayMode.Proxy);
     }
 
-    [Fact]
+    [Test]
     public void MigrateSvoRayItem_ShouldMoveHysteriaOffTheOldBrutalDefaultOnce()
     {
         // A 0.6.4 config: v2rayN's 100/100 default, which forced Brutal at 100 Mbps.
@@ -59,7 +61,7 @@ public class SvoRayConfigMigrationTests
         config.HysteriaItem.UpMbps.Should().Be(100);
     }
 
-    [Fact]
+    [Test]
     public void MigrateSvoRayItem_ShouldKeepAHysteriaSpeedTheUserTyped()
     {
         var config = new Config

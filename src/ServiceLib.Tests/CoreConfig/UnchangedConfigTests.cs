@@ -1,10 +1,11 @@
-using AwesomeAssertions;
 using ServiceLib.Enums;
 using ServiceLib.Manager;
 using ServiceLib.Services.CoreConfig;
-using Xunit;
 
 namespace ServiceLib.Tests.CoreConfig;
+
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
 
 /// <summary>
 /// A background subscription refresh reloads with "keep if unchanged": the running core stays
@@ -15,16 +16,16 @@ namespace ServiceLib.Tests.CoreConfig;
 /// Alone, not in parallel: generation reads the config bound to <see cref="AppManager"/> (the
 /// Clash API port follows its TUN flag), and other tests bind their own between two generations.
 /// </remarks>
-[Collection(nameof(UnchangedConfigTests))]
+[NotInParallel]
 public class UnchangedConfigTests
 {
     private const string SubId = "sub-1";
 
-    [Theory]
-    [InlineData(ECoreType.sing_box, false)]
-    [InlineData(ECoreType.sing_box, true)]
-    [InlineData(ECoreType.Xray, false)]
-    [InlineData(ECoreType.Xray, true)]
+    [Test]
+    [Arguments(ECoreType.sing_box, false)]
+    [Arguments(ECoreType.sing_box, true)]
+    [Arguments(ECoreType.Xray, false)]
+    [Arguments(ECoreType.Xray, true)]
     public async Task SameSubscriptionAgain_KeepsTheRunningCore(ECoreType core, bool tun)
     {
         var (config, servers) = Setup(core, tun);
@@ -38,9 +39,9 @@ public class UnchangedConfigTests
         CoreSwitchPlanner.CanKeepRunningCore(running, coreAlive: true, again).Should().BeTrue();
     }
 
-    [Theory]
-    [InlineData(ECoreType.sing_box)]
-    [InlineData(ECoreType.Xray)]
+    [Test]
+    [Arguments(ECoreType.sing_box)]
+    [Arguments(ECoreType.Xray)]
     public async Task ChangedServerSetServerOrRouting_Reloads(ECoreType core)
     {
         var (config, servers) = Setup(core, tun: true);
@@ -105,6 +106,3 @@ public class UnchangedConfigTests
         return ServerSwitchCandidates.WithCandidates(context, candidates);
     }
 }
-
-[CollectionDefinition(nameof(UnchangedConfigTests), DisableParallelization = true)]
-public class UnchangedConfigCollection;

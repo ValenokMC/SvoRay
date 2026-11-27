@@ -1,17 +1,19 @@
-using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Enums;
 using ServiceLib.Handler;
 using ServiceLib.Models;
 using ServiceLib.Services.CoreConfig;
-using Xunit;
 
 namespace ServiceLib.Tests.CoreConfig;
+
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
 
 /// <summary>
 /// Game mode and the subscription's routing profile in the simple screen's rule set, and how
 /// both reach the two cores.
 /// </summary>
+[NotInParallel(nameof(SvoRayGameModeAndServerRoutingTests))]
 public class SvoRayGameModeAndServerRoutingTests
 {
     private const string GameFolder = "C:/Program Files (x86)/Steam/";
@@ -35,7 +37,7 @@ public class SvoRayGameModeAndServerRoutingTests
         GameFolders = [GameFolder],
     };
 
-    [Fact]
+    [Test]
     public void GameMode_ShouldSendGameProcessesDirectBeforeAnythingElse()
     {
         var rules = SvoRayRoutingHandler.BuildRules(new SvoRayItem { GameMode = true }, Inputs());
@@ -47,7 +49,7 @@ public class SvoRayGameModeAndServerRoutingTests
         first.Domain.Should().BeNullOrEmpty();
     }
 
-    [Fact]
+    [Test]
     public void GameMode_ShouldAddNoProcessRuleInProxyMode()
     {
         var settings = new SvoRayItem { GameMode = true, Mode = ESvoRayMode.Proxy };
@@ -57,7 +59,7 @@ public class SvoRayGameModeAndServerRoutingTests
             .Should().NotContain(r => r.Process != null && r.Process.Count > 0);
     }
 
-    [Fact]
+    [Test]
     public void GameModeOff_ShouldAddNoProcessRule()
     {
         var rules = SvoRayRoutingHandler.BuildRules(new SvoRayItem { GameMode = false }, Inputs());
@@ -69,7 +71,7 @@ public class SvoRayGameModeAndServerRoutingTests
     /// Bypass mode: the user's list, then the server's groups in its order with QUIC refused on
     /// the proxied group, then the usual tail. Unknown categories never reach the core.
     /// </summary>
-    [Fact]
+    [Test]
     public void ServerProfile_ShouldFollowTheUserListInTheServersOrder()
     {
         var settings = new SvoRayItem { RuleDomains = ["mine.example"] };
@@ -95,7 +97,7 @@ public class SvoRayGameModeAndServerRoutingTests
         rules.SelectMany(r => r.Domain ?? []).Should().NotContain(d => d.Contains("whitelist"));
     }
 
-    [Fact]
+    [Test]
     public void ServerProfile_InProxyListedMode_ShouldNotBlockQuicForTheProxiedGroup()
     {
         var rules = SvoRayRoutingHandler.BuildRules(
@@ -105,7 +107,7 @@ public class SvoRayGameModeAndServerRoutingTests
         rules.Last().OutboundTag.Should().Be(Global.DirectTag);
     }
 
-    [Fact]
+    [Test]
     public void ServerRoutingSwitchedOff_ShouldIgnoreTheProfile()
     {
         var withoutProfile = SvoRayRoutingHandler.BuildRules(new SvoRayItem(), Inputs(withProfile: false));
@@ -117,7 +119,7 @@ public class SvoRayGameModeAndServerRoutingTests
     }
 
     /// <summary>Xray gets the folder prefix and the ext: categories exactly as built.</summary>
-    [Fact]
+    [Test]
     public void XrayConfig_ShouldCarryFolderProcessesAndExtCategories()
     {
         var config = CoreConfigTestFactory.CreateConfig(ECoreType.Xray);
@@ -141,7 +143,7 @@ public class SvoRayGameModeAndServerRoutingTests
     /// sing-box would read a trailing-slash folder as one exact file, so it gets a prefix regex;
     /// ext: categories it cannot read are left out while plain domains still arrive.
     /// </summary>
-    [Fact]
+    [Test]
     public void SingboxConfig_ShouldTurnFoldersIntoPrefixRegexes()
     {
         var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
@@ -162,9 +164,9 @@ public class SvoRayGameModeAndServerRoutingTests
             && r.domain_suffix != null && r.domain_suffix.Contains("discord.com"));
     }
 
-    [Theory]
-    [InlineData("C:/Program Files (x86)/Steam/", @"(?i)^C:\\Program Files \(x86\)\\Steam\\")]
-    [InlineData("D:/Games+More/", @"(?i)^D:\\Games\+More\\")]
+    [Test]
+    [Arguments("C:/Program Files (x86)/Steam/", @"(?i)^C:\\Program Files \(x86\)\\Steam\\")]
+    [Arguments("D:/Games+More/", @"(?i)^D:\\Games\+More\\")]
     public void FolderPrefixRegex_ShouldEscapeOnlyRegexCharacters(string folder, string expected)
     {
         if (!OperatingSystem.IsWindows())

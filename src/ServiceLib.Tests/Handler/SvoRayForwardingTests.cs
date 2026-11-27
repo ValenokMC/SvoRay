@@ -1,15 +1,16 @@
-using AwesomeAssertions;
 using ServiceLib.Handler;
-using Xunit;
 
 namespace ServiceLib.Tests.Handler;
+
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
 
 /// <summary>
 /// The forwarding guard with netsh and the adapter state faked: it must change nothing on a PC
 /// where forwarding is off, turn it off where something turned it on, do so again if that
 /// software turns it back on, and always give the adapter back.
 /// </summary>
-[Collection("SvoRayForwarding")]
+[NotInParallel("SvoRayForwarding")]
 public class SvoRayForwardingTests : IDisposable
 {
     private readonly Func<string, Task<int>> _run = SvoRayForwarding.RunNetsh;
@@ -40,14 +41,14 @@ public class SvoRayForwardingTests : IDisposable
 
     private static Config NewConfig() => new() { SvoRayItem = new(), GuiItem = new() };
 
-    [Fact]
+    [Test]
     public void Command_ShouldOnlyTouchTheActiveStore()
     {
         SvoRayForwarding.Command(4, false).Should().Be("interface ipv4 set interface interface=4 forwarding=disabled store=active");
         SvoRayForwarding.Command(4, true).Should().Be("interface ipv4 set interface interface=4 forwarding=enabled store=active");
     }
 
-    [Fact]
+    [Test]
     public async Task SuspendAsync_ShouldChangeNothingWhereForwardingIsOff()
     {
         if (!OperatingSystem.IsWindows())
@@ -64,7 +65,7 @@ public class SvoRayForwardingTests : IDisposable
         config.SvoRayItem.SuspendedForwardingInterface.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public async Task SuspendAsync_ShouldTurnForwardingOffAgainAndRestoreItOnce()
     {
         if (!OperatingSystem.IsWindows())
@@ -90,7 +91,7 @@ public class SvoRayForwardingTests : IDisposable
         _commands.Count(c => c.Contains("forwarding=enabled")).Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public async Task SuspendAsync_ShouldGiveTheFirstAdapterBackWhenTheNetworkChanges()
     {
         if (!OperatingSystem.IsWindows())
@@ -109,7 +110,7 @@ public class SvoRayForwardingTests : IDisposable
         config.SvoRayItem.SuspendedForwardingInterface.Should().Be(7);
     }
 
-    [Fact]
+    [Test]
     public async Task SuspendAsync_ShouldIgnoreAnUnknownOrMissingAdapter()
     {
         var config = NewConfig();
@@ -122,10 +123,10 @@ public class SvoRayForwardingTests : IDisposable
 }
 
 /// <summary>The real reader, on the machine the tests run on: it must answer per adapter.</summary>
-[Collection("SvoRayForwarding")]
+[NotInParallel("SvoRayForwarding")]
 public class SvoRayForwardingReaderTests
 {
-    [Fact]
+    [Test]
     public void IsForwardingEnabled_ShouldReadTheLoopbackInterfacesOwnFlag()
     {
         if (!OperatingSystem.IsWindows())

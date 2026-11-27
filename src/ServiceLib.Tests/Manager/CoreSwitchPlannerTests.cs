@@ -1,38 +1,40 @@
-using AwesomeAssertions;
 using ServiceLib.Enums;
 using ServiceLib.Manager;
-using Xunit;
 
 namespace ServiceLib.Tests.Manager;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(CoreSwitchPlannerTests))]
 public class CoreSwitchPlannerTests
 {
     private static readonly CoreConfigShape ShapeA = new("FP1", "proxy-1");
     private static readonly CoreConfigShape ShapeB = new("FP1", "proxy-2");
     private static readonly RunningCoreState RunningA = new(ECoreType.sing_box, ShapeA);
 
-    [Fact]
+    [Test]
     public void Decide_SameConfigOtherServer_HotSwitches()
     {
         CoreSwitchPlanner.Decide(RunningA, coreAlive: true, ECoreType.sing_box, hasPreCore: false, ShapeB)
             .Should().Be(ECoreSwitchKind.HotSwitch);
     }
 
-    [Fact]
+    [Test]
     public void Decide_NothingRunning_Restarts()
     {
         CoreSwitchPlanner.Decide(null, coreAlive: false, ECoreType.sing_box, hasPreCore: false, ShapeB)
             .Should().Be(ECoreSwitchKind.Restart);
     }
 
-    [Fact]
+    [Test]
     public void Decide_CoreDied_Restarts()
     {
         CoreSwitchPlanner.Decide(RunningA, coreAlive: false, ECoreType.sing_box, hasPreCore: false, ShapeB)
             .Should().Be(ECoreSwitchKind.Restart);
     }
 
-    [Fact]
+    [Test]
     public void Decide_ConfigChangedBesidesTheServer_Restarts()
     {
         // A mode, routing, DNS or server-set change shows up as a different fingerprint.
@@ -41,7 +43,7 @@ public class CoreSwitchPlannerTests
             .Should().Be(ECoreSwitchKind.Restart);
     }
 
-    [Fact]
+    [Test]
     public void Decide_OtherCoreType_Restarts()
     {
         CoreSwitchPlanner.Decide(RunningA, coreAlive: true, ECoreType.Xray, hasPreCore: false, ShapeB)
@@ -51,21 +53,21 @@ public class CoreSwitchPlannerTests
             .Should().Be(ECoreSwitchKind.Restart);
     }
 
-    [Fact]
+    [Test]
     public void Decide_NewConfigWithoutSelector_Restarts()
     {
         CoreSwitchPlanner.Decide(RunningA, coreAlive: true, ECoreType.sing_box, hasPreCore: false, null)
             .Should().Be(ECoreSwitchKind.Restart);
     }
 
-    [Fact]
+    [Test]
     public void Decide_PreCore_Restarts()
     {
         CoreSwitchPlanner.Decide(RunningA, coreAlive: true, ECoreType.sing_box, hasPreCore: true, ShapeB)
             .Should().Be(ECoreSwitchKind.Restart);
     }
 
-    [Fact]
+    [Test]
     public void Decide_SameServerAgain_Restarts()
     {
         // A reload of the running server is asked for on purpose and keeps restarting the core.
@@ -73,7 +75,7 @@ public class CoreSwitchPlannerTests
             .Should().Be(ECoreSwitchKind.Restart);
     }
 
-    [Fact]
+    [Test]
     public void Decide_Xray_HotSwitchesUntilTheSwapLimit()
     {
         var running = new RunningCoreState(ECoreType.Xray, ShapeA);
@@ -85,7 +87,7 @@ public class CoreSwitchPlannerTests
             .Should().Be(ECoreSwitchKind.Restart, "removed Xray outbounds are never closed, a restart clears them");
     }
 
-    [Fact]
+    [Test]
     public void Decide_OtherCores_AlwaysRestart()
     {
         var running = new RunningCoreState(ECoreType.mihomo, ShapeA);
@@ -93,7 +95,7 @@ public class CoreSwitchPlannerTests
             .Should().Be(ECoreSwitchKind.Restart);
     }
 
-    [Fact]
+    [Test]
     public void ReadXrayShape_MasksOnlyTheProxyOutbound()
     {
         var a = CoreSwitchPlanner.ReadXrayShape(XrayConfig("a.example.com", "1.1.1.1"));
@@ -107,7 +109,7 @@ public class CoreSwitchPlannerTests
         otherDns!.Fingerprint.Should().NotBe(a.Fingerprint);
     }
 
-    [Fact]
+    [Test]
     public void ReadXrayShape_WithoutHandlerApiOrWithBalancer_ReturnsNull()
     {
         var noApi = JsonNode.Parse(XrayConfig("a.example.com", "1.1.1.1"))!.AsObject();
@@ -120,7 +122,7 @@ public class CoreSwitchPlannerTests
         CoreSwitchPlanner.ReadXrayShape(null).Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void WrapOutbound_GivesTheConfigShapeTheXrayCommandsRead()
     {
         var wrapped = JsonNode.Parse(XrayApiService.WrapOutbound("""{"tag":"proxy","protocol":"vless"}"""))!;
@@ -129,18 +131,18 @@ public class CoreSwitchPlannerTests
         ((string?)wrapped["outbounds"]![0]!["tag"]).Should().Be("proxy");
     }
 
-    [Theory]
-    [InlineData(true, true, true, true)]
-    [InlineData(true, true, false, false)]
-    [InlineData(true, false, true, false)]
-    [InlineData(false, true, true, false)]
+    [Test]
+    [Arguments(true, true, true, true)]
+    [Arguments(true, true, false, false)]
+    [Arguments(true, false, true, false)]
+    [Arguments(false, true, true, false)]
     public void ShouldRemoveTunDevices_OnlyForTunOnWindowsWhenAdapterMayBeStale(bool isWindows, bool isTun,
         bool mayBeStale, bool expected)
     {
         CoreSwitchPlanner.ShouldRemoveTunDevices(isWindows, isTun, mayBeStale).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void CanKeepRunningCore_OnlyForTheConfigItRuns()
     {
         var running = CoreSwitchPlanner.ReadConfigDigest(Config("proxy-1", "8.8.8.8"));
@@ -154,7 +156,7 @@ public class CoreSwitchPlannerTests
         CoreSwitchPlanner.CanKeepRunningCore(null, coreAlive: true, null).Should().BeFalse("a custom config is not compared");
     }
 
-    [Fact]
+    [Test]
     public void ReadConfigDigest_IgnoresDatedLogFilesOnly()
     {
         const string today = """{"log":{"loglevel":"warning","access":"C:\\logs\\Vaccess_2026-11-26.txt","error":"C:\\logs\\Verror_2026-11-26.txt"},"outbounds":[{"tag":"proxy"}]}""";
@@ -168,7 +170,7 @@ public class CoreSwitchPlannerTests
         CoreSwitchPlanner.ReadConfigDigest(otherLevel).Should().NotBe(CoreSwitchPlanner.ReadConfigDigest(today));
     }
 
-    [Fact]
+    [Test]
     public void ReadConfigDigest_CoversThePreCore()
     {
         var main = Config("proxy-1", "8.8.8.8");
@@ -181,7 +183,7 @@ public class CoreSwitchPlannerTests
         CoreSwitchPlanner.ReadConfigDigest("not json").Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void ReadSingboxShape_IgnoresOnlyTheSelectorDefault()
     {
         var a = CoreSwitchPlanner.ReadSingboxShape(Config("proxy-1", "8.8.8.8"));
@@ -195,7 +197,7 @@ public class CoreSwitchPlannerTests
         other!.Fingerprint.Should().NotBe(a.Fingerprint);
     }
 
-    [Fact]
+    [Test]
     public void ReadSingboxShape_NoManualSelector_ReturnsNull()
     {
         const string singleServer = """{"outbounds":[{"type":"vmess","tag":"proxy"},{"type":"direct","tag":"direct"}]}""";

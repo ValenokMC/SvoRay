@@ -1,13 +1,14 @@
-using AwesomeAssertions;
-using Xunit;
-
 namespace ServiceLib.Tests.Common;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRayAutoUpdateTests))]
 public class SvoRayAutoUpdateTests
 {
     private const long Now = 1_800_000_000;
 
-    [Fact]
+    [Test]
     public void MigrateSubscriptions_MovesSubscriptionsLeftAtNeverOnce()
     {
         // As found on a real install: every subscription at v2rayN's "never".
@@ -23,7 +24,7 @@ public class SvoRayAutoUpdateTests
         settings.SubscriptionAutoUpdateMigrated.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void MigrateSubscriptions_KeepsNeverChosenAfterTheMigration()
     {
         var settings = new SvoRayItem { SubscriptionAutoUpdateMigrated = true };
@@ -34,7 +35,7 @@ public class SvoRayAutoUpdateTests
         never.AutoUpdateInterval.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void MigrateSubscriptions_FlagSurvivesTheConfigFile()
     {
         var settings = JsonUtils.Deserialize<SvoRayItem>(
@@ -44,16 +45,16 @@ public class SvoRayAutoUpdateTests
         settings.LastGeoUpdate.Should().Be(Now);
     }
 
-    [Fact]
+    [Test]
     public void NewSubscription_RefreshesByItself()
     {
         new SubItem().AutoUpdateInterval.Should().Be(SvoRayAutoUpdate.SubscriptionIntervalMinutes);
         SvoRayAutoUpdate.SubscriptionIntervalMinutes.Should().Be(360);
     }
 
-    [Theory]
-    [InlineData(0)] // off, v2rayN's default: about 35 MB a day is not turned on for anyone
-    [InlineData(72)]
+    [Test]
+    [Arguments(0)] // off, v2rayN's default: about 35 MB a day is not turned on for anyone
+    [Arguments(72)]
     public void MigrateSvoRayItem_LeavesTheGeoFileIntervalAsTheUserSetIt(int interval)
     {
         var config = JsonUtils.Deserialize<Config>($$"""{ "GuiItem": { "AutoUpdateInterval": {{interval}} }, "SvoRayItem": {} }""")!;
@@ -63,12 +64,12 @@ public class SvoRayAutoUpdateTests
         config.GuiItem.AutoUpdateInterval.Should().Be(interval);
     }
 
-    [Theory]
-    [InlineData(360, 0, true, true)] // never refreshed yet: right away
-    [InlineData(360, Now - 360 * 60, true, true)]
-    [InlineData(360, Now - 359 * 60, true, false)]
-    [InlineData(0, 0, true, false)] // "never" chosen by the user
-    [InlineData(360, 0, false, false)] // switched off subscription
+    [Test]
+    [Arguments(360, 0, true, true)] // never refreshed yet: right away
+    [Arguments(360, Now - 360 * 60, true, true)]
+    [Arguments(360, Now - 359 * 60, true, false)]
+    [Arguments(0, 0, true, false)] // "never" chosen by the user
+    [Arguments(360, 0, false, false)] // switched off subscription
     public void IsSubscriptionDue_FollowsTheInterval(int interval, long updateTime, bool enabled, bool expected)
     {
         var sub = new SubItem { AutoUpdateInterval = interval, UpdateTime = updateTime, Enabled = enabled };
@@ -76,7 +77,7 @@ public class SvoRayAutoUpdateTests
         SvoRayAutoUpdate.IsSubscriptionDue(sub, Now).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void UpdateTimeAfterAttempt_RetriesAFailureSoon()
     {
         var sub = new SubItem { AutoUpdateInterval = 360 };
@@ -91,7 +92,7 @@ public class SvoRayAutoUpdateTests
         SvoRayAutoUpdate.UpdateTimeAfterAttempt(frequent, Now, success: false).Should().Be(Now);
     }
 
-    [Fact]
+    [Test]
     public void IsGeoUpdateDue_GoesByTheLastUpdateNotTheUptime()
     {
         const long hour = 3600;

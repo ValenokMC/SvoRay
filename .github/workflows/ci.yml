@@ -47,4 +47,4 @@ jobs:
         run: dotnet build .\src\v2rayN.Desktop\v2rayN.Desktop.csproj --configuration Release --no-restore --nologo
 
       - name: Run tests
-        run: dotnet test .\src\ServiceLib.Tests\ServiceLib.Tests.csproj --configuration Release --no-restore --nologo
+        run: dotnet test --project .\src\ServiceLib.Tests\ServiceLib.Tests.csproj --configuration Release --no-restore --nologo

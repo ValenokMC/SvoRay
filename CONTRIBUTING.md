@@ -21,7 +21,7 @@ SvoRay targets Windows 10/11 and .NET 10. The installer build also requires Inno
 
 ```powershell
 dotnet restore .\src\ServiceLib.Tests\ServiceLib.Tests.csproj
-dotnet test .\src\ServiceLib.Tests\ServiceLib.Tests.csproj -c Release
+dotnet test --project .\src\ServiceLib.Tests\ServiceLib.Tests.csproj -c Release
 ```
 
 To build the installer (the components pinned in `build/cores.json` are downloaded and checked):

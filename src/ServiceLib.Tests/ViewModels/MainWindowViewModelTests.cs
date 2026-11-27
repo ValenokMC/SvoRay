@@ -1,11 +1,13 @@
-using AwesomeAssertions;
 using ServiceLib.Enums;
 using ServiceLib.Models;
 using ServiceLib.ViewModels;
-using Xunit;
 
 namespace ServiceLib.Tests.ViewModels;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(MainWindowViewModelTests))]
 public class MainWindowViewModelTests
 {
     private static Config CreateConfig(ESvoRayMode mode, ESysProxyType proxyType, bool enableTun)
@@ -18,9 +20,9 @@ public class MainWindowViewModelTests
         };
     }
 
-    [Theory]
-    [InlineData(ESvoRayMode.Proxy)]
-    [InlineData(ESvoRayMode.Tun)]
+    [Test]
+    [Arguments(ESvoRayMode.Proxy)]
+    [Arguments(ESvoRayMode.Tun)]
     public void IsCoreWanted_Disconnected_ShouldNotWantCore(ESvoRayMode mode)
     {
         // What the off switch leaves behind, in either mode: no tunnel and a cleared system proxy.
@@ -31,7 +33,7 @@ public class MainWindowViewModelTests
         MainWindowViewModel.IsCoreWanted(config).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void IsCoreWanted_TunUp_ShouldWantCore()
     {
         var config = CreateConfig(ESvoRayMode.Tun, ESysProxyType.ForcedClear, enableTun: true);
@@ -39,10 +41,10 @@ public class MainWindowViewModelTests
         MainWindowViewModel.IsCoreWanted(config).Should().BeTrue();
     }
 
-    [Theory]
-    [InlineData(ESysProxyType.ForcedChange)]
-    [InlineData(ESysProxyType.Unchanged)]
-    [InlineData(ESysProxyType.Pac)]
+    [Test]
+    [Arguments(ESysProxyType.ForcedChange)]
+    [Arguments(ESysProxyType.Unchanged)]
+    [Arguments(ESysProxyType.Pac)]
     public void IsCoreWanted_SystemProxyNotCleared_ShouldWantCore(ESysProxyType proxyType)
     {
         // Simple mode only ever sets ForcedChange, but advanced mode keeps the v2rayN meanings:
@@ -53,12 +55,12 @@ public class MainWindowViewModelTests
         MainWindowViewModel.IsCoreWanted(config).Should().BeTrue();
     }
 
-    [Theory]
-    [InlineData(ESvoRayMode.Proxy, ESysProxyType.ForcedChange, false, true)]
-    [InlineData(ESvoRayMode.Proxy, ESysProxyType.ForcedClear, false, false)]
-    [InlineData(ESvoRayMode.Proxy, ESysProxyType.Unchanged, false, false)]
-    [InlineData(ESvoRayMode.Tun, ESysProxyType.ForcedClear, true, true)]
-    [InlineData(ESvoRayMode.Tun, ESysProxyType.ForcedClear, false, false)]
+    [Test]
+    [Arguments(ESvoRayMode.Proxy, ESysProxyType.ForcedChange, false, true)]
+    [Arguments(ESvoRayMode.Proxy, ESysProxyType.ForcedClear, false, false)]
+    [Arguments(ESvoRayMode.Proxy, ESysProxyType.Unchanged, false, false)]
+    [Arguments(ESvoRayMode.Tun, ESysProxyType.ForcedClear, true, true)]
+    [Arguments(ESvoRayMode.Tun, ESysProxyType.ForcedClear, false, false)]
     public void IsSvoRayConnectionRequested_FollowsTheSwitchTheModeUses(
         ESvoRayMode mode, ESysProxyType proxyType, bool enableTun, bool expected)
     {

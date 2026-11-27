@@ -1,18 +1,20 @@
 using System.Text;
-using AwesomeAssertions;
 using ServiceLib.Handler;
-using Xunit;
 
 namespace ServiceLib.Tests.Handler;
+
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
 
 /// <summary>
 /// Each launcher format on data shaped like the real files (no registry and no real launcher
 /// installs are read). Layouts follow Playnite, GameFinder and the launchers' own files; see the
 /// 0.5.0 release notes for the sources.
 /// </summary>
+[NotInParallel(nameof(SvoRayGameSourcesTests))]
 public class SvoRayGameSourcesTests
 {
-    [Fact]
+    [Test]
     public void ParseEpicManifest_ShouldReadTheInstallLocation()
     {
         SvoRayGames.ParseEpicManifest("""{ "DisplayName": "Fortnite", "InstallLocation": "D:\\Epic\\Fortnite" }""")
@@ -21,7 +23,7 @@ public class SvoRayGameSourcesTests
         SvoRayGames.ParseEpicManifest(null).Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void ParseRiotProductSettings_ShouldReadOnlyTheTopLevelInstallPath()
     {
         const string yaml = """
@@ -38,7 +40,7 @@ public class SvoRayGameSourcesTests
         SvoRayGames.ParseRiotProductSettings("other: 1").Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void ParseRiotClientInstalls_ShouldReadTheGameFoldersOfAssociatedClients()
     {
         const string json = """
@@ -53,7 +55,7 @@ public class SvoRayGameSourcesTests
         SvoRayGames.ParseRiotClientInstalls("nonsense").Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void ParseBattleNetProductDb_ShouldReadGamePathsAndSkipTheLauncher()
     {
         var db = Concat(
@@ -65,7 +67,7 @@ public class SvoRayGameSourcesTests
         SvoRayGames.ParseBattleNetProductDb(db).Should().Equal("E:/Games/World of Warcraft", "F:/Overwatch");
     }
 
-    [Fact]
+    [Test]
     public void ParseBattleNetProductDb_ShouldSurviveTruncatedData()
     {
         var db = Field(1, Concat(Field(1, Text("wow")), Field(3, Field(1, Text("E:/Games/World of Warcraft")))));
@@ -75,7 +77,7 @@ public class SvoRayGameSourcesTests
         SvoRayGames.ParseBattleNetProductDb(null).Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void ParseGamingRoot_ShouldReadEveryRelativeFolder()
     {
         var data = Concat(Encoding.ASCII.GetBytes("RGBX"), BitConverter.GetBytes(2u),
@@ -86,7 +88,7 @@ public class SvoRayGameSourcesTests
         SvoRayGames.ParseGamingRoot([1, 2]).Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void ParseLestaPreferences_ShouldReadEveryGameWorkingDir()
     {
         const string xml = """
@@ -107,20 +109,20 @@ public class SvoRayGameSourcesTests
         SvoRayGames.ParseLestaPreferences("<broken").Should().BeEmpty();
     }
 
-    [Theory]
-    [InlineData("Blizzard Entertainment", null, true)]
-    [InlineData("Electronic Arts", null, true)]
-    [InlineData("Electronic Arts, Inc.", null, true)]
-    [InlineData("Rockstar Games", null, true)]
-    [InlineData(null, "\"C:\\Program Files (x86)\\Battle.net\\Battle.net.exe\" --uid=wow --lang=ruRU", true)]
-    [InlineData("Microsoft Corporation", "MsiExec.exe /X{...}", false)]
-    [InlineData("Discord Inc.", null, false)]
+    [Test]
+    [Arguments("Blizzard Entertainment", null, true)]
+    [Arguments("Electronic Arts", null, true)]
+    [Arguments("Electronic Arts, Inc.", null, true)]
+    [Arguments("Rockstar Games", null, true)]
+    [Arguments(null, "\"C:\\Program Files (x86)\\Battle.net\\Battle.net.exe\" --uid=wow --lang=ruRU", true)]
+    [Arguments("Microsoft Corporation", "MsiExec.exe /X{...}", false)]
+    [Arguments("Discord Inc.", null, false)]
     public void IsGameUninstallEntry_ShouldKeepOnlyGameLaunchers(string? publisher, string? uninstall, bool expected)
     {
         SvoRayGames.IsGameUninstallEntry(publisher, uninstall).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void FindFileSystemFolders_ShouldReadEveryLauncherFromItsOwnFiles()
     {
         var root = Directory.CreateTempSubdirectory("svoray-games-").FullName;
@@ -173,7 +175,7 @@ public class SvoRayGameSourcesTests
         }
     }
 
-    [Fact]
+    [Test]
     public void IsTooBroad_ShouldRefuseSystemFoldersAndStoreApps()
     {
         SvoRayGames.IsTooBroad(@"C:\").Should().BeTrue();
@@ -189,7 +191,7 @@ public class SvoRayGameSourcesTests
         SvoRayGames.IsTooBroad(@"E:\SteamLibrary\steamapps\common").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void BuildFolderEntries_ShouldDropAnInstallLocationThatIsTooBroad()
     {
         var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
@@ -197,7 +199,7 @@ public class SvoRayGameSourcesTests
         SvoRayGames.BuildFolderEntries([programFiles, Path.GetPathRoot(programFiles)!]).Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void CheckCustomFolder_ShouldExplainWhyAFolderIsRefused()
     {
         var game = Directory.CreateTempSubdirectory("svoray-custom-").FullName;
@@ -214,7 +216,7 @@ public class SvoRayGameSourcesTests
         }
     }
 
-    [Fact]
+    [Test]
     public void ExactCase_ShouldResolveAJunctionToItsTarget()
     {
         if (!OperatingSystem.IsWindows())

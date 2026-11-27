@@ -1,12 +1,14 @@
-using AwesomeAssertions;
 using ServiceLib.Handler;
-using Xunit;
 
 namespace ServiceLib.Tests.Handler;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRayGamesTests))]
 public class SvoRayGamesTests
 {
-    [Fact]
+    [Test]
     public void ParseLibraryFolders_ShouldReadEveryLibraryPath()
     {
         const string vdf = """
@@ -34,7 +36,7 @@ public class SvoRayGamesTests
     /// Xray compares folders case-sensitively against the path Windows reports, while Steam keeps
     /// library paths lower-cased. The entry has to come from the directory names on disk.
     /// </summary>
-    [Fact]
+    [Test]
     public void ExactCase_ShouldSpellThePathAsTheFileSystemDoes()
     {
         var root = Directory.CreateTempSubdirectory();
@@ -57,14 +59,14 @@ public class SvoRayGamesTests
         }
     }
 
-    [Fact]
+    [Test]
     public void ExactCase_ShouldReturnNullForAMissingFolder()
     {
         SvoRayGames.ExactCase(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))).Should().BeNull();
         SvoRayGames.ExactCase(null).Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void BuildFolderEntries_ShouldKeepExistingFoldersOnceAndDropNestedOnes()
     {
         var root = Directory.CreateTempSubdirectory();
@@ -88,7 +90,7 @@ public class SvoRayGamesTests
         }
     }
 
-    [Fact]
+    [Test]
     public void ProcessNames_ShouldCoverTheMainLaunchers()
     {
         SvoRayGames.ProcessNames.Should().Contain(["steam.exe", "steamwebhelper.exe", "EpicGamesLauncher.exe"]);

@@ -1,11 +1,12 @@
-using AwesomeAssertions;
-using Xunit;
-
 namespace ServiceLib.Tests.Services;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(DownloadServiceTests))]
 public class DownloadServiceTests
 {
-    [Fact]
+    [Test]
     public async Task FromHttpResponseAsync_ShouldPreserveSupportUrl()
     {
         using var response = new HttpResponseMessage(HttpStatusCode.OK)
@@ -17,7 +18,7 @@ public class DownloadServiceTests
 
         var result = await DownloadStringResult.FromHttpResponseAsync(
             response,
-            TestContext.Current.CancellationToken);
+            TestContext.Current!.Execution.CancellationToken);
 
         result.Content.Should().Be("subscription-data");
         result.GetHeaderValue("support-url").Should().Be("tg://resolve?domain=svoray_support");

@@ -1,10 +1,12 @@
 using System.Text;
-using AwesomeAssertions;
 using ServiceLib.Common;
-using Xunit;
 
 namespace ServiceLib.Tests.Common;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRayServerRoutingTests))]
 public class SvoRayServerRoutingTests
 {
     /// <summary>The profile as a 3X-UI panel sends it: Happ's format, every scalar a string.</summary>
@@ -28,7 +30,7 @@ public class SvoRayServerRoutingTests
         return "happ://routing/onadd/" + b64;
     }
 
-    [Fact]
+    [Test]
     public void ParseHeader_ShouldReadThePanelFormat()
     {
         var profile = SvoRayServerRouting.ParseHeader(Header(PanelProfileJson));
@@ -45,24 +47,24 @@ public class SvoRayServerRoutingTests
         profile.GeoipUrl.Should().Be("https://cdn.example/geoip.dat");
     }
 
-    [Fact]
+    [Test]
     public void ParseHeader_ShouldAcceptUrlSafeBase64WithoutPadding()
     {
         SvoRayServerRouting.ParseHeader(Header(PanelProfileJson, urlSafe: true)).Should().NotBeNull();
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("vless://not-a-routing-profile")]
-    [InlineData("happ://routing/onadd/%%%not-base64%%%")]
-    [InlineData("happ://routing/onadd/bm90IGpzb24=")] // "not json"
+    [Test]
+    [Arguments(null)]
+    [Arguments("")]
+    [Arguments("vless://not-a-routing-profile")]
+    [Arguments("happ://routing/onadd/%%%not-base64%%%")]
+    [Arguments("happ://routing/onadd/bm90IGpzb24=")] // "not json"
     public void ParseHeader_ShouldIgnoreAnythingElse(string? value)
     {
         SvoRayServerRouting.ParseHeader(value).Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void FromHeaders_ShouldHonourTheServerSwitchingRoutingOff()
     {
         SvoRayServerRouting.FromHeaders(Header(PanelProfileJson), "false").Should().BeNull();
@@ -71,7 +73,7 @@ public class SvoRayServerRoutingTests
         SvoRayServerRouting.FromHeaders(Header(PanelProfileJson), null).Should().NotBeNull();
     }
 
-    [Fact]
+    [Test]
     public void StoredProfile_ShouldRoundTrip()
     {
         var stored = SvoRayServerRouting.FromHeaders(Header(PanelProfileJson), "true");
@@ -85,7 +87,7 @@ public class SvoRayServerRoutingTests
     /// Entries end up inside the core config, so anything that is not a plain matcher is dropped,
     /// and only https geo sources are accepted.
     /// </summary>
-    [Fact]
+    [Test]
     public void Parse_ShouldDropEntriesThatAreNotPlainMatchersAndInsecureSources()
     {
         var profile = SvoRayServerRouting.Parse("""
@@ -99,13 +101,13 @@ public class SvoRayServerRoutingTests
         profile.RouteOrder.Should().Be(SvoRayServerRouting.DefaultRouteOrder);
     }
 
-    [Fact]
+    [Test]
     public void Parse_ShouldReturnNullForAProfileWithoutRules()
     {
         SvoRayServerRouting.Parse("""{"Name":"empty","DirectSites":[]}""").Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void RewriteGeo_ShouldPointKnownCategoriesAtTheProfileFileAndDropTheRest()
     {
         var tags = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "STEAM", "category-ru" };
@@ -122,7 +124,7 @@ public class SvoRayServerRoutingTests
         dropped.Should().Equal("geosite:whitelist", "ext:evil.dat:x");
     }
 
-    [Fact]
+    [Test]
     public void RewriteGeo_WithoutAProfileFile_ShouldKeepStockCategoriesAsTheyAre()
     {
         var dropped = new List<string>();
@@ -133,7 +135,7 @@ public class SvoRayServerRoutingTests
         dropped.Should().Equal("geosite:missing");
     }
 
-    [Fact]
+    [Test]
     public void RewriteGeo_WithoutTags_ShouldDropEveryGeoEntry()
     {
         var dropped = new List<string>();
@@ -144,7 +146,7 @@ public class SvoRayServerRoutingTests
         dropped.Should().Equal("geoip:direct");
     }
 
-    [Fact]
+    [Test]
     public void ReadGeoTags_ShouldListCategoriesOfAGeoFile()
     {
         var path = Path.GetTempFileName();

@@ -30,7 +30,7 @@ public partial class StatusBarView
             {
                 var strData = interaction.Input;
                 WindowsUtils.SetClipboardData(strData);
-                interaction.SetOutput(Unit.Default);
+                interaction.SetOutput(RxVoid.Default);
             }).DisposeWith(disposables);
         });
     }

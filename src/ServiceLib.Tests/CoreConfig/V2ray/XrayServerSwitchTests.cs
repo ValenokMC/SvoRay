@@ -1,19 +1,21 @@
-using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Enums;
 using ServiceLib.Manager;
 using ServiceLib.Services.CoreConfig;
-using Xunit;
 
 namespace ServiceLib.Tests.CoreConfig.V2ray;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(XrayServerSwitchTests))]
 public class XrayServerSwitchTests
 {
     private const string SubId = "sub-1";
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
     public async Task GeneratedConfig_DiffersOnlyInTheProxyOutbound(bool tun)
     {
         var (config, servers) = Setup(tun);
@@ -28,7 +30,7 @@ public class XrayServerSwitchTests
         third.Selection.Should().Contain("c.example.com");
     }
 
-    [Fact]
+    [Test]
     public async Task GeneratedConfig_OpensTheHandlerApiOnLoopbackOnly()
     {
         var (config, servers) = Setup(tun: false);
@@ -42,7 +44,7 @@ public class XrayServerSwitchTests
             "Xray keeps one proxy outbound; the other servers only join the DNS protect list");
     }
 
-    [Fact]
+    [Test]
     public void SingleServer_HasNoApiAndIsNotSwitchable()
     {
         var (config, servers) = Setup(tun: false);
@@ -55,7 +57,7 @@ public class XrayServerSwitchTests
         CoreSwitchPlanner.ReadXrayShape(json).Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void Select_ForXray_DropsWhatXrayCannotRun()
     {
         var selected = Server("a", "a.example.com");

@@ -1,8 +1,8 @@
 {
   "v2rayN": {
-    "version": "7.24.4",
-    "url": "https://github.com/2dust/v2rayN/releases/download/7.24.4/v2rayN-windows-64.zip",
-    "sha256": "20fc30526fe5a0164ae7b9a1f8b807bf724e87759ad0fb642bd008276a4239e7"
+    "version": "7.25.6",
+    "url": "https://github.com/2dust/v2rayN/releases/download/7.25.6/v2rayN-windows-64.zip",
+    "sha256": "9b94718c2a214a246b04dec84b9a27f1f0ced8489c2dd25eb80a0fbb806bd13f"
   },
   "xray": {
     "version": "26.11.9",

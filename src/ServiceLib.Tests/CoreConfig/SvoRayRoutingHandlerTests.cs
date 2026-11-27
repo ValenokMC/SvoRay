@@ -1,41 +1,43 @@
-using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Enums;
 using ServiceLib.Handler;
 using ServiceLib.Models;
 using ServiceLib.Services.CoreConfig;
-using Xunit;
 
 namespace ServiceLib.Tests.CoreConfig;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRayRoutingHandlerTests))]
 public class SvoRayRoutingHandlerTests
 {
-    [Theory]
-    [InlineData("example.com", "example.com")]
-    [InlineData("  Example.COM  ", "example.com")]
-    [InlineData("https://www.example.com/path?q=1", "example.com")]
-    [InlineData("example.com:443", "example.com")]
-    [InlineData("*.example.com", "example.com")]
-    [InlineData("example.com.", "example.com")]
-    [InlineData("sub.example.co.uk", "sub.example.co.uk")]
+    [Test]
+    [Arguments("example.com", "example.com")]
+    [Arguments("  Example.COM  ", "example.com")]
+    [Arguments("https://www.example.com/path?q=1", "example.com")]
+    [Arguments("example.com:443", "example.com")]
+    [Arguments("*.example.com", "example.com")]
+    [Arguments("example.com.", "example.com")]
+    [Arguments("sub.example.co.uk", "sub.example.co.uk")]
     public void NormalizeDomain_ShouldReduceToBareHost(string input, string expected)
     {
         SvoRayRoutingHandler.NormalizeDomain(input).Should().Be(expected);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData(null)]
-    [InlineData("localhost")]
-    [InlineData("два слова.рф")]
-    [InlineData("http://[2001:db8::1]:8080/")]
+    [Test]
+    [Arguments("")]
+    [Arguments("   ")]
+    [Arguments(null)]
+    [Arguments("localhost")]
+    [Arguments("два слова.рф")]
+    [Arguments("http://[2001:db8::1]:8080/")]
     public void NormalizeDomain_ShouldRejectWhatCannotBecomeAMatcher(string? input)
     {
         SvoRayRoutingHandler.NormalizeDomain(input).Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void ParseDomains_ShouldAcceptAPastedListInAnyShape()
     {
         var parsed = SvoRayRoutingHandler.ParseDomains(
@@ -44,11 +46,11 @@ public class SvoRayRoutingHandlerTests
         parsed.Should().Equal("gosuslugi.ru", "sberbank.ru", "avito.ru", "vk.com", "ozon.ru");
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" , ; \n ")]
-    [InlineData("localhost\nне домен")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("")]
+    [Arguments(" , ; \n ")]
+    [Arguments("localhost\nне домен")]
     public void ParseDomains_ShouldReturnNothingWhenThereIsNoUsableDomain(string? input)
     {
         SvoRayRoutingHandler.ParseDomains(input).Should().BeEmpty();
@@ -58,7 +60,7 @@ public class SvoRayRoutingHandlerTests
     /// Pasting a hosts file is a plausible thing to try, and every line of one begins with an
     /// address that would otherwise be stored as a domain matching nothing.
     /// </summary>
-    [Fact]
+    [Test]
     public void ParseDomains_ShouldKeepAddressesOutOfADomainList()
     {
         var parsed = SvoRayRoutingHandler.ParseDomains("0.0.0.0 tracker.example\n127.0.0.1 ads.example");
@@ -70,7 +72,7 @@ public class SvoRayRoutingHandlerTests
     /// The maintained list is fetched at runtime, so this pins the parsing of its actual shape:
     /// one host per line, some of them deep subdomains, some punycode.
     /// </summary>
-    [Fact]
+    [Test]
     public void ParseDomains_ShouldReadTheMaintainedListFormat()
     {
         var payload = string.Join('\n',
@@ -92,7 +94,7 @@ public class SvoRayRoutingHandlerTests
     /// Every entry has to survive the same normalisation a typed domain goes through, or the
     /// preset would quietly ship matchers that never fire.
     /// </summary>
-    [Fact]
+    [Test]
     public void RussiaPreset_ShouldBeNormalisedAndFreeOfDuplicates()
     {
         var preset = SvoRayRoutingHandler.RussiaPreset;
@@ -107,7 +109,7 @@ public class SvoRayRoutingHandlerTests
     /// takes subdomains, so gov.ru answers for nalog.gov.ru and the pair would only mislead a
     /// reader into thinking one of them does something the other does not.
     /// </summary>
-    [Fact]
+    [Test]
     public void RussiaPreset_ShouldNotRepeatWhatAShorterEntryAlreadyCovers()
     {
         var preset = SvoRayRoutingHandler.RussiaPreset;
@@ -119,7 +121,7 @@ public class SvoRayRoutingHandlerTests
         covered.Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void RussiaPreset_ShouldCarryTheStaticHostsOfTheSitesItLists()
     {
         var preset = SvoRayRoutingHandler.RussiaPreset;
@@ -144,7 +146,7 @@ public class SvoRayRoutingHandlerTests
         }
     }
 
-    [Fact]
+    [Test]
     public void RussiaPreset_ShouldSurviveRuleGenerationAsBypassDomains()
     {
         var rules = SvoRayRoutingHandler.BuildRules(new SvoRayItem
@@ -159,7 +161,7 @@ public class SvoRayRoutingHandlerTests
         listed.Domain.Should().Contain("domain:gosuslugi.ru");
     }
 
-    [Fact]
+    [Test]
     public void BuildRules_BypassListed_ShouldSendListedDomainsDirectAndTheRestToProxy()
     {
         var rules = SvoRayRoutingHandler.BuildRules(new SvoRayItem
@@ -181,7 +183,7 @@ public class SvoRayRoutingHandlerTests
         rules.Should().Contain(r => r.OutboundTag == Global.BlockTag && r.Port == "443" && r.Network == "udp");
     }
 
-    [Fact]
+    [Test]
     public void BuildRules_ProxyListed_ShouldSendOnlyListedDomainsToProxy()
     {
         var rules = SvoRayRoutingHandler.BuildRules(new SvoRayItem
@@ -204,7 +206,7 @@ public class SvoRayRoutingHandlerTests
             && r.Domain != null && r.Domain.Contains("domain:blocked.example"));
     }
 
-    [Fact]
+    [Test]
     public void BuildRules_WithoutDomains_ShouldStillCoverLanAndFinalHop()
     {
         var rules = SvoRayRoutingHandler.BuildRules(new SvoRayItem { RuleDomains = [] });
@@ -222,7 +224,7 @@ public class SvoRayRoutingHandlerTests
     /// outside the tunnel too. Resolving it through the proxy would hand back an address chosen
     /// for the wrong country, which is exactly what the user asked to avoid for this domain.
     /// </summary>
-    [Fact]
+    [Test]
     public void GeneratedRules_ShouldReachSingboxAsBothARouteAndADnsRule()
     {
         var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
@@ -252,7 +254,7 @@ public class SvoRayRoutingHandlerTests
     /// answers by default has to be the direct one - otherwise every ordinary lookup would still
     /// travel through the proxy.
     /// </summary>
-    [Fact]
+    [Test]
     public void GeneratedRules_ProxyListed_ShouldResolveEverythingElseDirectly()
     {
         var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);

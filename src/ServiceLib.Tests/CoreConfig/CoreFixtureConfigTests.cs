@@ -1,12 +1,13 @@
-using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Enums;
 using ServiceLib.Handler.Fmt;
 using ServiceLib.Models;
 using ServiceLib.Services.CoreConfig;
-using Xunit;
 
 namespace ServiceLib.Tests.CoreConfig;
+
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
 
 /// <summary>
 /// The configs SvoRay generates for every protocol it ships, with TUN off and on. Each one must
@@ -18,7 +19,7 @@ namespace ServiceLib.Tests.CoreConfig;
 /// Runs on its own: it binds TUN and non-TUN configs to the shared AppManager, which would
 /// change what the other core config tests generate if they ran at the same time.
 /// </summary>
-[Collection(nameof(CoreFixtureConfigTests))]
+[NotInParallel]
 public class CoreFixtureConfigTests
 {
     public const string FixturesVariable = "SVORAY_CORE_FIXTURES";
@@ -30,21 +31,23 @@ public class CoreFixtureConfigTests
     private const string RealityKey = "iAhl0UhVWHvBUuVGyTPbsvaSuzN9cgqFKSyP8hfuZ2k";
 
     // name, share link, generated for Xray, generated for sing-box
-    public static TheoryData<string, string, bool, bool> Links => new()
-    {
-        { "vless-reality-xhttp", $"vless://{Uuid}@example.com:443?encryption=none&security=reality&sni=www.example.com&fp=chrome&pbk={RealityKey}&sid=ab&type=xhttp&path=%2F&mode=auto&extra=%7B%22xPaddingBytes%22%3A%22100-1000%22%7D#x", true, false },
-        { "vless-reality-vision", $"vless://{Uuid}@example.com:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.example.com&fp=firefox&pbk={RealityKey}&sid=ab&type=tcp#x", true, true },
-        { "vless-tls-ws", $"vless://{Uuid}@example.com:443?encryption=none&security=tls&sni=example.com&fp=chrome&alpn=http%2F1.1&type=ws&host=example.com&path=%2Fws#x", true, true },
-        { "vless-tls-grpc", $"vless://{Uuid}@example.com:443?encryption=none&security=tls&sni=example.com&type=grpc&serviceName=svc&mode=gun#x", true, true },
-        { "trojan-tls", "trojan://secret@example.com:443?security=tls&sni=example.com&type=tcp#x", true, true },
-        { "shadowsocks", "ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206WXpJd09HTXhNamd4WldReU5XRTFOZz09@example.com:8388#x", true, true },
-        { "hysteria2-salamander", "hysteria2://secret@example.com:443?sni=example.com&obfs=salamander&obfs-password=pass#x", true, true },
-        { "hysteria2-hop", "hysteria2://secret@example.com:443?sni=example.com&mport=20000-30000#x", true, true },
-        { "tuic", $"tuic://{Uuid}:secret@example.com:443?sni=example.com&congestion_control=bbr&alpn=h3#x", false, true },
-    };
+    public static IEnumerable<(string Name, string Link, bool Xray, bool Singbox)> Links() =>
+    [
+        ("vless-reality-xhttp", $"vless://{Uuid}@example.com:443?encryption=none&security=reality&sni=www.example.com&fp=chrome&pbk={RealityKey}&sid=ab&type=xhttp&path=%2F&mode=auto&extra=%7B%22xPaddingBytes%22%3A%22100-1000%22%7D#x", true, false),
+        ("vless-reality-vision", $"vless://{Uuid}@example.com:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.example.com&fp=firefox&pbk={RealityKey}&sid=ab&type=tcp#x", true, true),
+        ("vless-tls-ws", $"vless://{Uuid}@example.com:443?encryption=none&security=tls&sni=example.com&fp=chrome&alpn=http%2F1.1&type=ws&host=example.com&path=%2Fws#x", true, true),
+        ("vless-tls-grpc", $"vless://{Uuid}@example.com:443?encryption=none&security=tls&sni=example.com&type=grpc&serviceName=svc&mode=gun#x", true, true),
+        ("trojan-tls", "trojan://secret@example.com:443?security=tls&sni=example.com&type=tcp#x", true, true),
+        ("shadowsocks", "ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206WXpJd09HTXhNamd4WldReU5XRTFOZz09@example.com:8388#x", true, true),
+        ("hysteria2-salamander", "hysteria2://secret@example.com:443?sni=example.com&obfs=salamander&obfs-password=pass#x", true, true),
+        ("hysteria2-hop", "hysteria2://secret@example.com:443?sni=example.com&mport=20000-30000#x", true, true),
+        ("tuic", $"tuic://{Uuid}:secret@example.com:443?sni=example.com&congestion_control=bbr&alpn=h3#x", false, true),
+        // WireGuard with the DNS of its config, as WARP imports carry it (upstream emits it as remoteDNS).
+        ("wireguard", "wireguard://AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA%3D@example.com:51820?publickey=ISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0%2BP0A%3D&address=172.16.0.2%2F32%2C%20fd00%3A%3A2%2F128&mtu=1280&dns=1.1.1.1%2C%202606%3A4700%3A4700%3A%3A1111#x", true, true),
+    ];
 
-    [Theory]
-    [MemberData(nameof(Links))]
+    [Test]
+    [MethodDataSource(nameof(Links))]
     public void GeneratedConfigs_ShouldBuildForEveryShippedProtocol(string name, string link, bool xray, bool singbox)
     {
         var node = FmtHandler.ResolveConfig(link, out var msg);
@@ -105,6 +108,3 @@ public class CoreFixtureConfigTests
         File.WriteAllText(Path.Combine(folder, fileName), content);
     }
 }
-
-[CollectionDefinition(nameof(CoreFixtureConfigTests), DisableParallelization = true)]
-public class CoreFixtureConfigCollection;

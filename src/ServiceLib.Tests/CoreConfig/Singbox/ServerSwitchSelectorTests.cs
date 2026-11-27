@@ -1,17 +1,19 @@
-using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Enums;
 using ServiceLib.Manager;
 using ServiceLib.Services.CoreConfig;
-using Xunit;
 
 namespace ServiceLib.Tests.CoreConfig.Singbox;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(ServerSwitchSelectorTests))]
 public class ServerSwitchSelectorTests
 {
     private const string SubId = "sub-1";
 
-    [Fact]
+    [Test]
     public async Task GeneratedConfig_HasManualSelectorPointingAtTheSelectedServer()
     {
         var (config, servers) = Setup();
@@ -30,7 +32,7 @@ public class ServerSwitchSelectorTests
             .Should().Equal("a.example.com", "b.example.com", "c.example.com");
     }
 
-    [Fact]
+    [Test]
     public async Task GeneratedConfig_IsTheSameWhicheverServerIsSelected()
     {
         var (config, servers) = Setup();
@@ -45,7 +47,7 @@ public class ServerSwitchSelectorTests
         third.Fingerprint.Should().Be(first.Fingerprint, "only the selector default may differ, or the switch would restart the core");
     }
 
-    [Fact]
+    [Test]
     public async Task GeneratedConfig_ChangesWhenTheServerSetChanges()
     {
         var (config, servers) = Setup();
@@ -56,7 +58,7 @@ public class ServerSwitchSelectorTests
         fewer!.Fingerprint.Should().NotBe(all!.Fingerprint);
     }
 
-    [Fact]
+    [Test]
     public async Task GeneratedConfig_ResolvesEveryCandidateOutsideTheTunnel()
     {
         var (config, servers) = Setup();
@@ -65,7 +67,7 @@ public class ServerSwitchSelectorTests
         context.ProtectDomainList.Should().Equal("a.example.com", "b.example.com", "c.example.com");
     }
 
-    [Fact]
+    [Test]
     public void SingleServer_KeepsThePlainProxyOutbound()
     {
         var (config, servers) = Setup();
@@ -78,7 +80,7 @@ public class ServerSwitchSelectorTests
         CoreSwitchPlanner.ReadSingboxShape(Generate(context)).Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void Select_KeepsOnlyServersTheSameCoreCanSwitchBetween()
     {
         var selected = Server("b", "b.example.com");
@@ -99,7 +101,7 @@ public class ServerSwitchSelectorTests
         result.Select(p => p.IndexId).Should().Equal("a", "b");
     }
 
-    [Fact]
+    [Test]
     public void Select_TooManyServers_FallsBackToTheSelectedOneOnly()
     {
         var servers = Enumerable.Range(0, ServerSwitchCandidates.MaxCandidates + 1)
@@ -109,7 +111,7 @@ public class ServerSwitchSelectorTests
         ServerSwitchCandidates.Select(servers[0], servers, p => ECoreType.sing_box).Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void IsSwitchable_OnlyPlainServerOnSingboxOrXrayWithoutPreCore()
     {
         var (config, servers) = Setup();

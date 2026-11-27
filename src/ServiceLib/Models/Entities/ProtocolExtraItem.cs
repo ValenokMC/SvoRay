@@ -27,6 +27,7 @@ public record ProtocolExtraItem
     public string? WgInterfaceAddress { get; init; }
     public string? WgReserved { get; init; }
     public int? WgMtu { get; init; }
+    public string? WgDns { get; init; }
 
     // amneziawg decoys the local relay sends before each handshake; the server never sees them as WireGuard
     public int? AwgJc { get; init; }
@@ -51,10 +52,17 @@ public record ProtocolExtraItem
     public int? InsecureConcurrency { get; init; }
     public bool? NaiveQuic { get; init; }
 
+    // MASQUE
+    public string? MasquePath { get; init; }
+    public string? MasqueHeaders { get; init; }
+
     // group profile
     public string? GroupType { get; init; }
     public string? ChildItems { get; init; }
     public string? SubChildItems { get; init; }
     public string? Filter { get; init; }
     public EMultipleLoad? MultipleLoad { get; init; }
+
+    // custom outbound
+    public bool? IsSingboxEndpoint { get; init; }
 }

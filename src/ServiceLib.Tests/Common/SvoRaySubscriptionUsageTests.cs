@@ -1,14 +1,16 @@
-using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Manager;
 using ServiceLib.Tests.CoreConfig;
-using Xunit;
 
 namespace ServiceLib.Tests.Common;
 
+// Inside the namespace: this scope is searched first, so Should() binds to AwesomeAssertions, not to TUnit's global Should().
+using AwesomeAssertions;
+
+[NotInParallel(nameof(SvoRaySubscriptionUsageTests))]
 public class SvoRaySubscriptionUsageTests
 {
-    [Fact]
+    [Test]
     public void Parse_ShouldReadThePanelHeader()
     {
         var usage = SvoRaySubscriptionUsage.Parse("upload=7171579511; download=95274278193; total=214748364800; expire=0");
@@ -19,7 +21,7 @@ public class SvoRaySubscriptionUsageTests
         usage.Expire.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Parse_ShouldTolerateOrderSpacingAndCase()
     {
         var usage = SvoRaySubscriptionUsage.Parse(" Total=100 ;download = 30;UPLOAD=10 ");
@@ -27,17 +29,17 @@ public class SvoRaySubscriptionUsageTests
         usage.Should().Be(new SvoRaySubscriptionUsage(10, 30, 100, 0));
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("expire=0")]
-    [InlineData("upload=abc; download=-5")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("")]
+    [Arguments("expire=0")]
+    [Arguments("upload=abc; download=-5")]
     public void Parse_ShouldIgnoreHeadersWithoutTraffic(string? header)
     {
         SvoRaySubscriptionUsage.Parse(header).Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void StoredForm_ShouldRoundTrip()
     {
         var usage = new SvoRaySubscriptionUsage(1, 2, 3, 4);
@@ -45,18 +47,18 @@ public class SvoRaySubscriptionUsageTests
         SvoRaySubscriptionUsage.Parse(usage.Serialize()).Should().Be(usage);
     }
 
-    [Theory]
-    [InlineData(0, "0 B")]
-    [InlineData(1536, "1.5 KB")]
-    [InlineData(102_436_000_000, "95.4 GB")]
-    [InlineData(214_748_364_800, "200 GB")]
-    [InlineData(1_319_413_953_331, "1.2 TB")]
+    [Test]
+    [Arguments(0, "0 B")]
+    [Arguments(1536, "1.5 KB")]
+    [Arguments(102_436_000_000, "95.4 GB")]
+    [Arguments(214_748_364_800, "200 GB")]
+    [Arguments(1_319_413_953_331, "1.2 TB")]
     public void FormatBytes_ShouldPickAReadableUnit(long bytes, string expected)
     {
         SvoRaySubscriptionUsage.FormatBytes(bytes).Replace(',', '.').Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void FormatBytes_ShouldUseTheUnitsOfTheInterfaceLanguage()
     {
         SvoRaySubscriptionUsage.FormatBytes(214_748_364_800, "Б,КБ,МБ,ГБ,ТБ").Should().Be("200 ГБ");
@@ -68,7 +70,7 @@ public class SvoRaySubscriptionUsageTests
     /// through a fallback that drops response headers. The manager now takes the app config
     /// itself.
     /// </summary>
-    [Fact]
+    [Test]
     public void CertificatePolicy_ShouldNotNeedAnExplicitInit()
     {
         var config = CoreConfigTestFactory.CreateConfig();

@@ -1,4 +1,4 @@
-namespace ServiceLib.Common;
+﻿namespace ServiceLib.Common;
 
 /// <summary>
 /// Checks for paths SvoRay reads from data it does not control: launcher records, the registry,
@@ -46,5 +46,50 @@ public static class SvoRayPaths
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// The file a custom outbound (<see cref="EConfigType.Outbound"/>) names in its address: the
+    /// name as given (relative to the working folder), else under the config folder, as upstream
+    /// looks it up. Null unless that is an existing file on a local drive. The address can be
+    /// edited by hand or come back with a restored backup, so a share or device path is refused
+    /// before anything touches it - even File.Exists would open the share.
+    /// </summary>
+    public static string? ResolveCustomOutboundFile(string? address)
+    {
+        if (address.IsNullOrEmpty())
+        {
+            return null;
+        }
+        foreach (var candidate in new[] { address!, Utils.GetConfigPath(address!) })
+        {
+            string fullPath;
+            try
+            {
+                fullPath = Path.GetFullPath(candidate);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                continue;
+            }
+            if (IsLocalPath(fullPath) && File.Exists(fullPath))
+            {
+                return fullPath;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// True for a name that stays a single file inside the folder it is combined with: no
+    /// separators of either kind, no "..", nothing Windows forbids in a file name. Rule-set names
+    /// come from routing rules, which a subscription's routing profile feeds.
+    /// </summary>
+    public static bool IsPlainFileName(string? name)
+    {
+        return !name.IsNullOrEmpty()
+               && !name!.Contains("..", StringComparison.Ordinal)
+               && name.IndexOfAny(['\\', '/', ':']) < 0
+               && name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0;
     }
 }

@@ -4,14 +4,14 @@
 
 # SvoRay
 
-**A simplified Windows VPN client built on the open-source [v2rayN](https://github.com/2dust/v2rayN) 7.24.4 codebase.**<br>
+**A simplified Windows VPN client built on the open-source [v2rayN](https://github.com/2dust/v2rayN) 7.25.6 codebase.**<br>
 **Paste your own subscription, pick a server, press one button.**
 
 [![Release](https://img.shields.io/github/v/release/ValenokMC/SvoRay?style=flat-square&logo=github&label=release&color=1f6feb)](https://github.com/ValenokMC/SvoRay/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/ValenokMC/SvoRay/total?style=flat-square&logo=github&label=downloads&color=2ea043)](https://github.com/ValenokMC/SvoRay/releases)
 [![CI](https://github.com/ValenokMC/SvoRay/actions/workflows/ci.yml/badge.svg)](https://github.com/ValenokMC/SvoRay/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPL--3.0-fd7e14?style=flat-square)](LICENSE)
-[![Built on v2rayN](https://img.shields.io/badge/built_on-v2rayN_7.24.4-8957e5?style=flat-square)](https://github.com/2dust/v2rayN)
+[![Built on v2rayN](https://img.shields.io/badge/built_on-v2rayN_7.25.6-8957e5?style=flat-square)](https://github.com/2dust/v2rayN)
 
 [![Windows](https://img.shields.io/badge/Windows_10%2F11-supported-0078D4?style=flat-square)](#install)
 [![Cores](https://img.shields.io/badge/cores-Xray_·_sing--box-6e7681?style=flat-square)](#what-it-does)
